@@ -1,21 +1,23 @@
-let instantiated: boolean = false;
+import { spawn } from 'child_process';
 
 class CommandManager implements ICommandManager {
-  private commandQueue: string[] = [];
+  private static instance: CommandManager;
+  private commandQueue: Command[] = [];
 
-  constructor() {
-    // singleton pattern
-    if (instantiated) {
-      throw new Error('You can only create one instance.');
+  private constructor() {}
+
+  public static getInstance(): CommandManager {
+    // Singleton pattern
+    if (!CommandManager.instance) {
+      CommandManager.instance = new CommandManager();
     }
-    instantiated = true;
+    return CommandManager.instance;
   }
 
   public async executeCommand(command: Command): Promise<CommandResponse> {
     return new Promise((resolve, reject) => {
       try {
-        const exec = require('child_process').exec;
-        exec(command, (error: any, stdout: any, stderr: any) => {
+        spawn(command, (error: any, stdout: any, stderr: any) => {
           if (error) {
             reject(error);
           }
@@ -31,5 +33,4 @@ class CommandManager implements ICommandManager {
   }
 }
 
-const commandManager = Object.freeze(new CommandManager());
-export default commandManager;
+export default CommandManager;
