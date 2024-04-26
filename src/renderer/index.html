@@ -2,16 +2,39 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>Electron</title>
-    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
-    <meta
-      http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
-    />
+    <title>FOSSLight Scanner</title>
+    <link rel="stylesheet" href="index.css" />
   </head>
 
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <div class="container">
+      <div class="title-bar">
+        <div class="title prevent-select draggable">
+          <img src="./src/assets/titlebar/title-logo.svg" alt="fosslogo" class="title-logo" />
+          <div class="title-text">FOSSLight Scanner</div>
+          <img src="./src/assets/titlebar/title-bar-icon.png" />
+          <div class="version-text">v1.7.22</div>
+        </div>
+        <div class="control prevent-select">
+          <button id="setting">
+            <img src="./src/assets/titlebar/title-setting-icon.png" />
+          </button>
+          <button id="info">
+            <img src="./src/assets/titlebar/title-info-icon.png" />
+          </button>
+          <img src="./src/assets/titlebar/title-bar-icon.png" />
+          <button id="min">
+            <img src="./src/assets/titlebar/title-min-icon.png" alt="minimize" />
+          </button>
+          <button id="max">
+            <img src="./src/assets/titlebar/title-max-icon.png" alt="max" />
+          </button>
+          <button id="close">
+            <img src="./src/assets/titlebar/title-close-icon.png" alt="close" />
+          </button>
+        </div>
+      </div>
+    </div>
+    <script src="./src/function.js"></script>
   </body>
 </html>

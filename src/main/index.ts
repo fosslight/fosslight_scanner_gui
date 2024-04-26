@@ -9,12 +9,29 @@ function createWindow(): void {
     width: 900,
     height: 670,
     show: false,
+    frame: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false
     }
+  });
+
+  ipcMain.on('minimizeApp', () => {
+    mainWindow.minimize();
+  });
+
+  ipcMain.on('maximizeApp', () => {
+    if (mainWindow.isMaximized()) {
+      mainWindow.restore();
+    } else {
+      mainWindow.maximize();
+    }
+  });
+
+  ipcMain.on('closeApp', () => {
+    mainWindow.close();
   });
 
   mainWindow.on('ready-to-show', () => {

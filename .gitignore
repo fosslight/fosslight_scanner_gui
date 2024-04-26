@@ -12,3 +12,4 @@ out
 
 # Python Virtual Environment
 venv
+.venv
