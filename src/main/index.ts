@@ -49,12 +49,12 @@ function createHiddenWindow(): void {
     }
   });
 
-  hiddenWindow.loadFile(join(__dirname, '../renderer/index.html'));
+  hiddenWindow.loadFile(join(__dirname, '../background/index.html'));
   // const devUrl = 'http://localhost:3000/index.html';
   // if (is.dev) {
   //   hiddenWindow.loadURL(devUrl);
   // } else {
-  //   hiddenWindow.loadFile(join(__dirname, '../renderer/index.html'));
+  //   hiddenWindow.loadFile(join(__dirname, '../background/index.html'));
   // }
 }
 
