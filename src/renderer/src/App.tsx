@@ -1,8 +1,40 @@
 import Versions from './components/Versions';
 import electronLogo from './assets/electron.svg';
+import useCommandManager from './hooks/useCommandManager';
+import { useState } from 'react';
 
 function App(): JSX.Element {
-  const ipcHandle = (): void => window.electron.ipcRenderer.send('ping');
+  const commandManager = useCommandManager();
+  const [message, setMessage] = useState<string | null>(null);
+
+  const handleClickCompareButton = async (): Promise<void> => {
+    const res = await commandManager.compare({
+      reports: ['path/to/report1', 'path/to/report2']
+    });
+
+    if (res.success) {
+      setMessage('Command executed successfully');
+    } else {
+      setMessage(res.message!);
+    }
+  };
+
+  const handleClickAnalyzeButton = async (): Promise<void> => {
+    const res = await commandManager.analyze({
+      mode: ['source', 'binary', 'dependency'],
+      path: ['.'],
+      outputFormat: 'xlsx',
+      outputPath: '.',
+      outputFileName: 'output',
+      extraOptions: ''
+    });
+
+    if (res.success) {
+      setMessage('Command executed successfully');
+    } else {
+      setMessage(res.message!);
+    }
+  };
 
   return (
     <>
@@ -17,16 +49,17 @@ function App(): JSX.Element {
       </p>
       <div className="actions">
         <div className="action">
-          <a href="https://electron-vite.org/" target="_blank" rel="noreferrer">
-            Documentation
+          <a target="_blank" rel="noreferrer" onClick={handleClickAnalyzeButton}>
+            Send Analyze Command
           </a>
         </div>
         <div className="action">
-          <a target="_blank" rel="noreferrer" onClick={ipcHandle}>
-            Send IPC
+          <a target="_blank" rel="noreferrer" onClick={handleClickCompareButton}>
+            Send Compare Command
           </a>
         </div>
       </div>
+      <div className="text">{message}</div>
       <Versions></Versions>
     </>
   );

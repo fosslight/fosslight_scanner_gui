@@ -1,8 +1,7 @@
-import { spawn } from 'child_process';
-
 class CommandManager implements ICommandManager {
   private static instance: CommandManager;
-  private commandQueue: Command[] = [];
+  private readonly commandQueue: Command[] = [];
+  private readonly capacity: number = 1;
 
   private constructor() {}
 
@@ -15,6 +14,16 @@ class CommandManager implements ICommandManager {
   }
 
   public async executeCommand(command: Command): Promise<CommandResponse> {
+    if (!command) {
+      return { success: false, message: 'Command is required' };
+    }
+
+    if (this.commandQueue.length >= this.capacity) {
+      return { success: false, message: 'Command queue is full' };
+    }
+
+    this.commandQueue.push(command);
+    const res = window.api.sendCommand(command);
     return new Promise((resolve, reject) => {
       try {
         // spawn(command, (error: any, stdout: any, stderr: any) => {
