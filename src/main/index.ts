@@ -3,16 +3,19 @@ import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import icon from '../../resources/icon.png?asset';
 
+let mainWindow: BrowserWindow;
+let hiddenWindow: BrowserWindow;
+
 function createWindow(): void {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 900,
     height: 670,
     show: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
+      preload: join(__dirname, '../preload/visible.js'),
       sandbox: false
     }
   });
@@ -35,6 +38,18 @@ function createWindow(): void {
   }
 }
 
+function createHiddenWindow(): void {
+  hiddenWindow = new BrowserWindow({
+    show: false,
+    webPreferences: {
+      preload: join(__dirname, '../preload/hidden.js'),
+      sandbox: false
+    }
+  });
+
+  hiddenWindow.loadFile(join(__dirname, '../background/index.html'));
+}
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
@@ -49,10 +64,20 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window);
   });
 
-  // IPC test
-  ipcMain.on('ping', () => console.log('pong'));
-
   createWindow();
+  createHiddenWindow();
+
+  // IPC communication between main and hidden windows
+  ipcMain.on('send-command', (event, { command, args }) => {
+    console.log('execute-command', command, args);
+    event.reply('command-result', 'Command executed');
+    hiddenWindow.webContents.send('execute-command', { command, args });
+  });
+
+  ipcMain.on('send-log', (event, { log }) => {
+    console.log('receive-log', log);
+    mainWindow.webContents.send('receive-log', { log });
+  });
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the

@@ -17,15 +17,15 @@ class CommandManager implements ICommandManager {
   public async executeCommand(command: Command): Promise<CommandResponse> {
     return new Promise((resolve, reject) => {
       try {
-        spawn(command, (error: any, stdout: any, stderr: any) => {
-          if (error) {
-            reject(error);
-          }
-          if (stderr) {
-            reject(stderr);
-          }
-          resolve(stdout);
-        });
+        // spawn(command, (error: any, stdout: any, stderr: any) => {
+        //   if (error) {
+        //     reject(error);
+        //   }
+        //   if (stderr) {
+        //     reject(stderr);
+        //   }
+        //   resolve(stdout);
+        // });
       } catch (error) {
         reject(error);
       }
