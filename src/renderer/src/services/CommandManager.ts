@@ -23,22 +23,13 @@ class CommandManager implements ICommandManager {
     }
 
     this.commandQueue.push(command);
-    const res = window.api.sendCommand(command);
-    return new Promise((resolve, reject) => {
-      try {
-        // spawn(command, (error: any, stdout: any, stderr: any) => {
-        //   if (error) {
-        //     reject(error);
-        //   }
-        //   if (stderr) {
-        //     reject(stderr);
-        //   }
-        //   resolve(stdout);
-        // });
-      } catch (error) {
-        reject(error);
-      }
-    });
+    await window.api.sendCommand(command);
+    const message: string = 'hey';
+    // window.api.onCommandResult((result) => {
+    //   message = result;
+    // });
+    this.commandQueue.shift();
+    return { success: true, message };
   }
 }
 

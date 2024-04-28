@@ -4,8 +4,13 @@ declare global {
   interface Window {
     electron: ElectronAPI;
     api: {
-      sendCommand: (command: Command, args?: any) => void;
+      sendCommand: (command: Command, args?: any) => any;
+      onCommandResult: (callback: (result: any) => void) => void;
+      onLog: (callback: (log: any) => void) => void;
     };
-    fosslightApi: unknown;
+    hiddenApi: {
+      onCommand: (callback: (command: any) => void) => void;
+      sendLog: (log: any) => void;
+    };
   }
 }

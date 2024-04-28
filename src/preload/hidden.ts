@@ -2,16 +2,14 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 // Assuming you have a custom API for the hidden renderer to execute commands
 // and to handle other background tasks. Adjust according to your actual APIs.
-const fosslightApi = {
+const hiddenApi = {
   // Function to send a command to the main process
 
-  // executeCommand: (command: string, args: any): void => {
-  //   ipcRenderer.on('execute-command', { command, args });
-  // },
-
-  // Listen for command execution results from the main process
-  onCommandResult: (callback: (result: any) => void): void => {
-    ipcRenderer.on('command-result', (_, result) => callback(result));
+  onCommand: (callback: (command: any) => void): void => {
+    ipcRenderer.on('recv-command', (_, result) => callback(result));
+  },
+  sendLog: (log: any): void => {
+    ipcRenderer.send('send-log', log);
   }
   // You can extend this API based on the tasks you expect the hidden renderer to perform
 };
@@ -20,11 +18,13 @@ const fosslightApi = {
 // only if context isolation is enabled, otherwise just add to the DOM global.
 if (process.contextIsolated) {
   try {
-    contextBridge.exposeInMainWorld('fosslightApi', fosslightApi);
+    contextBridge.exposeInMainWorld('hiddenApi', hiddenApi);
   } catch (error) {
-    console.error('Error exposing fosslightApi:', error);
+    console.error('Error exposing hiddenApi:', error);
   }
 } else {
   // @ts-ignore (define in dts)
-  window.fosslightApi = fosslightApi;
+  window.hiddenApi = hiddenApi;
 }
+
+console.log('Preload script for hidden renderer loaded, APIs exposed.');

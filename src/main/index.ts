@@ -16,6 +16,7 @@ function createWindow(): void {
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/visible.js'),
+      contextIsolation: true,
       sandbox: false
     }
   });
@@ -43,11 +44,18 @@ function createHiddenWindow(): void {
     show: false,
     webPreferences: {
       preload: join(__dirname, '../preload/hidden.js'),
+      contextIsolation: true,
       sandbox: false
     }
   });
 
-  hiddenWindow.loadFile(join(__dirname, '../background/index.html'));
+  hiddenWindow.loadFile(join(__dirname, '../renderer/index.html'));
+  // const devUrl = 'http://localhost:3000/index.html';
+  // if (is.dev) {
+  //   hiddenWindow.loadURL(devUrl);
+  // } else {
+  //   hiddenWindow.loadFile(join(__dirname, '../renderer/index.html'));
+  // }
 }
 
 // This method will be called when Electron has finished
@@ -68,15 +76,19 @@ app.whenReady().then(() => {
   createHiddenWindow();
 
   // IPC communication between main and hidden windows
-  ipcMain.on('send-command', (event, { command, args }) => {
-    console.log('execute-command', command, args);
-    event.reply('command-result', 'Command executed');
-    hiddenWindow.webContents.send('execute-command', { command, args });
+  ipcMain.on('send-command', (event, { command }) => {
+    console.log('command: ', command);
+    const message =
+      command.type === 'analyze'
+        ? 'Analyze command executed successfully'
+        : 'Compare command executed successfully';
+    event.reply('recv-command-result', message);
+    hiddenWindow.webContents.send('recv-command', { command });
   });
 
-  ipcMain.on('send-log', (event, { log }) => {
-    console.log('receive-log', log);
-    mainWindow.webContents.send('receive-log', { log });
+  ipcMain.on('send-log', (_, { log }) => {
+    console.log('log result: ', log);
+    mainWindow.webContents.send('recv-log', { log });
   });
 
   app.on('activate', function () {

@@ -5,7 +5,14 @@ export default defineConfig({
   root: resolve(__dirname, 'src/background'),
   build: {
     outDir: resolve(__dirname, 'out/background'),
-    emptyOutDir: true
-    // Specific settings for the background build, such as plugins and optimizations
+    emptyOutDir: true,
+    rollupOptions: {
+      input: {
+        hidden: resolve(__dirname, 'src/background/index.html')
+      }
+    }
+  },
+  server: {
+    port: 3000
   }
 });

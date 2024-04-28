@@ -13,7 +13,7 @@ function App(): JSX.Element {
     });
 
     if (res.success) {
-      setMessage('Command executed successfully');
+      setMessage(res.message!);
     } else {
       setMessage(res.message!);
     }
@@ -30,7 +30,7 @@ function App(): JSX.Element {
     });
 
     if (res.success) {
-      setMessage('Command executed successfully');
+      setMessage(res.message!);
     } else {
       setMessage(res.message!);
     }
@@ -59,7 +59,8 @@ function App(): JSX.Element {
           </a>
         </div>
       </div>
-      <div className="text">{message}</div>
+      <div className="text">{commandManager.result}</div>
+      <div className="text">{commandManager.log}</div>
       <Versions></Versions>
     </>
   );
