@@ -3,9 +3,12 @@ import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import icon from '../../resources/icon.png?asset';
 
+let mainWindow: BrowserWindow;
+let hiddenWindow: BrowserWindow;
+
 function createWindow(): void {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 900,
     height: 670,
     show: false,
@@ -13,7 +16,8 @@ function createWindow(): void {
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
+      preload: join(__dirname, '../preload/visible.js'),
+      contextIsolation: true,
       sandbox: false
     }
   });
@@ -52,6 +56,25 @@ function createWindow(): void {
   }
 }
 
+function createHiddenWindow(): void {
+  hiddenWindow = new BrowserWindow({
+    show: false,
+    webPreferences: {
+      preload: join(__dirname, '../preload/hidden.js'),
+      contextIsolation: true,
+      sandbox: false
+    }
+  });
+
+  hiddenWindow.loadFile(join(__dirname, '../background/index.html'));
+  // const devUrl = 'http://localhost:3000/index.html';
+  // if (is.dev) {
+  //   hiddenWindow.loadURL(devUrl);
+  // } else {
+  //   hiddenWindow.loadFile(join(__dirname, '../background/index.html'));
+  // }
+}
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
@@ -66,10 +89,24 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window);
   });
 
-  // IPC test
-  ipcMain.on('ping', () => console.log('pong'));
-
   createWindow();
+  createHiddenWindow();
+
+  // IPC communication between main and hidden windows
+  ipcMain.on('send-command', (event, { command }) => {
+    console.log('command: ', command);
+    const message =
+      command.type === 'analyze'
+        ? 'Analyze command executed successfully'
+        : 'Compare command executed successfully';
+    event.reply('recv-command-result', message);
+    hiddenWindow.webContents.send('recv-command', { command });
+  });
+
+  ipcMain.on('send-log', (_, { log }) => {
+    console.log('log result: ', log);
+    mainWindow.webContents.send('recv-log', { log });
+  });
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the

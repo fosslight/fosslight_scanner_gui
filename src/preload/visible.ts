@@ -1,8 +1,19 @@
-import { contextBridge } from 'electron';
+import { contextBridge, ipcRenderer } from 'electron';
 import { electronAPI } from '@electron-toolkit/preload';
 
 // Custom APIs for renderer
-const api = {};
+const api = {
+  // Function to send a command to the main process
+  sendCommand: (command: any): void => {
+    ipcRenderer.send('send-command', { command });
+  },
+  onCommandResult: (callback: (result: any) => void): void => {
+    ipcRenderer.on('recv-command-result', (_, result) => callback(result));
+  },
+  onLog: (callback: (log: any) => void): void => {
+    ipcRenderer.on('recv-log', (_, log) => callback(log));
+  }
+};
 
 // Use `contextBridge` APIs to expose Electron APIs to
 // renderer only if context isolation is enabled, otherwise

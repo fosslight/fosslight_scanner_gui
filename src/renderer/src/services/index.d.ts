@@ -17,15 +17,8 @@ interface CompareCommandConfig {
 type CommandConfig = AnalyzeCommandConfig | CompareCommandConfig;
 
 interface Command {
+  type: 'analyze' | 'compare';
   config: CommandConfig;
-}
-
-interface AnalyzeCommand extends Command {
-  config: AnalyzeCommandConfig;
-}
-
-interface CompareCommand extends Command {
-  config: CompareCommandConfig;
 }
 
 interface CommandResponse {
