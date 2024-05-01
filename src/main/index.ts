@@ -22,22 +22,6 @@ function createWindow(): void {
     }
   });
 
-  ipcMain.on('minimizeApp', () => {
-    mainWindow.minimize();
-  });
-
-  ipcMain.on('maximizeApp', () => {
-    if (mainWindow.isMaximized()) {
-      mainWindow.restore();
-    } else {
-      mainWindow.maximize();
-    }
-  });
-
-  ipcMain.on('closeApp', () => {
-    mainWindow.close();
-  });
-
   mainWindow.on('ready-to-show', () => {
     mainWindow.show();
   });
@@ -106,6 +90,23 @@ app.whenReady().then(() => {
   ipcMain.on('send-log', (_, { log }) => {
     console.log('log result: ', log);
     mainWindow.webContents.send('recv-log', { log });
+  });
+
+  ipcMain.on('minimizeApp', () => {
+    console.log('minimizeApp');
+    mainWindow.minimize();
+  });
+
+  ipcMain.on('maximizeApp', () => {
+    if (mainWindow.isMaximized()) {
+      mainWindow.restore();
+    } else {
+      mainWindow.maximize();
+    }
+  });
+
+  ipcMain.on('closeApp', () => {
+    mainWindow.close();
   });
 
   app.on('activate', function () {
