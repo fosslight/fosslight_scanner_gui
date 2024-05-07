@@ -3,6 +3,8 @@ import Button from './atoms/Button';
 import IconButton from './atoms/IconButton';
 import ModeToggle from './atoms/ModeToggle';
 import Toggle from './atoms/Toggle';
+import EditButton from './atoms/EditButton';
+import DeleteButton from './atoms/DeleteButton';
 
 const COMPARE = true;
 const SCAN = false;
@@ -15,7 +17,12 @@ export const Page: FC = () => {
       <HeaderSection />
       {/* {mode === Mode.compare ? <CompareModeSection setMode={setMode} /> : <ScanModeSection />} */}
       <Button title="click meeeeeeeeeeeeeee" className="button-main" />
+      <Button title="click meeeeeeeeeeeeeee" className="button-sub-color" />
+      <Button title="click meeeeeeeeeeeeeee" className="button-sub-gray" />
       <IconButton />
+      <EditButton />
+      <DeleteButton />
+
       <OuptputSection />
       <ModeToggle toggled={mode} setToggled={setMode} />
       <Toggle toggled={mode} setToggled={setMode} />

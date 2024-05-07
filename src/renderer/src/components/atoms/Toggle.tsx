@@ -22,3 +22,4 @@ const Toggle: React.FC<IToggleProps> = ({ toggled, setToggled }) => {
 };
 
 export default Toggle;
+

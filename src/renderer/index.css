@@ -108,7 +108,15 @@ body * {
   -webkit-app-region: drag;
 }
 
-/*button*/
+/*button 테마*/
 .button-main {
-  @apply bg-LGRed-600 text-white;
+  @apply bg-LGRed-600 text-white hover:bg-LGRed-700 active:bg-LGRed-600;
+}
+
+.button-sub-color {
+  @apply bg-LGRed-100 text-LGRed-600 hover:bg-LGRed-300 active:bg-LGRed-300 active:border active:border-LGRed-500;
+}
+
+.button-sub-gray {
+  @apply bg-PaleGray-100 text-PaleGray-900 hover:bg-PaleGray-300 active:bg-PaleGray-300 active:border active:border-PaleGray-900;
 }
