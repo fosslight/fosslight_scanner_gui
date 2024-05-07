@@ -1,25 +1,18 @@
 import { ButtonHTMLAttributes, FC } from 'react';
 
 interface IPropsButton {
-  type?: 'light' | 'dark';
   title: string;
+  className?: string;
   onClick?: ButtonHTMLAttributes<HTMLButtonElement>['onClick'];
 }
 
-const Button: FC<IPropsButton> = ({ type = 'light', title, ...props }) => {
-  // const handleClickButton = () => {
-  //   console.log('Button clicked');
-  //   fosslight_analyze(config: {
-  //     mode: ['source', 'binary', 'dependency'],
-  //     path: ['.'],
-  //     excludedPath: [],
-  //   });
-  // };
+const Button: FC<IPropsButton> = ({ title, className = '', ...props }) => {
 
-  const style = type === 'light' ? 'bg-white text-black' : 'bg-black text-white';
 
   return (
-    <button className={style} {...props}>
+    <button
+      className={`${className} h-9 px-4 rounded-lg text-xs font-medium justify-start items-center inline-flex`}
+    >
       {title}
     </button>
   );

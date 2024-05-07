@@ -3,6 +3,7 @@ import electronLogo from './assets/electron.svg';
 import useCommandManager from '../hooks/useCommandManager';
 import { useState } from 'react';
 import '../../index.css';
+import Page from '@renderer/components/temp';
 
 function App(): JSX.Element {
   const commandManager = useCommandManager();
@@ -55,7 +56,7 @@ function App(): JSX.Element {
   return (
     <>
       <div
-        className="container"
+        className="main-container"
         style={{
           position: 'fixed',
           width: '100%',
@@ -65,7 +66,9 @@ function App(): JSX.Element {
         <div className="title-bar">
           <div className="title prevent-select draggable">
             <img src="./src/assets/titlebar/title-logo.svg" alt="fosslogo" className="title-logo" />
-            <div className="title-text">FOSSLight Scanner</div>
+            <div style={{ fontFamily: 'Segoe UI, sans-serif' }} className="title-text">
+              FOSSLight Scanner
+            </div>
             <img src="./src/assets/titlebar/title-bar-icon.png" />
             <div className="version-text">v1.7.22</div>
           </div>
@@ -90,7 +93,7 @@ function App(): JSX.Element {
         </div>
       </div>
       <div className="actions">
-        <div className="action">
+        {/*<div className="action">
           <a target="_blank" rel="noreferrer" onClick={handleClickAnalyzeButton}>
             Send Analyze Command
           </a>
@@ -99,7 +102,8 @@ function App(): JSX.Element {
           <a target="_blank" rel="noreferrer" onClick={handleClickCompareButton}>
             Send Compare Command
           </a>
-        </div>
+      </div>*/}
+        <Page />
       </div>
       <div className="text">{commandManager.result}</div>
       <div className="text">{commandManager.log}</div>
