@@ -1,4 +1,4 @@
-import Button from "../atoms/ModeToggle";
+import Button from '../atoms/ModeToggle';
 
 const Molecule = () => {
   return (
