@@ -7,11 +7,9 @@ interface IPropsButton {
 }
 
 const Button: FC<IPropsButton> = ({ title, className = '', ...props }) => {
-
-
   return (
     <button
-      className={`${className} h-9 px-4 rounded-lg text-xs font-medium justify-start items-center inline-flex`}
+      className={`${className} inline-flex h-9 items-center justify-start rounded-lg px-4 text-xs font-medium`}
     >
       {title}
     </button>
@@ -20,6 +18,6 @@ const Button: FC<IPropsButton> = ({ title, className = '', ...props }) => {
 
 export default Button;
 
-<div className="w-[72px] h-9 px-4 bg-stone-100 rounded-lg justify-start items-center inline-flex">
-<div className="text-rose-800 text-xs font-medium font-['Spoqa Han Sans Neo']">Button</div>
-</div>
+<div className="bg-stone-100 inline-flex h-9 w-[72px] items-center justify-start rounded-lg px-4">
+  <div className="text-rose-800 font-['Spoqa Han Sans Neo'] text-xs font-medium">Button</div>
+</div>;

@@ -1,8 +1,8 @@
 import { FC, useState } from 'react';
 import Button from './atoms/Button';
-import IconButton from './atoms/IconButton';
-import ModeToggle from './atoms/ModeToggle';
-import Toggle from './atoms/Toggle';
+import IconButton from './atoms/button/IconButton';
+import Toggle from './atoms/toggle/Toggle';
+import Toggle from './atoms/toggle/Temp';
 import EditButton from './atoms/EditButton';
 import DeleteButton from './atoms/DeleteButton';
 
@@ -13,7 +13,7 @@ export const Page: FC = () => {
   const [mode, setMode] = useState(COMPARE);
 
   return (
-    <div className="w-screen h-screen bg-white">
+    <div className="h-screen w-screen bg-white">
       <HeaderSection />
       {/* {mode === Mode.compare ? <CompareModeSection setMode={setMode} /> : <ScanModeSection />} */}
       <Button title="click meeeeeeeeeeeeeee" className="button-main" />
@@ -24,7 +24,7 @@ export const Page: FC = () => {
       <DeleteButton />
 
       <OuptputSection />
-      <ModeToggle toggled={mode} setToggled={setMode} />
+      <Toggle toggled={mode} onToggle={setMode} />
       <Toggle toggled={mode} setToggled={setMode} />
     </div>
   );
