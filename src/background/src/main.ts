@@ -1,12 +1,4 @@
-if (window !== undefined) {
-  window.addEventListener('DOMContentLoaded', () => {
-    if (window.hiddenApi) {
-      window.hiddenApi.onCommand((command) => {
-        console.log('Received command:', command);
-        window.hiddenApi.sendLog(command);
-      });
-    } else {
-      console.error('hiddenApi is not available.');
-    }
-  });
-}
+window.electron.ipcRenderer.on('recv-command', (_, message) => {
+  console.log('Received command result:', message);
+  window.electron.ipcRenderer.send('send-log', { log: message });
+});

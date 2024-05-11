@@ -1,7 +1,11 @@
 import { app, shell, BrowserWindow, ipcMain } from 'electron';
-import { join } from 'path';
+import { dirname, join, resolve } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
-import icon from '../../resources/icon.png?asset';
+import icon from '../../resources/icon.png';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 let mainWindow: BrowserWindow;
 let hiddenWindow: BrowserWindow;
@@ -15,8 +19,9 @@ function createWindow(): void {
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
-      preload: join(__dirname, '../preload/visible.js'),
+      preload: join(__dirname, '../preload/visible.mjs'),
       contextIsolation: true,
+      nodeIntegration: false,
       sandbox: false
     }
   });
@@ -32,25 +37,26 @@ function createWindow(): void {
 
   // HMR for renderer base on electron-vite cli.
   // Load the remote URL for development or the local html file for production.
-  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL']);
-  } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
-  }
+  // if (is.dev) {
+  //   mainWindow.loadURL('http://localhost:3000');
+  // } else {
+  mainWindow.loadFile(join(__dirname, '../src/renderer/index.html'));
+  // }
 }
 
 function createHiddenWindow(): void {
   hiddenWindow = new BrowserWindow({
     show: false,
     webPreferences: {
-      preload: join(__dirname, '../preload/hidden.js'),
+      preload: join(__dirname, '../preload/hidden.mjs'),
       contextIsolation: true,
+      nodeIntegration: false,
       sandbox: false
     }
   });
 
-  hiddenWindow.loadFile(join(__dirname, '../background/index.html'));
-  // const devUrl = 'http://localhost:3000/index.html';
+  hiddenWindow.loadFile(join(__dirname, '../src/background/index.html'));
+  // const devUrl = 'http://localhost:3001';
   // if (is.dev) {
   //   hiddenWindow.loadURL(devUrl);
   // } else {

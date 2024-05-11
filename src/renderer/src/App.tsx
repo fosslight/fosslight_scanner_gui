@@ -59,8 +59,8 @@ function App(): JSX.Element {
           </a>
         </div>
       </div>
-      <div className="text">{commandManager.result}</div>
-      <div className="text">{commandManager.log}</div>
+      {commandManager.result && <div className="text">{commandManager.result}</div>}
+      {commandManager.log && <div className="text">{JSON.stringify(commandManager.log)}</div>}
       <Versions></Versions>
     </>
   );

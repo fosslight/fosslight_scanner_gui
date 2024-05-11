@@ -1,3 +1,4 @@
+import { electronAPI } from '@electron-toolkit/preload';
 import { contextBridge, ipcRenderer } from 'electron';
 
 // Assuming you have a custom API for the hidden renderer to execute commands
@@ -6,7 +7,7 @@ const hiddenApi = {
   // Function to send a command to the main process
 
   onCommand: (callback: (command: any) => void): void => {
-    ipcRenderer.on('recv-command', (_, result) => callback(result));
+    ipcRenderer.on('recv-command', (_, result) => callback(result.command));
   },
   sendLog: (log: any): void => {
     ipcRenderer.send('send-log', log);
@@ -19,6 +20,7 @@ const hiddenApi = {
 if (process.contextIsolated) {
   try {
     contextBridge.exposeInMainWorld('hiddenApi', hiddenApi);
+    contextBridge.exposeInMainWorld('electron', electronAPI);
   } catch (error) {
     console.error('Error exposing hiddenApi:', error);
   }

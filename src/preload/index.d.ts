@@ -10,6 +10,7 @@ declare global {
     };
     hiddenApi: {
       onCommand: (callback: (command: any) => void) => void;
+      sendCommandResult: (result: any) => void;
       sendLog: (log: any) => void;
     };
   }

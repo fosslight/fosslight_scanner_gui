@@ -1,10 +1,12 @@
 {
   "name": "fosslight_gui",
   "version": "1.0.0",
-  "description": "An Electron application with React and TypeScript",
-  "main": "./out/main/index.js",
+  "license": "MIT",
+  "description": "FOSSLight Scanner GUI Application",
+  "main": "./dist/main/index.js",
   "author": "example.com",
   "homepage": "https://electron-vite.org",
+  "type": "module",
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint . --ext .js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix",
@@ -14,13 +16,18 @@
     "build:background": "vite build --config vite.background.config.ts",
     "dev:background": "vite dev --config vite.background.config.ts",
     "start": "npm run build && electron-vite preview",
-    "dev": "npm run build:background && electron-vite dev",
+    "dev": "npm run dev:background && electron-vite dev",
     "build": "npm run typecheck && npm run build:background && electron-vite build",
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",
     "build:win": "npm run build && electron-builder --win",
     "build:mac": "electron-vite build && electron-builder --mac",
-    "build:linux": "electron-vite build && electron-builder --linux"
+    "build:linux": "electron-vite build && electron-builder --linux",
+    "dev:ui": "vite --config vite.config.ui.ts",
+    "dev:bg": "vite --config vite.config.bg.ts",
+    "test:dev": "vite && electron .",
+    "test:build": "tsc && vite build",
+    "test:start": "electron ."
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.0",
@@ -35,6 +42,7 @@
     "@types/react": "^18.2.48",
     "@types/react-dom": "^18.2.18",
     "@vitejs/plugin-react": "^4.2.1",
+    "concurrently": "^8.2.2",
     "electron": "^28.2.0",
     "electron-builder": "^24.9.1",
     "electron-vite": "^2.0.0",
@@ -45,6 +53,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "typescript": "^5.3.3",
-    "vite": "^5.0.12"
+    "vite": "^5.0.12",
+    "wait-on": "^7.2.0"
   }
 }
