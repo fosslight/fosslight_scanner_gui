@@ -3,7 +3,8 @@ import ButtonBar from '../organisms/ButtonBar';
 import LogBox from '../organisms/LogBox';
 import SignBox from '../organisms/SignBox';
 import useModal from '@renderer/hooks/useModal';
-import Modal from '../atoms/modal/Modal';
+import Modal from '../organisms/modal/Modal';
+import Button from '../atoms/button/Button';
 
 const LowerTemplate: FC = () => {
   const { openModal, closeModal, modalRef } = useModal();
@@ -21,7 +22,19 @@ const LowerTemplate: FC = () => {
           <SignBox />
         </div>
       </div>
-      <Modal modalRef={modalRef} title="title" />
+      <Modal
+        modalRef={modalRef}
+        title="Would you sure to force quit the analysis?"
+        content="The details such as the analysis list that you've added will be maintained."
+        buttons={[
+          <Button key="force-quit" type="secondary">
+            Force Quit
+          </Button>,
+          <Button key="keep-analyze" type="tertiary">
+            Keep analyze
+          </Button>
+        ]}
+      />
     </>
   );
 };

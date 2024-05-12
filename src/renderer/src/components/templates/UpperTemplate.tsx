@@ -1,6 +1,6 @@
 import { FC, useState } from 'react';
 import ModeController from '../organisms/ModeController';
-import { useMode } from '@renderer/hooks/useMode';
+import useMode from '@renderer/hooks/useMode';
 import AnalyzeTemplate from './AnalyzeTemplate';
 import CompareTemplate from './CompareTemplate';
 

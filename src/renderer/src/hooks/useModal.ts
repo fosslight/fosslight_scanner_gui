@@ -1,4 +1,4 @@
-import { RefObject, useCallback, useRef, useState } from 'react';
+import { RefObject, useCallback, useEffect, useRef, useState } from 'react';
 import useClickOutside from './useClickOutside';
 
 interface IUseModal {
@@ -17,6 +17,20 @@ const useModal = (): IUseModal => {
   const closeModal = useCallback(() => {
     modalRef.current?.close();
   }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        modalRef.current?.close();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [modalRef]);
 
   return { openModal, closeModal, modalRef };
 };

@@ -4,8 +4,6 @@ import AnalyzeTemplate from './AnalyzeTemplate';
 import CompareTemplate from './CompareTemplate';
 import UpperTemplate from './UpperTemplate';
 import LowerTemplate from './LowerTemplate';
-import { useMode } from '@renderer/hooks/useMode';
-import { ModeType } from '@renderer/context/ModeContext';
 
 const MainTemplate: FC = () => {
   return (
