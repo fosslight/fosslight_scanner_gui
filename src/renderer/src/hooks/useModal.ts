@@ -1,12 +1,24 @@
-import { useState } from 'react';
+import { RefObject, useCallback, useRef, useState } from 'react';
+import useClickOutside from './useClickOutside';
 
-const useModal = () => {
-  const [isOpen, setIsOpen] = useState(false);
+interface IUseModal {
+  openModal: () => void;
+  closeModal: () => void;
+  modalRef: RefObject<HTMLDialogElement>;
+}
 
-  const openModal = () => setIsOpen(true);
-  const closeModal = () => setIsOpen(false);
+const useModal = (): IUseModal => {
+  const modalRef = useRef<HTMLDialogElement>(null);
 
-  return { isOpen, openModal, closeModal };
+  const openModal = useCallback(() => {
+    modalRef.current?.show();
+  }, []);
+
+  const closeModal = useCallback(() => {
+    modalRef.current?.close();
+  }, []);
+
+  return { openModal, closeModal, modalRef };
 };
 
 export default useModal;

@@ -18,7 +18,7 @@ const AppBar: FC = () => {
 
   return (
     <div
-      className="main-container"
+      className="main-container z-30"
       style={{
         position: 'fixed',
         width: '100%',
