@@ -4,14 +4,20 @@ interface ITextProps {
   type: TextType;
   color?: ColorType;
   inner?: boolean;
-  style?: CSSProperties;
+  className?: string;
   children: ReactNode;
 }
 
-const Text: FC<ITextProps> = ({ type, color = 'black', inner, style, children }) => {
+const Text: FC<ITextProps> = ({
+  type,
+  color = 'black',
+  inner,
+  className: classNameProps,
+  children
+}) => {
   const [size, weight] = type.split('-');
-  const className = `${sizeClass[size]} ${weightClass[weight]} ${colorClass[color]}`;
-  const props = { className, style, children };
+  const className = `${sizeClass[size]} ${weightClass[weight]} ${colorClass[color]} ${classNameProps}`;
+  const props = { className, children };
 
   if (inner) return <span {...props} />;
   if (size[0] === 'p') return <p {...props} />;
@@ -145,6 +151,7 @@ type ColorType =
   | 'Purple-900'
   | 'Purple-1000';
 
+// Since tailwindcss does not support dynamic class names, we need to define the class names manually.
 const sizeClass = {
   p50: 'text-[11px]',
   p100: 'text-[12px]',

@@ -1,30 +1,31 @@
+@import url('https://spoqa.github.io/spoqa-han-sans/css/SpoqaHanSansNeo.css');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 body {
-  font-family:
-    'SpoqaHanSansNeo-Regular',
-    'Segoe UI',
-    -apple-system,
-    BlinkMacSystemFont,
-    Roboto,
-    Helvetica,
-    Arial,
-    sans-serif;
-  margin: 0px;
+  font-family: 'Spoqa Han Sans Neo', sans-serif;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
 
-body * {
+* {
   box-sizing: border-box;
 }
 
-@font-face {
-  font-family: 'SpoqaHanSansNeo-Regular';
-  src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2108@1.1/SpoqaHanSansNeo-Regular.woff')
-    format('woff');
-  font-weight: normal;
-  font-style: normal;
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  line-height: normal;
+}
+
+button:focus {
+  outline: none;
 }
 
 .main-container {
@@ -114,9 +115,9 @@ body * {
 }
 
 .button-sub-color {
-  @apply bg-LGRed-100 text-LGRed-600 hover:bg-LGRed-300 active:bg-LGRed-300 active:border active:border-LGRed-500;
+  @apply bg-LGRed-100 text-LGRed-600 hover:bg-LGRed-300 active:border active:border-LGRed-500 active:bg-LGRed-300;
 }
 
 .button-sub-gray {
-  @apply bg-PaleGray-100 text-PaleGray-900 hover:bg-PaleGray-300 active:bg-PaleGray-300 active:border active:border-PaleGray-900;
+  @apply bg-PaleGray-100 text-PaleGray-900 hover:bg-PaleGray-300 active:border active:border-PaleGray-900 active:bg-PaleGray-300;
 }
