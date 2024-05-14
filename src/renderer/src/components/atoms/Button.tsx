@@ -19,7 +19,3 @@ const Button: FC<IPropsButton> = ({ title, className = '', ...props }) => {
 };
 
 export default Button;
-
-<div className="w-[72px] h-9 px-4 bg-stone-100 rounded-lg justify-start items-center inline-flex">
-<div className="text-rose-800 text-xs font-medium font-['Spoqa Han Sans Neo']">Button</div>
-</div>

@@ -40,11 +40,38 @@ export const FileEditIcon: React.FC = (props) => (
 
 export const FileDeleteIcon: React.FC = (props) => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <g id="edit">
+    <g id="delete">
       <path
         d="M4.7998 4.7998L11.1998 11.1998M4.7998 11.1998L11.1998 4.7998"
         stroke="#626B74"
         stroke-width="1.07"
+      />
+    </g>
+  </svg>
+);
+
+export const CheckOnIcon: React.FC = (props) => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g id="tick-circle">
+      <path
+        id="Vector"
+        fill-rule="evenodd"
+        clip-rule="evenodd"
+        d="M0 12C0 5.37258 5.37258 0 12 0C18.6274 0 24 5.37258 24 12C24 18.6274 18.6274 24 12 24C5.37258 24 0 18.6274 0 12ZM11.3149 17.137L18.2247 8.49971L16.9753 7.5002L11.0852 14.8629L6.91219 11.3854L5.88789 12.6145L11.3149 17.137Z"
+        fill="#A50034"
+      />
+    </g>
+  </svg>
+);
+
+export const CheckOffIcon: React.FC = (props) => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g id="tick-circle">
+      <path
+        id="Vector"
+        d="M6.40029 12.0003L11.2003 16.0003L17.6003 8.00029M12.0003 23.2003C5.8147 23.2003 0.800293 18.1859 0.800293 12.0003C0.800293 5.8147 5.8147 0.800293 12.0003 0.800293C18.1859 0.800293 23.2003 5.8147 23.2003 12.0003C23.2003 18.1859 18.1859 23.2003 12.0003 23.2003Z"
+        stroke="#BDC2C7"
+        stroke-width="1.33333"
       />
     </g>
   </svg>

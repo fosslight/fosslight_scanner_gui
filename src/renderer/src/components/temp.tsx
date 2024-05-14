@@ -1,10 +1,11 @@
 import { FC, useState } from 'react';
 import Button from './atoms/Button';
-import IconButton from './atoms/IconButton';
+import IconButton from './atoms/UploadButton';
 import ModeToggle from './atoms/ModeToggle';
 import Toggle from './atoms/Toggle';
 import EditButton from './atoms/EditButton';
 import DeleteButton from './atoms/DeleteButton';
+import SelectCheckbox from './atoms/SelectCheckbox';
 
 const COMPARE = true;
 const SCAN = false;
@@ -22,6 +23,7 @@ export const Page: FC = () => {
       <IconButton />
       <EditButton />
       <DeleteButton />
+      <SelectCheckbox title="ALL" />
 
       <OuptputSection />
       <ModeToggle toggled={mode} setToggled={setMode} />
