@@ -1,20 +1,24 @@
-import { FC, ReactNode } from 'react';
+import { CSSProperties, FC, ReactNode } from 'react';
 
 interface ITextProps {
   type: TextType;
   color?: ColorType;
+  inner?: boolean;
+  style?: CSSProperties;
   children: ReactNode;
 }
 
-const Text: FC<ITextProps> = ({ type, color = 'black', children }) => {
+const Text: FC<ITextProps> = ({ type, color = 'black', inner, style, children }) => {
   const [size, weight] = type.split('-');
   const className = `${sizeClass[size]} ${weightClass[weight]} ${colorClass[color]}`;
+  const props = { className, style, children };
 
-  if (size[0] === 'p') return <p className={className}>{children}</p>;
-  if (size === 'h700') return <h4 className={className}>{children}</h4>;
-  if (size === 'h800') return <h3 className={className}>{children}</h3>;
-  if (size === 'h900') return <h2 className={className}>{children}</h2>;
-  if (size === 'h1000') return <h1 className={className}>{children}</h1>;
+  if (inner) return <span {...props} />;
+  if (size[0] === 'p') return <p {...props} />;
+  if (size === 'h700') return <h4 {...props} />;
+  if (size === 'h800') return <h3 {...props} />;
+  if (size === 'h900') return <h2 {...props} />;
+  if (size === 'h1000') return <h1 {...props} />;
   throw new Error('Invalid text type');
 };
 
