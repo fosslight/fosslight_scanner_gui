@@ -6,7 +6,13 @@ import useModal from '@renderer/hooks/useModal';
 import Modal from '../organisms/modal/Modal';
 import Button from '../atoms/button/Button';
 
-const LowerTemplate: FC = () => {
+interface ILowerTemplateProps {
+  data?: any;
+}
+
+const LowerTemplate: FC<ILowerTemplateProps> = ({ data }) => {
+  // const { log, commandResult } = data;
+
   const { openModal, closeModal, modalRef } = useModal();
 
   const handleForceQuit = () => {
@@ -14,13 +20,11 @@ const LowerTemplate: FC = () => {
   };
 
   return (
-    <>
-      <div>
-        <ButtonBar onForceQuit={handleForceQuit} />
-        <div className="flex h-80 flex-row">
-          <LogBox />
-          <SignBox />
-        </div>
+    <div>
+      <ButtonBar onForceQuit={handleForceQuit} />
+      <div className="flex h-80 flex-row">
+        <LogBox />
+        <SignBox />
       </div>
       <Modal
         modalRef={modalRef}
@@ -30,12 +34,12 @@ const LowerTemplate: FC = () => {
           <Button key="force-quit" type="secondary">
             Force Quit
           </Button>,
-          <Button key="keep-analyze" type="tertiary">
+          <Button key="keep-analyze" type="tertiary" onClick={closeModal}>
             Keep analyze
           </Button>
         ]}
       />
-    </>
+    </div>
   );
 };
 

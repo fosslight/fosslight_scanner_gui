@@ -19,10 +19,10 @@ const UploadButton: React.FC = () => {
   return (
     <div>
       <button
-        className="w-7 h-7 bg-PaleGray-100 hover:bg-PaleGray-200 rounded-md justify-center items-center inline-flex"
+        className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-PaleGray-100 hover:bg-PaleGray-200"
         onClick={handleButtonClick}
       >
-        <img className="w-4 h-4 relative" src="./src/assets/more-horizontal.png" alt="Upload" />
+        <img className="relative h-4 w-4" src="./src/assets/more-horizontal.png" alt="Upload" />
       </button>
       <input
         type="file"

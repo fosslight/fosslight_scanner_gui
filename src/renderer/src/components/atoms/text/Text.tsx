@@ -1,4 +1,4 @@
-import { CSSProperties, FC, ReactNode } from 'react';
+import { FC, ReactNode } from 'react';
 
 interface ITextProps {
   type: TextType;
@@ -11,12 +11,12 @@ interface ITextProps {
 const Text: FC<ITextProps> = ({
   type,
   color = 'black',
-  inner,
-  className: classNameProps,
+  inner = false,
+  className: inputClassName,
   children
 }) => {
   const [size, weight] = type.split('-');
-  const className = `${sizeClass[size]} ${weightClass[weight]} ${colorClass[color]} ${classNameProps}`;
+  const className = `${sizeClass[size]} ${weightClass[weight]} ${colorClass[color]} ${inputClassName}`;
   const props = { className, children };
 
   if (inner) return <span {...props} />;

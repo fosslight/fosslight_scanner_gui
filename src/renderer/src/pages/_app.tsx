@@ -7,16 +7,16 @@ import '@renderer/styles/index.css';
 
 const App: FC = () => {
   return (
-    <Router>
-      <div className="fixed h-full w-full">
+    <div className="fixed h-full w-full">
+      <Router>
         <AppBar />
         <ModeProvider>
           <Routes>
             <Route path="/" element={<Main />} />
           </Routes>
         </ModeProvider>
-      </div>
-    </Router>
+      </Router>
+    </div>
   );
 };
 

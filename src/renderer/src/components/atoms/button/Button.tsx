@@ -20,7 +20,7 @@ const classNames = {
 const Button: FC<IButtonProps> = ({ children, type, onClick }) => {
   return (
     <button
-      className={`${classNames[type]} h-9 rounded-lg px-4 text-xs font-medium `}
+      className={`${classNames[type]} h-9 rounded-lg px-4 text-xs font-medium`}
       onClick={onClick}
     >
       {children}

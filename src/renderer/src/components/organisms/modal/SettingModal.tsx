@@ -3,11 +3,11 @@ import Text from '@renderer/components/atoms/text/Text';
 import SideBar from '@renderer/components/molecules/SideBar';
 import { FC, RefObject } from 'react';
 
-interface IModalProps {
+interface ISettingModalProps {
   modalRef: RefObject<HTMLDialogElement>;
 }
 
-const SettingModal: FC<IModalProps> = ({ modalRef }) => {
+const SettingModal: FC<ISettingModalProps> = ({ modalRef }) => {
   const handleCloseModal = () => {
     modalRef.current?.close();
   };

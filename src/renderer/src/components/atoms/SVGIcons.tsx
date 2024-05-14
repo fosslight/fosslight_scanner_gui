@@ -1,4 +1,8 @@
-import React from 'react';
+import React, { FC } from 'react';
+
+interface ISVGIconProps {
+  size: number;
+}
 
 export const ModeScanIcon: React.FC = (props) => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -38,16 +42,8 @@ export const FileEditIcon: React.FC = (props) => (
   </svg>
 );
 
-export const FileDeleteIcon: React.FC = (props) => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <g id="delete">
-      <path
-        d="M4.7998 4.7998L11.1998 11.1998M4.7998 11.1998L11.1998 4.7998"
-        stroke="#626B74"
-        stroke-width="1.07"
-      />
-    </g>
-  </svg>
+export const FileDeleteIcon: FC = () => (
+  <img src="/src/assets/icons/file-delete.svg" alt="delete" />
 );
 
 export const CheckOnIcon: React.FC = (props) => (

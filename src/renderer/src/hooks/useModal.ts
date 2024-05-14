@@ -1,5 +1,4 @@
-import { RefObject, useCallback, useEffect, useRef, useState } from 'react';
-import useClickOutside from './useClickOutside';
+import { RefObject, useCallback, useEffect, useRef } from 'react';
 
 interface IUseModal {
   openModal: () => void;
