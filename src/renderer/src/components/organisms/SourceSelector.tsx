@@ -1,13 +1,13 @@
 import { FC, useState } from 'react';
 import TextInput from './TextInput';
 import ListBox from './ListBox';
-import Button from '../atoms/button/Button';
+import Button, { ButtonType } from '../atoms/button/Button';
 
 interface ISourceSelectorProps {
   label: string;
   required?: boolean;
   addButtonConfig?: {
-    type: 'primary' | 'secondary' | 'tertiary';
+    type: ButtonType;
     title: string;
   };
   onChange?: (values: any) => void;
@@ -45,8 +45,7 @@ const SourceSelector: FC<ISourceSelectorProps> = ({
         value={inputValue}
         onChange={handleInputChange}
       />
-      {/* <ListBox /> */}
-      <div className="w-[600px]" />
+      <ListBox />
     </div>
   );
 };

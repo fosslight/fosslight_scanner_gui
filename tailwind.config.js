@@ -34,7 +34,7 @@ module.exports = {
       PaleGray: {
         50: '#F2F4F5',
         100: '#EDEEF0',
-        200: '#EBECEE',
+        200: '#E7E9EC',
         300: '#D7DADE',
         400: '#BDC1C7',
         500: '#A1A9B0',

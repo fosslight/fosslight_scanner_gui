@@ -57,7 +57,7 @@ const TextInput: FC<ITextInputProps> = ({
         </div>
       )}
       <div className="flex w-full gap-2">
-        <div className="flex h-[36px] w-full items-center rounded-lg border border-PaleGray-300 bg-white px-1">
+        <div className="flex h-[36px] w-full min-w-[280px] items-center rounded-lg border border-PaleGray-300 bg-white px-1">
           <div className="mr-2">
             <Dropdown
               options={dropdownOptions}
