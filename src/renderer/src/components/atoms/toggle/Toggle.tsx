@@ -11,7 +11,7 @@ interface IToggleProps {
 const Toggle: FC<IToggleProps> = ({ type = 'default', isToggled = false, onToggle }) => {
   const [toggled, setToggled] = useState<boolean>(isToggled);
 
-  const handleClickToggle = () => {
+  const handleToggleClick = () => {
     setToggled(!toggled);
     onToggle && onToggle(!toggled);
   };
@@ -19,7 +19,7 @@ const Toggle: FC<IToggleProps> = ({ type = 'default', isToggled = false, onToggl
   return (
     <button
       className={`flex h-[32px] w-[54px] rounded-full p-[2px] ${toggled ? 'justify-end bg-LGRed-600' : 'justify-start bg-PaleGray-300'}`}
-      onClick={handleClickToggle}
+      onClick={handleToggleClick}
     >
       <div className="flex h-[28px] w-[28px] items-center justify-center rounded-full bg-PaleGray-100">
         {type === 'for-mode' && <>{toggled ? <ModeCompareIcon /> : <ModeScanIcon />}</>}

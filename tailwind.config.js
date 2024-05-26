@@ -33,7 +33,7 @@ module.exports = {
       },
       PaleGray: {
         50: '#F2F4F5',
-        100: '#F5F6F7',
+        100: '#EDEEF0',
         200: '#EBECEE',
         300: '#D7DADE',
         400: '#BDC1C7',
@@ -103,6 +103,11 @@ module.exports = {
         800: '#703BB4',
         900: '#5B3093',
         1000: '#402268'
+      }
+    },
+    extend: {
+      boxShadow: {
+        300: '0px 2px 4px -2px rgba(29, 52, 97, 0.06), 0px 2px 8px -2px rgba(29, 52, 97, 0.10);'
       }
     }
   }

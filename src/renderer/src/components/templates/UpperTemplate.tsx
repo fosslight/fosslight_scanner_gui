@@ -5,6 +5,7 @@ import AnalyzeTemplate from './AnalyzeTemplate';
 import CompareTemplate from './CompareTemplate';
 import DeleteButton from '../molecules/button/DeleteButton';
 import SourceSelector from '../organisms/SourceSelector';
+import TextInput from '../organisms/TextInput';
 
 const UpperTemplate: FC = () => {
   const { mode } = useMode();
@@ -13,7 +14,8 @@ const UpperTemplate: FC = () => {
     <div className="flex h-full flex-col gap-8 px-10 py-12">
       <div className="py-6">
         <ModeController />
-        <SourceSelector />
+        <SourceSelector label="Analysis subject" required />
+        <TextInput options={[]} />
       </div>
       {mode === 'analyze' ? <AnalyzeTemplate /> : <CompareTemplate />}
     </div>

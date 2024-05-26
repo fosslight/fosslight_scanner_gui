@@ -10,13 +10,13 @@ interface ITextProps {
 
 const Text: FC<ITextProps> = ({
   type,
-  color = 'black',
+  color,
   inner = false,
   className: inputClassName,
   children
 }) => {
   const [size, weight] = type.split('-');
-  const className = `${sizeClass[size]} ${weightClass[weight]} ${colorClass[color]} ${inputClassName}`;
+  const className = `${sizeClass[size]} ${weightClass[weight]} ${colorClass[color!]} ${inputClassName}`;
   const props = { className, children };
 
   if (inner) return <span {...props} />;

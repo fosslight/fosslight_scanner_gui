@@ -1,16 +1,52 @@
-import { FC } from 'react';
-import TextInput from '../molecules/TextInput';
+import { FC, useState } from 'react';
+import TextInput from './TextInput';
 import ListBox from './ListBox';
+import Button from '../atoms/button/Button';
 
 interface ISourceSelectorProps {
-  onChange: (values: any) => void;
+  label: string;
+  required?: boolean;
+  addButtonConfig?: {
+    type: 'primary' | 'secondary' | 'tertiary';
+    title: string;
+  };
+  onChange?: (values: any) => void;
 }
 
-const SourceSelector: FC = () => {
+const SourceSelector: FC<ISourceSelectorProps> = ({
+  label,
+  required,
+  addButtonConfig,
+  onChange
+}) => {
+  const [inputValue, setInputValue] = useState<string | undefined>(undefined);
+
+  const handleInputChange = (value: string) => {
+    setInputValue(value);
+    onChange && onChange(value);
+  };
+
+  const handleAddClick = () => {
+    setInputValue('');
+    console.log(`Add '${inputValue}' to list`);
+  };
+
   return (
-    <div className="flex w-[346px] flex-col gap-4">
-      <TextInput />
-      <ListBox />
+    <div className="flex w-fit flex-col gap-4">
+      <TextInput
+        label={label}
+        required={required}
+        options={[]}
+        suffix={
+          <Button type={addButtonConfig?.type || 'primary'} onClick={handleAddClick}>
+            {addButtonConfig?.title || 'Add'}
+          </Button>
+        }
+        value={inputValue}
+        onChange={handleInputChange}
+      />
+      {/* <ListBox /> */}
+      <div className="w-[600px]" />
     </div>
   );
 };
