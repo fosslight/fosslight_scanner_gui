@@ -14,6 +14,7 @@ const UpperTemplate: FC = () => {
       <div className="py-6">
         <ModeController />
         <SourceSelector />
+        <
       </div>
       {mode === 'analyze' ? <AnalyzeTemplate /> : <CompareTemplate />}
     </div>
