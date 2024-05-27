@@ -1,17 +1,22 @@
 import { FC } from 'react';
-import Chip from '../atoms/LocalChip';
+import Localchip from '../atoms/LocalChip';
+import Githubchip from '../atoms/GithubChip';
 import IconButton from '../atoms/button/IconButton'; 
 
 interface IListBoxItemProps {
-  title: string;
+  option: string;
+  path: string;
+  onEditClick: () => void;
   onRemoveClick: () => void;
 }
 
-const ListBoxItem: FC<IListBoxItemProps> = ({ title, onRemoveClick }) => {
+const ListBoxItem: FC<IListBoxItemProps> = ({ option, path, onEditClick, onRemoveClick }) => {
   return (
     <div className="flex items-center gap-2">
-      <Chip title={title} />
-      <IconButton onClick={onRemoveClick}>X</IconButton>
+      {option == 'local' ? <Localchip /> : <Githubchip />}
+      <div className="self-stretch text-[11px] font-normal">{path}</div>
+      <IconButton onClick={onEditClick}>e</IconButton>
+      <IconButton onClick={onRemoveClick}>d</IconButton>
     </div>
   );
 }
