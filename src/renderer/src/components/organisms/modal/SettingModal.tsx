@@ -28,13 +28,13 @@ const SettingModal: FC<ISettingModalProps> = ({ modalRef }) => {
 
   return (
     <dialog ref={modalRef}>
-      <div className="fixed top-1/2 z-20 flex h-[540px] w-[75%] max-w-[960px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl bg-white shadow">
+      <div className="fixed top-1/2 z-30 flex h-[540px] w-[75%] max-w-[960px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl bg-white shadow">
         <Header />
         <div className="flex h-full">
           <SideBar />
         </div>
       </div>
-      <div className="fixed inset-0 z-10 bg-[#454E5D] bg-opacity-40" onClick={handleCloseModal} />
+      <div className="fixed inset-0 z-20 bg-[#454E5D] bg-opacity-40" onClick={handleCloseModal} />
     </dialog>
   );
 };

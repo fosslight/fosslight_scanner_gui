@@ -24,7 +24,8 @@ p {
   line-height: normal;
 }
 
-button:focus {
+button:focus,
+input:focus {
   outline: none;
 }
 

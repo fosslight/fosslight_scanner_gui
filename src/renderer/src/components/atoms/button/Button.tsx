@@ -1,6 +1,6 @@
 import { FC, ReactNode } from 'react';
 
-type ButtonType = 'primary' | 'secondary' | 'tertiary';
+export type ButtonType = 'primary' | 'secondary' | 'tertiary';
 
 interface IButtonProps {
   children: ReactNode;
