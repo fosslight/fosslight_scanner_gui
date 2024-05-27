@@ -6,6 +6,7 @@ import Button, { ButtonType } from '../atoms/button/Button';
 interface ISourceSelectorProps {
   label: string;
   required?: boolean;
+  options?: any[];
   addButtonConfig?: {
     type: ButtonType;
     title: string;

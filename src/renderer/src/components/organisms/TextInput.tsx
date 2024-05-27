@@ -1,6 +1,6 @@
 import { FC, ReactNode, useState } from 'react';
 import Text from '../atoms/text/Text';
-import Dropdown, { IDropdownOption } from '../atoms/dropdown/Dropdown';
+import Dropdown, { IDropdownOption } from '../molecules/dropdown/Dropdown';
 import Input from '../atoms/input/Input';
 
 export interface ITextInputOption {

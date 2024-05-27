@@ -1,5 +1,5 @@
 import { ChangeEvent, FC, useRef, useState } from 'react';
-import Text from '../text/Text';
+import Text from '../../atoms/text/Text';
 import useClickOutside from '@renderer/hooks/useClickOutside';
 
 export interface IDropdownOption {
@@ -55,7 +55,7 @@ const Dropdown: FC<IDropdownProps> = ({ options, value, onChange }) => {
       </div>
       {opened && hasOptions && (
         <div
-          className="shadow-300 absolute top-9 z-10 flex w-[110px] flex-col gap-[6px] rounded-lg bg-white p-[6px]"
+          className="absolute top-9 z-10 flex w-[110px] flex-col gap-[6px] rounded-lg bg-white p-[6px] shadow-300"
           ref={dropdownRef}
         >
           {options.map((option) => (

@@ -18,12 +18,12 @@ const SelectCheckbox: FC<ISelectProps> = ({ title, onCheckboxClick }) => {
   return (
     <button
       className={
-        'w-auto h-9 p-2 bg-white hover:bg-PaleGray-50 border rounded-lg justify-start items-center gap-2 inline-flex'
+        'inline-flex h-9 w-auto items-center justify-start gap-2 rounded-lg border bg-white p-2 hover:bg-PaleGray-50'
       }
       onClick={handleClick}
     >
-      <div className="w-6 h-6">{clicked ? <CheckOnIcon /> : <CheckOffIcon />}</div>
-      <div className="text-PaleGray-1000 text-sm font-medium font-SpoqaHanSansNeo-Regular">
+      <div className="h-6 w-6">{clicked ? <CheckOnIcon /> : <CheckOffIcon />}</div>
+      <div className="font-SpoqaHanSansNeo-Regular text-sm font-medium text-PaleGray-1000">
         {title}
       </div>
     </button>

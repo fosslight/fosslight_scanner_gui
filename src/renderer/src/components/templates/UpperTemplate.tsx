@@ -6,6 +6,7 @@ import CompareTemplate from './CompareTemplate';
 import DeleteButton from '../molecules/button/DeleteButton';
 import SourceSelector from '../organisms/SourceSelector';
 import TextInput from '../organisms/TextInput';
+import SelectCheckbox from '../atoms/SelectCheckbox';
 
 const UpperTemplate: FC = () => {
   const { mode } = useMode();
@@ -14,14 +15,6 @@ const UpperTemplate: FC = () => {
     <div className="flex h-full flex-col gap-8 overflow-auto px-10 py-12">
       <div className="border-b border-b-PaleGray-200 py-6">
         <ModeController />
-      </div>
-      <div className="flex justify-between">
-        <SourceSelector label="Analysis subject" required />
-        <SourceSelector
-          label="Exclusion from analysis"
-          addButtonConfig={{ type: 'tertiary', title: 'Exclude' }}
-        />
-        <div className="flex flex-col gap-4"></div>
       </div>
       {mode === 'analyze' ? <AnalyzeTemplate /> : <CompareTemplate />}
     </div>
