@@ -1,34 +1,21 @@
 import { FC, useState } from 'react';
 import SelectChip from '../atoms/select/SelectChip';
 
-interface ISelectChipOption {
+export interface ISelectChipOption {
   label: string;
   value: string;
 }
 
 interface IMultiSelectChipProps {
   options: ISelectChipOption[];
-  selectedValues?: Set<string>;
-  onChange?: (selectedValues: Set<string>) => void;
+  values?: Set<string>;
+  onChange?: (values: Set<string>) => void;
 }
 
-const MultiSelectChip: FC<IMultiSelectChipProps> = ({
-  options,
-  selectedValues: inputSelectedValues,
-  onChange
-}) => {
-  const [selectedValues, setSelectedValues] = useState<Set<string>>(
-    inputSelectedValues ?? new Set()
-  );
-
-  const handleSelect = (value: string) => {
-    const newSelectedValues = new Set(selectedValues);
-    if (newSelectedValues.has(value)) {
-      newSelectedValues.delete(value);
-    } else {
-      newSelectedValues.add(value);
-    }
-    setSelectedValues(newSelectedValues);
+const MultiSelectChip: FC<IMultiSelectChipProps> = ({ options, values, onChange }) => {
+  const handleSelect = (value: string) => (selected: boolean) => {
+    const newSelectedValues = new Set(values ?? []);
+    selected ? newSelectedValues.add(value) : newSelectedValues.delete(value);
     onChange?.(newSelectedValues);
   };
 
@@ -38,8 +25,8 @@ const MultiSelectChip: FC<IMultiSelectChipProps> = ({
         <SelectChip
           key={option.value}
           title={option.label}
-          selected={selectedValues?.has(option.value)}
-          onSelect={handleSelect.bind(null, option.value)}
+          selected={values?.has(option.value)}
+          onSelect={handleSelect(option.value)}
         />
       ))}
     </div>

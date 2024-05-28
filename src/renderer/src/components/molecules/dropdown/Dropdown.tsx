@@ -22,7 +22,7 @@ const Dropdown: FC<IDropdownProps> = ({ options, value, onChange }) => {
   const hasOptions = options.length > 1;
 
   const handleToggle = () => {
-    setOpened(!opened);
+    hasOptions && setOpened(!opened);
   };
 
   const handleOptionClick = (value: string) => () => {
@@ -36,10 +36,16 @@ const Dropdown: FC<IDropdownProps> = ({ options, value, onChange }) => {
 
   useClickOutside(dropdownRef, handleClickOutside, [toggleRef]);
 
+  const bgClassName = hasOptions
+    ? opened
+      ? 'bg-PaleGray-50 hover:bg-PaleGray-100'
+      : 'bg-white hover:bg-PaleGray-50'
+    : 'bg-white';
+
   return (
     <div className="relative">
       <div
-        className={`flex h-[28px] w-[96px] cursor-pointer items-center justify-between rounded-md p-[6px] ${opened ? 'bg-PaleGray-50 hover:bg-PaleGray-100' : 'bg-white hover:bg-PaleGray-50'}`}
+        className={`${bgClassName} flex h-[28px] w-[96px] cursor-pointer items-center justify-between rounded-md p-[6px]`}
         ref={toggleRef}
         onClick={handleToggle}
       >

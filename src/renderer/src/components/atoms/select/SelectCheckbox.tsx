@@ -1,4 +1,4 @@
-import { useState, FC } from 'react';
+import { FC } from 'react';
 import { CheckOffIcon, CheckOnIcon } from '../SVGIcons';
 
 interface ISelectCheckboxProps {
@@ -7,15 +7,8 @@ interface ISelectCheckboxProps {
   onSelect?: (selected: boolean) => void;
 }
 
-const SelectCheckbox: FC<ISelectCheckboxProps> = ({
-  title,
-  selected: inputSelected = false,
-  onSelect
-}) => {
-  const [selected, setSelected] = useState<boolean>(inputSelected);
-
+const SelectCheckbox: FC<ISelectCheckboxProps> = ({ title, selected = false, onSelect }) => {
   const handleClick = () => {
-    setSelected(!selected);
     onSelect?.(!selected);
   };
 

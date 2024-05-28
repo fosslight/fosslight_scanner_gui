@@ -8,15 +8,8 @@ interface IToggleProps {
   onToggle?: (toggled: boolean) => void;
 }
 
-const Toggle: FC<IToggleProps> = ({
-  type = 'default',
-  toggled: inputToggled = false,
-  onToggle
-}) => {
-  const [toggled, setToggled] = useState<boolean>(inputToggled);
-
+const Toggle: FC<IToggleProps> = ({ type = 'default', toggled = false, onToggle }) => {
   const handleClick = () => {
-    setToggled(!toggled);
     onToggle?.(!toggled);
   };
 

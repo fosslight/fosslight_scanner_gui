@@ -2,9 +2,7 @@ import { FC, ReactNode, useState } from 'react';
 import Text from '../atoms/text/Text';
 import Dropdown, { IDropdownOption } from '../molecules/dropdown/Dropdown';
 import Input from '../atoms/input/Input';
-import UploadButton from '../molecules/button/UploadButton';
 import IconButton from '../atoms/button/IconButton';
-import Button from '../atoms/button/Button';
 import useFileUpload from '@renderer/hooks/useFileUpload';
 import FileUpload from '../atoms/upload/FileUpload';
 
@@ -20,7 +18,7 @@ interface ITextInputProps {
   options: ITextInputOption[];
   suffix?: ReactNode;
   value?: string;
-  onChange?: (value: any) => void;
+  onChange?: (value: string) => void;
 }
 
 const TextInput: FC<ITextInputProps> = ({
@@ -45,7 +43,7 @@ const TextInput: FC<ITextInputProps> = ({
   };
 
   const handleFileChange = (files: File[]) => {
-    onChange?.(files[0].path);
+    onChange?.(files[0].path); // Fix: should handle both ordinary file and directory
   };
 
   return options.length === 0 ? null : (
@@ -63,7 +61,7 @@ const TextInput: FC<ITextInputProps> = ({
         </div>
       )}
       <div className="flex w-full gap-2">
-        <div className="flex h-[36px] w-[280px] items-center rounded-lg border border-PaleGray-300 bg-white px-1">
+        <div className="flex h-[36px] w-[280px] min-w-[280px] items-center rounded-lg border border-PaleGray-300 bg-white px-1">
           {dropdown && (
             <>
               <div className="mr-2">

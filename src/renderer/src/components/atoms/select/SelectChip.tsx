@@ -3,24 +3,21 @@ import { useState, FC } from 'react';
 interface ISelectChipProps {
   title: string;
   selected?: boolean;
-  onSelect?: (checked: boolean) => void;
+  onSelect?: (selected: boolean) => void;
 }
 
-const SelectChip: FC<ISelectChipProps> = ({ title, selected: inputSelected = false, onSelect }) => {
-  const [selected, setSelected] = useState<boolean>(inputSelected);
-
+const SelectChip: FC<ISelectChipProps> = ({ title, selected = false, onSelect }) => {
   const bgClassName = selected
     ? 'bg-LGRed-100 hover:bg-LGRed-200'
     : 'bg-PaleGray-50 hover:bg-PaleGray-100';
 
   const handleClick = () => {
-    setSelected(!selected);
     onSelect?.(!selected);
   };
 
   return (
     <button
-      className={`${bgClassName} flex h-9 w-fit items-center gap-[2px] rounded-lg pl-[6px] pr-[10px]`}
+      className={`${bgClassName} flex h-9 min-w-fit items-center gap-[2px] rounded-lg pl-[6px] pr-[10px]`}
       onClick={handleClick}
     >
       {selected ? (
