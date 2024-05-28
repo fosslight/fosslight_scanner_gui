@@ -1,4 +1,4 @@
-import { FC, useState } from 'react';
+import { FC, ReactNode, useState } from 'react';
 import TextInput, { ITextInputOption } from './TextInput';
 import ListBox, { PathInfo } from './ListBox';
 import Button, { ButtonType } from '../atoms/button/Button';
@@ -6,8 +6,8 @@ import Button, { ButtonType } from '../atoms/button/Button';
 interface ISourceSelectorProps {
   label: string;
   required?: boolean;
-  options?: any[];
-  emptyMessage?: string;
+  options: ITextInputOption[];
+  emptyText?: ReactNode;
   addButtonConfig?: {
     type: ButtonType;
     title: string;
@@ -18,30 +18,26 @@ interface ISourceSelectorProps {
 const SourceSelector: FC<ISourceSelectorProps> = ({
   label,
   required,
+  options,
   addButtonConfig,
-  emptyMessage: children,
+  emptyText,
   onChange
 }) => {
-  const [pathValue, setPathValue] = useState<string>(''); //여기를 path option 따로 받거나
-  const [optionValue, setOptionValue] = useState<string>('local'); //여기를 path option 따로 받거나
-  const [path_list, setPathList] = useState<PathInfo[]>([]); // [PathInfo, ...
+  const [pathInfo, setPathInfo] = useState<PathInfo | undefined>(undefined); //여기를 path option 따로 받거나
+  const [pathInfoList, setPathInfoList] = useState<PathInfo[]>([]); // [PathInfo, ...
 
-  const textInputOptions: ITextInputOption[] = [
-    { value: 'github', label: 'GitHub repo', type: 'text', placeholder: 'https://github/' }, // Change this option to 'Link' later
-    { value: 'local', label: 'Local path', type: 'file', placeholder: '~/' }
-  ];
-
-  const handleInputChange = (value: string) => {
-    setPathValue(value);
-    setOptionValue(value);
-    onChange?.(value);
+  const handleInputChange = (value: string | null, type?: ITextInputOption['type']) => {
+    if (!value || !type) {
+      setPathInfo(undefined);
+    } else {
+      setPathInfo({ option: type, path: value });
+    }
   };
 
   const handleAddClick = () => {
-    if (!pathValue) return;
-
-    setPathList([...path_list, { option: optionValue, path: pathValue }]);
-    setPathValue('');
+    if (!pathInfo) return;
+    setPathInfoList([...pathInfoList, pathInfo]);
+    setPathInfo(undefined);
   };
 
   const handleEditClick = (index: number) => {
@@ -49,7 +45,7 @@ const SourceSelector: FC<ISourceSelectorProps> = ({
   };
 
   const handleRemoveClick = (index: number) => {
-    setPathList((prevList) => prevList.filter((_, i) => i !== index));
+    setPathInfoList((prevList) => prevList.filter((_, i) => i !== index));
     console.log(`Remove item at index ${index}`);
   };
 
@@ -64,18 +60,18 @@ const SourceSelector: FC<ISourceSelectorProps> = ({
       <TextInput
         label={label}
         required={required}
-        options={textInputOptions}
+        options={options}
         suffix={
           <Button type={addButtonConfig?.type || 'primary'} onClick={handleAddClick}>
             {addButtonConfig?.title || 'Add'}
           </Button>
         }
-        value={pathValue}
+        value={pathInfo?.path}
         onChange={handleInputChange}
       />
       <ListBox
-        children={children}
-        path_list={path_list}
+        emptyText={emptyText}
+        pathInfoList={pathInfoList}
         onEditClick={handleEditClick}
         onRemoveClick={handleRemoveClick}
       />

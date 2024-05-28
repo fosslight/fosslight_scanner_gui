@@ -1,11 +1,13 @@
 import { FC } from 'react';
 import Localchip from '../atoms/LocalChip';
 import Githubchip from '../atoms/GithubChip';
-import IconButton from '../atoms/button/IconButton'; 
+import IconButton from '../atoms/button/IconButton';
 import { FileDeleteIcon, FileEditIcon } from '../atoms/SVGIcons';
+import { ITextInputOption } from '../organisms/TextInput';
+import Text from '../atoms/text/Text';
 
 interface IListBoxItemProps {
-  option: string;
+  option: ITextInputOption['type'];
   path: string;
   onEditClick: () => void;
   onRemoveClick: () => void;
@@ -14,14 +16,20 @@ interface IListBoxItemProps {
 const ListBoxItem: FC<IListBoxItemProps> = ({ option, path, onEditClick, onRemoveClick }) => {
   console.log('option:', option);
   return (
-    <div className="w-[330px] h-9 p-1 bg-white rounded-md justify-start items-center gap-1.5 inline-flex">
-        {option === 'local' ? <Localchip /> : <Githubchip />}
-      <div className="w-[204px] grow shrink basis-0 flex flex-col justify-center items-start gap-1.5 self-stretch text-PaleGray-900 text-[11px] font-normal">{path}</div>
-      <IconButton onClick={onEditClick}><FileEditIcon/></IconButton>
-      <IconButton onClick={onRemoveClick}><FileDeleteIcon/></IconButton>
+    <div className="flex h-9 w-full items-center justify-start gap-1.5 rounded-md bg-white p-1">
+      {option === 'file' ? <Localchip /> : <Githubchip />}
+      <div className="w-full overflow-hidden">
+        <Text type="p50-r" color="PaleGray-900" className="truncate">
+          {path}
+        </Text>
+      </div>
+      <IconButton onClick={onEditClick}>
+        <FileEditIcon />
+      </IconButton>
+      <IconButton onClick={onRemoveClick}>
+        <FileDeleteIcon />
+      </IconButton>
     </div>
   );
-}
+};
 export default ListBoxItem;
-
-

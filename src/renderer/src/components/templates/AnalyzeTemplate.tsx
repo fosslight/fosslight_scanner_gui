@@ -7,15 +7,31 @@ import Select from '../organisms/Select';
 const AnalyzeTemplate: FC = () => {
   return (
     <div className="flex justify-between gap-6">
-      <SourceSelector label="Analysis subject" required />
       <SourceSelector
-        // emptyMessage={
-        //   <>
-        //     Exclude the local paths <br />
-        //     you do not want to analyze.
-        //   </>
-        // }
+        label="Analysis subject"
+        required
+        options={[
+          { value: 'github', label: 'GitHub repo', type: 'text', placeholder: 'https://github/' }, // Change this option to 'Link' later
+          { value: 'local', label: 'Local path', type: 'file', placeholder: '~/' }
+        ]}
+        emptyText={
+          <>
+            Add the GitHub repository address
+            <br />
+            or local path you want to analyze.
+          </>
+        }
+      />
+      <SourceSelector
         label="Exclusion from analysis"
+        options={[{ value: 'local', label: 'Local path', type: 'file', placeholder: '~/' }]}
+        emptyText={
+          <>
+            Exclude the local paths
+            <br />
+            you do not want to analyze.
+          </>
+        }
         addButtonConfig={{ type: 'tertiary', title: 'Exclude' }}
       />
       <div className="flex h-[250px] flex-col justify-between">

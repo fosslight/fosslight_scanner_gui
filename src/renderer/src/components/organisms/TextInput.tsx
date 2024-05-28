@@ -1,4 +1,4 @@
-import { FC, ReactNode, useState } from 'react';
+import { FC, ReactNode, useEffect, useState } from 'react';
 import Text from '../atoms/text/Text';
 import Dropdown, { IDropdownOption } from '../molecules/dropdown/Dropdown';
 import Input from '../atoms/input/Input';
@@ -18,7 +18,7 @@ interface ITextInputProps {
   options: ITextInputOption[];
   suffix?: ReactNode;
   value?: string;
-  onChange?: (value: string) => void;
+  onChange?: (value: string | null, type?: ITextInputOption['type']) => void;
 }
 
 const TextInput: FC<ITextInputProps> = ({
@@ -35,16 +35,20 @@ const TextInput: FC<ITextInputProps> = ({
 
   const handleDropdownChange = (value: string) => {
     setSelectedOption(options.find((option) => option.value === value) || options[0]);
-    onChange?.('');
+    onChange?.(null);
   };
 
   const handleInputChange = (value: string) => {
-    onChange?.(value);
+    onChange?.(value, selectedOption.type);
   };
 
   const handleFileChange = (files: File[]) => {
-    onChange?.(files[0].path); // Fix: should handle both ordinary file and directory
+    onChange?.(files[0].path, selectedOption.type); // Fix: should handle both ordinary file and directory
   };
+
+  useEffect(() => {
+    console.log('value', value);
+  }, [value]);
 
   return options.length === 0 ? null : (
     <div className="flex flex-col gap-[6px]">

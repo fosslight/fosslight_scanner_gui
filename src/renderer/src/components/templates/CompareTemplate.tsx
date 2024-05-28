@@ -6,7 +6,18 @@ import MultiSelectChip from '../molecules/MultiSelectChip';
 const CompareTemplate: FC = () => {
   return (
     <div className="flex flex-wrap items-start justify-start gap-16">
-      <SourceSelector label="Comparison Subject" required />
+      <SourceSelector
+        label="Comparison Subject"
+        required
+        options={[{ value: 'local', label: 'Local path', type: 'file', placeholder: '~/' }]}
+        emptyText={
+          <>
+            Add two analysis result files
+            <br />
+            you want to compare.
+          </>
+        }
+      />
       <div className="flex flex-col justify-start gap-10">
         <TextInput
           label="Storage path for comparison results"

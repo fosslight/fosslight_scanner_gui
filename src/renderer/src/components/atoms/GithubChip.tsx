@@ -1,11 +1,12 @@
 import { FC } from 'react';
+import Text from './text/Text';
 
-const GithubChip: FC=() => { 
+const GithubChip: FC = () => {
   return (
-    <div
-      className="w-11 h-[22px] rounded-md flex justify-center items-center gap-2.5 text-Teal-800 bg-Teal-200 text-xs font-normal"
-    >
-   Github
+    <div className="flex min-h-[22px] min-w-[44px] items-center justify-center rounded-md bg-Teal-200">
+      <Text type="p50-r" color="Teal-800">
+        Github
+      </Text>
     </div>
   );
 };
