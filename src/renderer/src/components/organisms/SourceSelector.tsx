@@ -7,9 +7,11 @@ interface ISourceSelectorProps {
   label: string;
   required?: boolean;
   options?: any[];
+  children?: string;
   addButtonConfig?: {
     type: ButtonType;
     title: string;
+  
   };
   onChange?: (values: any) => void;
 }
@@ -18,6 +20,7 @@ const SourceSelector: FC<ISourceSelectorProps> = ({
   label,
   required,
   addButtonConfig,
+  children,
   onChange
 }) => {
   const [pathValue, setPathValue] = useState<string | undefined>(undefined); //여기를 path option 따로 받거나
@@ -72,6 +75,7 @@ const SourceSelector: FC<ISourceSelectorProps> = ({
         onChange={handleInputChange}
       />
       <ListBox
+        children={children}
         path_list={path_list}
         onEditClick={handleEditClick}
         onRemoveClick={handleRemoveClick}
