@@ -1,5 +1,4 @@
 import { useState, FC } from 'react';
-import { CheckOffIcon, CheckOnIcon } from '../SVGIcons';
 
 interface ISelectChipProps {
   title: string;

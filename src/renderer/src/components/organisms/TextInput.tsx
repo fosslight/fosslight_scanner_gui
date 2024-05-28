@@ -16,6 +16,7 @@ export interface ITextInputOption extends IDropdownOption {
 interface ITextInputProps {
   label?: string;
   required?: boolean;
+  dropdown?: boolean;
   options: ITextInputOption[];
   suffix?: ReactNode;
   value?: string;
@@ -25,6 +26,7 @@ interface ITextInputProps {
 const TextInput: FC<ITextInputProps> = ({
   label,
   required = false,
+  dropdown = true,
   options,
   suffix,
   value,
@@ -35,15 +37,15 @@ const TextInput: FC<ITextInputProps> = ({
 
   const handleDropdownChange = (value: string) => {
     setSelectedOption(options.find((option) => option.value === value) || options[0]);
-    onChange && onChange('');
+    onChange?.('');
   };
 
   const handleInputChange = (value: string) => {
-    onChange && onChange(value);
+    onChange?.(value);
   };
 
   const handleFileChange = (files: File[]) => {
-    onChange && onChange(files[0].path);
+    onChange?.(files[0].path);
   };
 
   return options.length === 0 ? null : (
@@ -62,22 +64,22 @@ const TextInput: FC<ITextInputProps> = ({
       )}
       <div className="flex w-full gap-2">
         <div className="flex h-[36px] w-[280px] items-center rounded-lg border border-PaleGray-300 bg-white px-1">
-          <div className="mr-2">
-            <Dropdown
-              options={options}
-              onChange={handleDropdownChange}
-              value={selectedOption.value}
-            />
-          </div>
-          <div className="h-[16px] w-[1px] bg-PaleGray-300" />
+          {dropdown && (
+            <>
+              <div className="mr-2">
+                <Dropdown
+                  options={options}
+                  onChange={handleDropdownChange}
+                  value={selectedOption.value}
+                />
+              </div>
+              <div className="h-[16px] w-[1px] bg-PaleGray-300" />
+            </>
+          )}
           {selectedOption.type === 'file' && (
             <>
               <div className="flex w-full items-center overflow-hidden px-[6px]">
-                <Text
-                  type="p100-r"
-                  color={`PaleGray-${value ? 1000 : 500}`}
-                  className="block truncate"
-                >
+                <Text type="p100-r" color={`PaleGray-${value ? 1000 : 500}`} className="truncate">
                   {value || selectedOption.placeholder}
                 </Text>
               </div>

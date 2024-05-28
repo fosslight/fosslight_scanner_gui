@@ -26,7 +26,7 @@ const Dropdown: FC<IDropdownProps> = ({ options, value, onChange }) => {
   };
 
   const handleOptionClick = (value: string) => () => {
-    onChange && onChange(value);
+    onChange?.(value);
     setOpened(false);
   };
 

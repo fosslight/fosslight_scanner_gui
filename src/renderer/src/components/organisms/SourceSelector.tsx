@@ -32,7 +32,7 @@ const SourceSelector: FC<ISourceSelectorProps> = ({
   const handleInputChange = (value: string) => {
     setPathValue(value);
     setOptionValue(value);
-    onChange && onChange(value);
+    onChange?.(value);
   };
 
   const handleAddClick = () => {
