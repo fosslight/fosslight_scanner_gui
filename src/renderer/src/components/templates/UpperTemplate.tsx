@@ -8,11 +8,13 @@ const UpperTemplate: FC = () => {
   const { mode } = useMode();
 
   return (
-    <div className="flex h-full flex-col gap-8 overflow-auto px-10 py-12">
-      <div className="border-b border-b-PaleGray-200 py-6">
+    <div className="mx-10 flex h-full flex-col gap-8">
+      <div className="mt-12 border-b border-b-PaleGray-200 py-6">
         <ModeController />
       </div>
-      {mode === 'analyze' ? <AnalyzeTemplate /> : <CompareTemplate />}
+      <div className="overflow-auto pb-12">
+        {mode === 'analyze' ? <AnalyzeTemplate /> : <CompareTemplate />}
+      </div>
     </div>
   );
 };
