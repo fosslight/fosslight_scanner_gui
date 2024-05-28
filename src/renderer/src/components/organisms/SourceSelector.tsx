@@ -7,6 +7,7 @@ interface ISourceSelectorProps {
   label: string;
   required?: boolean;
   options?: any[];
+  emptyMessage?: string;
   addButtonConfig?: {
     type: ButtonType;
     title: string;
@@ -18,10 +19,11 @@ const SourceSelector: FC<ISourceSelectorProps> = ({
   label,
   required,
   addButtonConfig,
+  emptyMessage: children,
   onChange
 }) => {
-  const [pathValue, setPathValue] = useState<string | undefined>(undefined); //여기를 path option 따로 받거나
-  const [optionValue, setOptionValue] = useState<string | undefined>(undefined); //여기를 path option 따로 받거나
+  const [pathValue, setPathValue] = useState<string>(''); //여기를 path option 따로 받거나
+  const [optionValue, setOptionValue] = useState<string>('local'); //여기를 path option 따로 받거나
   const [path_list, setPathList] = useState<PathInfo[]>([]); // [PathInfo, ...
 
   const textInputOptions: ITextInputOption[] = [
@@ -38,9 +40,8 @@ const SourceSelector: FC<ISourceSelectorProps> = ({
   const handleAddClick = () => {
     if (!pathValue) return;
 
+    setPathList([...path_list, { option: optionValue, path: pathValue }]);
     setPathValue('');
-    console.log(`Add '${pathValue}' to list`);
-    setPathList([...path_list, { option: 'local', path: pathValue || '' }]); // Provide a default value for inputValue
   };
 
   const handleEditClick = (index: number) => {
@@ -48,6 +49,7 @@ const SourceSelector: FC<ISourceSelectorProps> = ({
   };
 
   const handleRemoveClick = (index: number) => {
+    setPathList((prevList) => prevList.filter((_, i) => i !== index));
     console.log(`Remove item at index ${index}`);
   };
 
@@ -72,6 +74,7 @@ const SourceSelector: FC<ISourceSelectorProps> = ({
         onChange={handleInputChange}
       />
       <ListBox
+        children={children}
         path_list={path_list}
         onEditClick={handleEditClick}
         onRemoveClick={handleRemoveClick}

@@ -2,6 +2,7 @@ import { FC } from 'react';
 import Localchip from '../atoms/LocalChip';
 import Githubchip from '../atoms/GithubChip';
 import IconButton from '../atoms/button/IconButton'; 
+import { FileDeleteIcon, FileEditIcon } from '../atoms/SVGIcons';
 
 interface IListBoxItemProps {
   option: string;
@@ -11,14 +12,16 @@ interface IListBoxItemProps {
 }
 
 const ListBoxItem: FC<IListBoxItemProps> = ({ option, path, onEditClick, onRemoveClick }) => {
+  console.log('option:', option);
   return (
-    <div className="flex items-center gap-2">
-      {option == 'local' ? <Localchip /> : <Githubchip />}
-      <div className="self-stretch text-[11px] font-normal">{path}</div>
-      <IconButton onClick={onEditClick}>e</IconButton>
-      <IconButton onClick={onRemoveClick}>d</IconButton>
+    <div className="w-[330px] h-9 p-1 bg-white rounded-md justify-start items-center gap-1.5 inline-flex">
+        {option === 'local' ? <Localchip /> : <Githubchip />}
+      <div className="w-[204px] grow shrink basis-0 flex flex-col justify-center items-start gap-1.5 self-stretch text-PaleGray-900 text-[11px] font-normal">{path}</div>
+      <IconButton onClick={onEditClick}><FileEditIcon/></IconButton>
+      <IconButton onClick={onRemoveClick}><FileDeleteIcon/></IconButton>
     </div>
   );
 }
 export default ListBoxItem;
+
 

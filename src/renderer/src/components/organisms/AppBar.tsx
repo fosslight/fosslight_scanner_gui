@@ -23,37 +23,38 @@ const AppBar: FC = () => {
   return (
     <>
       <div
-        className="main-container z-40"
+        className="main-container z-40 draggable"
         style={{
           position: 'fixed',
           width: '100%',
           top: 0
         }}
       >
-        <div className="title-bar">
-          <div className="title prevent-select draggable">
+        <div className="title-bar draggable flex items-center justify-between">
+          <div className="title prevent-select draggable px-4 pb-0.5 justify-start items-center gap-2 flex">
             <img src="./src/assets/titlebar/title-logo.svg" alt="fosslogo" className="title-logo" />
             <div style={{ fontFamily: 'Segoe UI, sans-serif' }} className="title-text">
               FOSSLight Scanner
             </div>
-            <img src="./src/assets/titlebar/title-bar-icon.png" />
+            <div className="w-3 h-[0px] origin-top-left rotate-90 border border-PaleGray-300"></div>
             <div className="version-text">v1.7.22</div>
           </div>
-          <div className="control prevent-select">
-            <button id="setting" onClick={openModal}>
+
+          <div className="control prevent-select ">
+            <button id="setting" onClick={openModal} className="no-drag">
               <img src="./src/assets/titlebar/title-setting-icon.png" />
             </button>
-            <button id="info">
+            <button id="info" className="no-drag">
               <img src="./src/assets/titlebar/title-info-icon.png" />
             </button>
-            <img src="./src/assets/titlebar/title-bar-icon.png" />
-            <button onClick={handleClickMinimizeButton}>
+            <div className="w-3 h-[0px] origin-top-left rotate-90 border border-PaleGray-300"></div>
+            <button onClick={handleClickMinimizeButton} className="no-drag">
               <img src="./src/assets/titlebar/title-min-icon.png" alt="minimize" />
             </button>
-            <button onClick={handleClickMaximizeButton}>
+            <button onClick={handleClickMaximizeButton} className="no-drag">
               <img src="./src/assets/titlebar/title-max-icon.png" alt="max" />
             </button>
-            <button onClick={handleClickCloseButton}>
+            <button onClick={handleClickCloseButton} className="no-drag">
               <img src="./src/assets/titlebar/title-close-icon.png" alt="close" />
             </button>
           </div>
@@ -65,3 +66,5 @@ const AppBar: FC = () => {
 };
 
 export default AppBar;
+
+

@@ -9,6 +9,12 @@ const AnalyzeTemplate: FC = () => {
     <div className="flex justify-between gap-6">
       <SourceSelector label="Analysis subject" required />
       <SourceSelector
+        // emptyMessage={
+        //   <>
+        //     Exclude the local paths <br />
+        //     you do not want to analyze.
+        //   </>
+        // }
         label="Exclusion from analysis"
         addButtonConfig={{ type: 'tertiary', title: 'Exclude' }}
       />

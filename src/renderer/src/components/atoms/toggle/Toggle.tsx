@@ -18,11 +18,10 @@ const Toggle: FC<IToggleProps> = ({ type = 'default', toggled = false, onToggle 
       className={`flex h-[32px] w-[54px] rounded-full p-[2px] ${toggled ? 'justify-end bg-LGRed-600' : 'justify-start bg-PaleGray-300'}`}
       onClick={handleClick}
     >
-      <div className="flex h-[28px] w-[28px] items-center justify-center rounded-full bg-PaleGray-100">
+      <div className="flex h-[28px] w-[28px] items-center justify-center rounded-full bg-white">
         {type === 'for-mode' && <>{toggled ? <ModeCompareIcon /> : <ModeScanIcon />}</>}
       </div>
     </button>
   );
 };
-
 export default Toggle;
