@@ -6,8 +6,8 @@ import Text from '../atoms/text/Text';
 const ModeController: FC = () => {
   const { mode, setMode } = useMode();
 
-  const handleToggle = (isToggled: boolean) => {
-    setMode(isToggled ? 'compare' : 'analyze');
+  const handleToggle = (toggled: boolean) => {
+    setMode(toggled ? 'compare' : 'analyze');
   };
 
   return (

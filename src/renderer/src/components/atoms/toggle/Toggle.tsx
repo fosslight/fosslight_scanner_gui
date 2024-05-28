@@ -4,22 +4,26 @@ import { ModeCompareIcon } from '../SVGIcons';
 
 interface IToggleProps {
   type?: 'default' | 'for-mode';
-  isToggled?: boolean;
-  onToggle?: (isToggled: boolean) => void;
+  toggled?: boolean;
+  onToggle?: (toggled: boolean) => void;
 }
 
-const Toggle: FC<IToggleProps> = ({ type = 'default', isToggled = false, onToggle }) => {
-  const [toggled, setToggled] = useState<boolean>(isToggled);
+const Toggle: FC<IToggleProps> = ({
+  type = 'default',
+  toggled: inputToggled = false,
+  onToggle
+}) => {
+  const [toggled, setToggled] = useState<boolean>(inputToggled);
 
-  const handleToggleClick = () => {
+  const handleClick = () => {
     setToggled(!toggled);
-    onToggle && onToggle(!toggled);
+    onToggle?.(!toggled);
   };
 
   return (
     <button
       className={`flex h-[32px] w-[54px] rounded-full p-[2px] ${toggled ? 'justify-end bg-LGRed-600' : 'justify-start bg-PaleGray-300'}`}
-      onClick={handleToggleClick}
+      onClick={handleClick}
     >
       <div className="flex h-[28px] w-[28px] items-center justify-center rounded-full bg-PaleGray-100">
         {type === 'for-mode' && <>{toggled ? <ModeCompareIcon /> : <ModeScanIcon />}</>}

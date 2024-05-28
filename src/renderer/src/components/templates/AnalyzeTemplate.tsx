@@ -1,6 +1,7 @@
 import { FC } from 'react';
 import SourceSelector from '../organisms/SourceSelector';
-import SelectCheckbox from '../atoms/SelectCheckbox';
+import SelectCheckbox from '../atoms/select/SelectCheckbox';
+import SelectChip from '../atoms/select/SelectChip';
 
 const AnalyzeTemplate: FC = () => {
   return (
@@ -11,9 +12,12 @@ const AnalyzeTemplate: FC = () => {
         addButtonConfig={{ type: 'tertiary', title: 'Exclude' }}
       />
       <div className="flex flex-col justify-between">
-        <SelectCheckbox onCheckboxClick={() => {}} title="title" />
-        <SelectCheckbox onCheckboxClick={() => {}} title="title" />
-        <SelectCheckbox onCheckboxClick={() => {}} title="title" />
+        <div className="flex gap-4">
+          <SelectCheckbox title="Code duplication" />
+          <SelectChip title="Code complexity" />
+          <SelectChip title="Code smells" />
+          <SelectCheckbox title="Code coverage" />
+        </div>
       </div>
     </div>
   );

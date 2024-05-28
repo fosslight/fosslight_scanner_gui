@@ -1,7 +1,7 @@
 import { FC } from 'react';
 import SourceSelector from '../organisms/SourceSelector';
 import TextInput from '../organisms/TextInput';
-import SelectCheckbox from '../atoms/SelectCheckbox';
+import SelectCheckbox from '../atoms/select/SelectCheckbox';
 
 const CompareTemplate: FC = () => {
   return (
@@ -9,7 +9,6 @@ const CompareTemplate: FC = () => {
       <SourceSelector label="Comparison Subject" required />
       <div className="flex flex-col gap-10">
         <TextInput label="Storage path for comparison results" required options={[]} />
-        <SelectCheckbox onCheckboxClick={() => {}} title="title" />
       </div>
     </div>
   );
