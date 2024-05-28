@@ -2,10 +2,13 @@ import { FC, ReactNode, useState } from 'react';
 import Text from '../atoms/text/Text';
 import Dropdown, { IDropdownOption } from '../molecules/dropdown/Dropdown';
 import Input from '../atoms/input/Input';
+import UploadButton from '../molecules/button/UploadButton';
+import IconButton from '../atoms/button/IconButton';
+import Button from '../atoms/button/Button';
+import useFileUpload from '@renderer/hooks/useFileUpload';
+import FileUpload from '../atoms/upload/FileUpload';
 
-export interface ITextInputOption {
-  value: string;
-  label: string;
+export interface ITextInputOption extends IDropdownOption {
   type: 'text' | 'file';
   placeholder?: string;
 }
@@ -27,22 +30,23 @@ const TextInput: FC<ITextInputProps> = ({
   value,
   onChange
 }) => {
-  const dropdownOptions: IDropdownOption[] = [
-    { value: 'github', label: 'GitHub repo' }, // Change this option to 'Link' later
-    { value: 'local', label: 'Local path' }
-  ];
-  const [selectedValue, setSelectedValue] = useState<string>(dropdownOptions[0].value);
+  const { openFileUpload, fileUploadRef } = useFileUpload();
+  const [selectedOption, setSelectedOption] = useState<ITextInputOption>(options[0]);
 
   const handleDropdownChange = (value: string) => {
-    setSelectedValue(value);
+    setSelectedOption(options.find((option) => option.value === value) || options[0]);
+    onChange && onChange('');
   };
 
   const handleInputChange = (value: string) => {
-    console.log(value);
     onChange && onChange(value);
   };
 
-  return (
+  const handleFileChange = (files: File[]) => {
+    onChange && onChange(files[0].path);
+  };
+
+  return options.length === 0 ? null : (
     <div className="flex flex-col gap-[6px]">
       {label && (
         <div className="flex gap-[2px] bg-transparent">
@@ -57,21 +61,45 @@ const TextInput: FC<ITextInputProps> = ({
         </div>
       )}
       <div className="flex w-full gap-2">
-        <div className="flex h-[36px] w-full min-w-[280px] items-center rounded-lg border border-PaleGray-300 bg-white px-1">
+        <div className="flex h-[36px] w-[280px] items-center rounded-lg border border-PaleGray-300 bg-white px-1">
           <div className="mr-2">
             <Dropdown
-              options={dropdownOptions}
+              options={options}
               onChange={handleDropdownChange}
-              value={selectedValue}
+              value={selectedOption.value}
             />
           </div>
           <div className="h-[16px] w-[1px] bg-PaleGray-300" />
-          <div className="flex h-full w-full items-center px-[6px]">
-            <Input placeholder="placeholder" value={value} onChange={handleInputChange} />
-          </div>
+          {selectedOption.type === 'file' && (
+            <>
+              <div className="flex w-full items-center overflow-hidden px-[6px]">
+                <Text
+                  type="p100-r"
+                  color={`PaleGray-${value ? 1000 : 500}`}
+                  className="block truncate"
+                >
+                  {value || selectedOption.placeholder}
+                </Text>
+              </div>
+              <IconButton onClick={openFileUpload}>
+                <img className="h-4 w-4" src="/src/assets/icons/more-horizontal.svg" alt="upload" />
+              </IconButton>
+            </>
+          )}
+          {selectedOption.type === 'text' && (
+            <div className="flex w-full items-center px-[6px]">
+              <Input
+                placeholder={selectedOption.placeholder}
+                value={value}
+                onChange={handleInputChange}
+              />
+            </div>
+          )}
         </div>
         {suffix}
       </div>
+
+      <FileUpload fileUploadRef={fileUploadRef} onChange={handleFileChange} />
     </div>
   );
 };

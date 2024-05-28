@@ -1,7 +1,7 @@
-import React, { useRef } from 'react';
+import React, { ChangeEvent, FC, useRef } from 'react';
 
-const UploadButton: React.FC = () => {
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+const UploadButton: FC = () => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleButtonClick = () => {
     if (fileInputRef.current) {
@@ -9,7 +9,7 @@ const UploadButton: React.FC = () => {
     }
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files && files.length > 0) {
       console.log('file upload', files[0]);
@@ -22,7 +22,7 @@ const UploadButton: React.FC = () => {
         className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-PaleGray-100 hover:bg-PaleGray-200"
         onClick={handleButtonClick}
       >
-        <img className="relative h-4 w-4" src="./src/assets/more-horizontal.png" alt="Upload" />
+        <img className="h-4 w-4" src="/src/assets/more-horizontal.png" alt="upload" />
       </button>
       <input
         type="file"

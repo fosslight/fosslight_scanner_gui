@@ -1,8 +1,21 @@
-import { FC } from 'react';
+import { ChangeEvent, FC, RefObject } from 'react';
 
-const FileUpload: FC = () => {
+interface IFileUploadProps {
+  fileUploadRef: RefObject<HTMLInputElement>;
+  directory?: boolean;
+  onChange?: (files: File[]) => void;
+}
+
+const FileUpload: FC<IFileUploadProps> = ({ fileUploadRef, directory = false, onChange }) => {
+  const directoryProps = directory ? { webkitdirectory: '', mozdirectory: '', directory: '' } : {};
+
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    onChange && onChange(files);
+  };
+
   return (
-    <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileChange} />
+    <input ref={fileUploadRef} type="file" hidden {...directoryProps} onChange={handleChange} />
   );
 };
 

@@ -1,12 +1,8 @@
-import { FC, useState } from 'react';
+import { FC } from 'react';
 import ModeController from '../organisms/ModeController';
 import useMode from '@renderer/hooks/useMode';
 import AnalyzeTemplate from './AnalyzeTemplate';
 import CompareTemplate from './CompareTemplate';
-import DeleteButton from '../molecules/button/DeleteButton';
-import SourceSelector from '../organisms/SourceSelector';
-import TextInput from '../organisms/TextInput';
-import SelectCheckbox from '../atoms/SelectCheckbox';
 
 const UpperTemplate: FC = () => {
   const { mode } = useMode();
