@@ -1,6 +1,5 @@
 import { FC } from 'react';
 import ListBoxItem from '../molecules/ListBoxItem';
-import ListboxText from '../atoms/ListboxText';
 
 export type PathInfo = {
   option: string;
