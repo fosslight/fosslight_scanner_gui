@@ -110,6 +110,11 @@ input:focus {
   -webkit-app-region: drag;
 }
 
+
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
 /*button 테마*/
 .button-main {
   @apply bg-LGRed-600 text-white hover:bg-LGRed-700 active:bg-LGRed-600;
