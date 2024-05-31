@@ -24,7 +24,7 @@ const SourceSelector: FC<ISourceSelectorProps> = ({
   placeholder,
   onChange
 }) => {
-  const { width, ref } = useMeasure();
+  const { ref, width, ready } = useMeasure();
 
   const [pathInfo, setPathInfo] = useState<PathInfo | undefined>(undefined); //여기를 path option 따로 받거나
   const [pathInfoList, setPathInfoList] = useState<PathInfo[]>([]); // [PathInfo, ...
@@ -74,14 +74,16 @@ const SourceSelector: FC<ISourceSelectorProps> = ({
           onChange={handleInputChange}
         />
       </div>
-      <div style={{ width }}>
-        <ListBox
-          emptyText={placeholder}
-          pathInfoList={pathInfoList}
-          onEditClick={handleEditClick}
-          onRemoveClick={handleRemoveClick}
-        />
-      </div>
+      {ready && (
+        <div style={{ width }}>
+          <ListBox
+            emptyText={placeholder}
+            pathInfoList={pathInfoList}
+            onEditClick={handleEditClick}
+            onRemoveClick={handleRemoveClick}
+          />
+        </div>
+      )}
     </div>
   );
 };

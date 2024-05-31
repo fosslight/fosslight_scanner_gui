@@ -4,6 +4,7 @@ const useMeasure = (): {
   ref: RefObject<HTMLDivElement>;
   width: number;
   height: number;
+  ready: boolean;
 } => {
   const ref = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState<number>(0);
@@ -24,7 +25,7 @@ const useMeasure = (): {
     };
   }, []);
 
-  return { ref, width, height };
+  return { ref, width, height, ready: width !== 0 && height !== 0 };
 };
 
 export default useMeasure;
