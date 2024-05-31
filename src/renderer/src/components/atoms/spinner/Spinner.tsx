@@ -1,8 +1,24 @@
-import { FC } from 'react';
+import { FC, useEffect, useState } from 'react';
 
 const Spinner: FC = () => {
+  const spinnerElements = ['-90', '-135', '180', '135', '90', '45', '0', '-45'];
+  const spinRate = 0.1; // seconds
+  const [currIndex, setCurrIndex] = useState<number>(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrIndex((prevIndex) => (prevIndex + 1) % spinnerElements.length);
+    }, spinRate * 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <div className="h-6 w-6 animate-spin rounded-full border-2 border-solid border-Blue-500"></div>
+    <img
+      className="flex h-6 w-6 items-center justify-center"
+      src={`/src/assets/icons/angles/angle=${spinnerElements[currIndex]}.svg`}
+      alt="spinner"
+    />
   );
 };
 
