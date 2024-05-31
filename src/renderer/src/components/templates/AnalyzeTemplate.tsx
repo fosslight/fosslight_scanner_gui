@@ -14,7 +14,7 @@ const AnalyzeTemplate: FC = () => {
           { value: 'github', label: 'GitHub repo', type: 'text', placeholder: 'https://github/' }, // Change this option to 'Link' later
           { value: 'local', label: 'Local path', type: 'file', placeholder: '~/' }
         ]}
-        emptyText={
+        placeholder={
           <>
             Add the GitHub repository address
             <br />
@@ -25,7 +25,7 @@ const AnalyzeTemplate: FC = () => {
       <SourceSelector
         label="Exclusion from analysis"
         options={[{ value: 'local', label: 'Local path', type: 'file', placeholder: '~/' }]}
-        emptyText={
+        placeholder={
           <>
             Exclude the local paths
             <br />

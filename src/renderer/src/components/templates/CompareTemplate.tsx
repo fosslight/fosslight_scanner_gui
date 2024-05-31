@@ -10,7 +10,7 @@ const CompareTemplate: FC = () => {
         label="Comparison Subject"
         required
         options={[{ value: 'local', label: 'Local path', type: 'file', placeholder: '~/' }]}
-        emptyText={
+        placeholder={
           <>
             Add two analysis result files
             <br />

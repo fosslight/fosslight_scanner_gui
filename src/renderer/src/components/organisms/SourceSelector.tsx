@@ -1,13 +1,14 @@
-import { FC, ReactNode, useState } from 'react';
+import { FC, ReactNode, useEffect, useState } from 'react';
 import TextInput, { ITextInputOption } from './TextInput';
 import ListBox, { PathInfo } from './ListBox';
 import Button, { ButtonType } from '../atoms/button/Button';
+import useMeasure from '@renderer/hooks/useMeasure';
 
 interface ISourceSelectorProps {
   label: string;
   required?: boolean;
   options: ITextInputOption[];
-  emptyText?: ReactNode;
+  placeholder?: ReactNode;
   addButtonConfig?: {
     type: ButtonType;
     title: string;
@@ -20,9 +21,11 @@ const SourceSelector: FC<ISourceSelectorProps> = ({
   required,
   options,
   addButtonConfig,
-  emptyText,
+  placeholder,
   onChange
 }) => {
+  const { width, ref } = useMeasure();
+
   const [pathInfo, setPathInfo] = useState<PathInfo | undefined>(undefined); //여기를 path option 따로 받거나
   const [pathInfoList, setPathInfoList] = useState<PathInfo[]>([]); // [PathInfo, ...
 
@@ -57,24 +60,28 @@ const SourceSelector: FC<ISourceSelectorProps> = ({
 
   return (
     <div className="flex w-fit flex-col gap-4">
-      <TextInput
-        label={label}
-        required={required}
-        options={options}
-        suffix={
-          <Button type={addButtonConfig?.type || 'primary'} onClick={handleAddClick}>
-            {addButtonConfig?.title || 'Add'}
-          </Button>
-        }
-        value={pathInfo?.path}
-        onChange={handleInputChange}
-      />
-      <ListBox
-        emptyText={emptyText}
-        pathInfoList={pathInfoList}
-        onEditClick={handleEditClick}
-        onRemoveClick={handleRemoveClick}
-      />
+      <div ref={ref}>
+        <TextInput
+          label={label}
+          required={required}
+          options={options}
+          suffix={
+            <Button type={addButtonConfig?.type || 'primary'} onClick={handleAddClick}>
+              {addButtonConfig?.title || 'Add'}
+            </Button>
+          }
+          value={pathInfo?.path}
+          onChange={handleInputChange}
+        />
+      </div>
+      <div style={{ width }}>
+        <ListBox
+          emptyText={placeholder}
+          pathInfoList={pathInfoList}
+          onEditClick={handleEditClick}
+          onRemoveClick={handleRemoveClick}
+        />
+      </div>
     </div>
   );
 };
