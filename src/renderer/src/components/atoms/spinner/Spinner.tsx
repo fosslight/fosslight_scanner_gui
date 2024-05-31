@@ -15,7 +15,7 @@ const Spinner: FC = () => {
 
   return (
     <img
-      className="flex h-6 w-6 items-center justify-center"
+      className="flex h-4 w-4 items-center justify-center"
       src={`/src/assets/icons/angles/angle=${spinnerElements[currIndex]}.svg`}
       alt="spinner"
     />
