@@ -1,4 +1,4 @@
-import { FC, ReactNode, useEffect, useState } from 'react';
+import { FC, ReactNode, useState } from 'react';
 import Text from '../atoms/text/Text';
 import Dropdown, { IDropdownOption } from '../molecules/dropdown/Dropdown';
 import Input from '../atoms/input/Input';
@@ -46,10 +46,6 @@ const TextInput: FC<ITextInputProps> = ({
     onChange?.(files[0].path, selectedOption.type); // Fix: should handle both ordinary file and directory
   };
 
-  useEffect(() => {
-    console.log('value', value);
-  }, [value]);
-
   return options.length === 0 ? null : (
     <div className="flex flex-col gap-[6px]">
       {label && (
@@ -94,7 +90,7 @@ const TextInput: FC<ITextInputProps> = ({
             <div className="flex w-full items-center px-[6px]">
               <Input
                 placeholder={selectedOption.placeholder}
-                value={value}
+                value={value ?? ''}
                 onChange={handleInputChange}
               />
             </div>
