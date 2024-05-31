@@ -52,7 +52,7 @@ const AnalyzeTemplate: FC = () => {
         <TextInput
           label="File name and format of analysis results"
           required
-          dropdown={false}
+          showDropdown={false}
           options={[
             {
               type: 'text',
