@@ -16,10 +16,17 @@ interface CompareCommandConfig {
 
 type CommandConfig = AnalyzeCommandConfig | CompareCommandConfig;
 
-interface Command {
-  type: 'analyze' | 'compare';
-  config: CommandConfig;
+interface AnalyzeCommand {
+  type: 'analyze';
+  config: AnalyzeCommandConfig;
 }
+
+interface CompareCommand {
+  type: 'compare';
+  config: CompareCommandConfig;
+}
+
+type Command = AnalyzeCommand | CompareCommand;
 
 interface CommandResponse {
   success: boolean;

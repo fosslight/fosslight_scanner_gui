@@ -1,4 +1,4 @@
-import { ReactNode, createContext } from 'react';
+import { FC, ReactNode, createContext } from 'react';
 
 export interface ICommandContext {
   command: Command;
@@ -10,7 +10,7 @@ interface ICommandProviderProps {
   children: ReactNode;
 }
 
-export const CommandProvider = ({ children }: ICommandProviderProps) => {
+export const CommandProvider: FC<ICommandProviderProps> = ({ children }) => {
   return (
     <CommandContext.Provider
       value={{
