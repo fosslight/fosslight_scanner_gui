@@ -1,4 +1,4 @@
-import { FC, Provider, ReactNode, createElement } from 'react';
+import { FC, ReactNode, createElement } from 'react';
 
 interface IAppProviderProps {
   providers?: FC<any>[];
