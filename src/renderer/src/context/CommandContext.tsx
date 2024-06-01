@@ -1,7 +1,10 @@
-import { FC, ReactNode, createContext } from 'react';
+import { FC, ReactNode, createContext, useState } from 'react';
 
 export interface ICommandContext {
-  command: Command;
+  analyzeCommandConfig: AnalyzeCommandConfig;
+  compareCommandConfig: CompareCommandConfig;
+  setAnalyzeCommandConfig: (config: AnalyzeCommandConfig) => void;
+  setCompareCommandConfig: (config: CompareCommandConfig) => void;
 }
 
 const CommandContext = createContext<ICommandContext | undefined>(undefined);
@@ -11,13 +14,16 @@ interface ICommandProviderProps {
 }
 
 export const CommandProvider: FC<ICommandProviderProps> = ({ children }) => {
+  const [analyzeCommandConfig, setAnalyzeCommandConfig] = useState<AnalyzeCommandConfig>({});
+  const [compareCommandConfig, setCompareCommandConfig] = useState<CompareCommandConfig>({});
+
   return (
     <CommandContext.Provider
       value={{
-        command: {
-          config: {},
-          type: 'analyze'
-        }
+        analyzeCommandConfig,
+        compareCommandConfig,
+        setAnalyzeCommandConfig,
+        setCompareCommandConfig
       }}
     >
       {children}
