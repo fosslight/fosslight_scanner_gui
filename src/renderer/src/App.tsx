@@ -22,11 +22,10 @@ function App(): JSX.Element {
   const handleClickAnalyzeButton = async (): Promise<void> => {
     const res = await commandManager.analyze({
       mode: ['source', 'binary', 'dependency'],
-      path: ['.'],
-      outputFormat: 'xlsx',
-      outputPath: '.',
-      outputFileName: 'output',
-      extraOptions: ''
+      path: 'tests',
+      outputFormat: 'excel',
+      outputPath: 'results',
+      extraOptions: '-r'
     });
 
     if (res.success) {

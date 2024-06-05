@@ -1,17 +1,17 @@
 interface AnalyzeCommandConfig {
   mode?: ('source' | 'binary' | 'dependency')[]; // default: ['source', 'binary', 'dependency'] (all)
-  path?: string[]; // default: '.' (current directory)
+  path?: string; // default: '.' (current directory)
   excludedPath?: string[];
-  outputFormat?: 'xlsx' | 'yaml'; // default: ['xlsx']
+  outputFormat?: 'excel' | 'yaml'; // default: ['excel']
   outputPath?: string; // default: '.' (current directory)
-  outputFileName?: string;
-  extraOptions?: string;
+  extraOptions?: string; // "-r -d "-a 'source /test/Projects/venv/bin/activate' -d 'deactivate'""
 }
 
 interface CompareCommandConfig {
-  reports: [string, string]; // [report1, report2]
-  outputFormat?: 'xlsx' | 'json' | 'yaml' | 'html'; // default: ['xlsx']
+  reports: [string, string]; // [path/to/report1, path/to/report2]
+  outputFormat?: 'excel' | 'json' | 'yaml' | 'html'; // default: ['excel']
   outputPath?: string; // default: '.' (current directory)
+  extraOptions?: string; // "-r -c 10"
 }
 
 type CommandConfig = AnalyzeCommandConfig | CompareCommandConfig;
