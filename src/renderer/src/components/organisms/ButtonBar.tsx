@@ -10,22 +10,21 @@ interface IButtonBarProps {
 const ButtonBar: FC<IButtonBarProps> = ({ onForceQuit }) => {
   const { mode } = useMode();
   const { analyze, compare } = useCommandManager();
-  console.log('mode', mode);
 
-  const handleClickExecute = () => {
+  const handleExecuteClick = () => {
     if (mode === 'analyze') {
       console.log('Analyze button clicked');
-      // analyze();
+      analyze();
       return;
     } else {
       console.log('Compare button clicked');
-      // compare();
+      compare();
     }
   };
 
   return (
     <div className="flex h-11 items-center justify-end gap-2 border-t border-t-PaleGray-300 px-4">
-      <Button type="primary" onClick={handleClickExecute}>
+      <Button type="primary" onClick={handleExecuteClick}>
         Start {mode === 'analyze' ? 'Analysis' : 'Comparing'}
       </Button>
       <Button type="secondary" onClick={onForceQuit}>

@@ -2,33 +2,31 @@ import CommandContext from '@renderer/context/CommandContext';
 import { useCallback, useContext } from 'react';
 
 interface IUseCommand {
-  createCommand: (type: Command['type']) => Command;
+  updateAnalyzeCommandConfig: (config: AnalyzeCommandConfig) => void;
+  updateCompareCommandConfig: (config: CompareCommandConfig) => void;
 }
 
 const useCommand = (): IUseCommand => {
   const context = useContext(CommandContext);
   if (!context) {
-    throw new Error('useCommand must be used within a CommandProvider');
+    throw new Error('useCommand must be used within a CommandProvider.');
   }
 
-  const createCommand = useCallback(
-    (type: Command['type']) =>
-      type === 'analyze'
-        ? {
-            type,
-            config: context.analyzeCommandConfig || {}
-          }
-        : {
-            type,
-            config: context.compareCommandConfig || {}
-          },
-
+  const updateAnalyzeCommandConfig = useCallback(
+    (config: AnalyzeCommandConfig) => {
+      context.setAnalyzeCommandConfig({ ...context.analyzeCommandConfig, ...config });
+    },
     [context]
   );
 
-  return {
-    createCommand
-  };
+  const updateCompareCommandConfig = useCallback(
+    (config: CompareCommandConfig) => {
+      context.setCompareCommandConfig({ ...context.compareCommandConfig, ...config });
+    },
+    [context]
+  );
+
+  return { updateAnalyzeCommandConfig, updateCompareCommandConfig };
 };
 
 export default useCommand;
