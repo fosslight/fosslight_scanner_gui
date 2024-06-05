@@ -2,7 +2,7 @@ import { FC, ReactNode } from 'react';
 import Text from '../atoms/text/Text';
 import Button from '../atoms/button/Button';
 import Toggle from '../atoms/toggle/Toggle';
-import useCorrect from '../../hooks/useCorrect'; // useMode 훅을 가져옵니다
+import useCorrect from '../../hooks/useCorrect';
 
 const ScannerSetting: FC = () => {
   const { correct, setCorrect } = useCorrect();
@@ -24,8 +24,8 @@ const ScannerSetting: FC = () => {
         </Text>
         <div className="flex h-44 w-full items-start justify-start rounded-lg border border-PaleGray-300 bg-white px-2 py-4">
           <textarea
-            placeholder="gdsgdg"
-            className="h-full w-full flex-grow resize-none text-xs font-normal text-PaleGray-900 outline-none"
+            placeholder="Enter additional arguments"
+            className="h-full w-full text-xs font-normal text-PaleGray-900 outline-none"
           />
         </div>
       </div>

@@ -2,12 +2,13 @@ import { FC, ReactNode, useEffect, useState } from 'react';
 import TextInput, { ITextInputOption } from './TextInput';
 import ListBox, { PathInfo } from './ListBox';
 import Button, { ButtonType } from '../atoms/button/Button';
-import useMeasure from '../../hooks/useMeasure';
+import useMeasure from '@renderer/hooks/useMeasure';
+import TokenBox from './TokenBox';
 
-interface ISourceSelectorProps {
+interface ITokenSelectorProps {
   label: string;
   required?: boolean;
-  options: ITextInputOption[];
+
   placeholder?: ReactNode;
   addButtonConfig?: {
     type: ButtonType;
@@ -16,10 +17,9 @@ interface ISourceSelectorProps {
   onChange?: (values: any) => void;
 }
 
-const SourceSelector: FC<ISourceSelectorProps> = ({
+const SourceSelector: FC<ITokenSelectorProps> = ({
   label,
   required,
-  options,
   addButtonConfig,
   placeholder,
   onChange
@@ -43,10 +43,6 @@ const SourceSelector: FC<ISourceSelectorProps> = ({
     setPathInfo(undefined);
   };
 
-  const handleEditClick = (index: number) => {
-    console.log(`Edit item at index ${index}`);
-  };
-
   const handleRemoveClick = (index: number) => {
     setPathInfoList((prevList) => prevList.filter((_, i) => i !== index));
     console.log(`Remove item at index ${index}`);
@@ -64,7 +60,6 @@ const SourceSelector: FC<ISourceSelectorProps> = ({
         <TextInput
           label={label}
           required={required}
-          options={options}
           suffix={
             <Button type={addButtonConfig?.type || 'primary'} onClick={handleAddClick}>
               {addButtonConfig?.title || 'Add'}
@@ -72,14 +67,14 @@ const SourceSelector: FC<ISourceSelectorProps> = ({
           }
           value={pathInfo?.path}
           onChange={handleInputChange}
+          options={[]}
         />
       </div>
       {ready && (
         <div style={{ width }}>
-          <ListBox
+          <TokenBox
             emptyText={placeholder}
             pathInfoList={pathInfoList}
-            onEditClick={handleEditClick}
             onRemoveClick={handleRemoveClick}
           />
         </div>
