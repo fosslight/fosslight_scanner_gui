@@ -49,14 +49,23 @@ const SourceSelector: FC<ISourceSelectorProps> = ({
 
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const handleEditClick = (index: number) => {
-    // 수정: 인덱스를 매개변수로 받음
-    setEditIndex(index); // 추가: 수정할 항목의 인덱스를 저장
+    setEditIndex(index);
+    console.log(`Edit item at index ${editIndex}`);
+    pathInfoList.map((info,i)=>console.log(`PathList[${i}]: ${info.path}`));
     openModal();
   };
 
   const handleRemoveClick = (index: number) => {
     setPathInfoList((prevList) => prevList.filter((_, i) => i !== index));
     console.log(`Remove item at index ${index}`);
+  };
+
+  const handleElementChange = (value: string | null, type?: ITextInputOption['type']) => {
+    if (editIndex === null) return;
+    setPathInfoList((prevList) =>
+      prevList.map((item, i) => (i === editIndex ? { option: type || item.option, path: value || item.path } : item))
+    );
+    console.log(`Modify item at index ${editIndex}`);
   };
 
   // option 이랑 path(inputvalue)를 받아서 리스트에 추가 해야함 => 구조체나 객체나 튜플로 받아서 처리해야할듯
@@ -95,18 +104,14 @@ const SourceSelector: FC<ISourceSelectorProps> = ({
         <ModifyModal
           isOpen={editIndex !== null}
           modalRef={modalRef}
-          title="Would you sure to force quit the analysis?"
+          title="Modify Analysis Subject"
           content="The details such as the analysis list that you've added will be maintained."
-          buttons={[
-            <Button key="force-quit" type="secondary">
-              Force Quit
-            </Button>,
-            <Button key="keep-analyze" type="tertiary" onClick={closeModal}>
-              Keep analyze
-            </Button>
-          ]}
-      
+          options={options}
+          onClose={closeModal}
+          value={pathInfoList[editIndex]?.path}
+          onChange={handleElementChange}
         />
+      
       )}
     </div>
   );
