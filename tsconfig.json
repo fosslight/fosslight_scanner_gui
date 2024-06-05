@@ -27,7 +27,8 @@
     "noImplicitReturns": false,
   },
   "include": [
-    "src/**/*"                // include all files in src for compilation
+    "src/**/*",                // include all files in src for compilation
+    "resources/**/*"           // include all files in resources for compilation
   ],
   "exclude": [
     "node_modules",           // exclude node_modules to speed up compilation

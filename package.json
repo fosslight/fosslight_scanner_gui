@@ -29,6 +29,17 @@
     "test:build": "tsc && vite build",
     "test:start": "electron ."
   },
+  "build": {
+    "extraResources": [
+      {
+        "from": "resources/",
+        "to": "resources/",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ]
+  },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.0",
     "@electron-toolkit/utils": "^3.0.0",
