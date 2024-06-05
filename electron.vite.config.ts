@@ -7,15 +7,7 @@ export default defineConfig({
     plugins: [externalizeDepsPlugin()]
   },
   preload: {
-    plugins: [externalizeDepsPlugin()],
-    build: {
-      rollupOptions: {
-        input: {
-          visible: resolve('src/preload/visible.ts'),
-          hidden: resolve('src/preload/hidden.ts')
-        }
-      }
-    }
+    plugins: [externalizeDepsPlugin()]
   },
   renderer: {
     resolve: {
