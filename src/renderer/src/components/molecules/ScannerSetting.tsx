@@ -1,39 +1,53 @@
 import { FC, ReactNode } from 'react';
+import Text from '../atoms/text/Text';
+import Button from '../atoms/button/Button';
+import Toggle from '../atoms/toggle/Toggle';
+import useCorrect from '../../hooks/useCorrect'; // useMode 훅을 가져옵니다
 
-const ScannerSetting: FC = (): ReactNode => {
+const ScannerSetting: FC = () => {
+  const { correct, setCorrect } = useCorrect();
+
+  const handleToggle = (toggled: boolean) => {
+    const newMode = toggled ? 'correction' : 'no_correction';
+    setCorrect(newMode);
+    console.log(`Mode is now: ${newMode}`);
+  };
+
   return (
-    <div className="flex flex-col items-start justify-start gap-1">
-      <div className="text-zinc-700 font-['Spoqa Han Sans Neo'] text-[13px] font-medium">
-        -d Option
-      </div>
-      <div className="inline-flex items-start justify-start gap-2.5">
-        <div className="text-gray-400 font-['Spoqa Han Sans Neo'] w-[403.27px] text-[11px] font-normal">
+    <div className="flex h-full w-full flex-col items-start justify-start gap-8">
+      <div className="flex w-full flex-col items-start justify-start gap-1">
+        <Text type="p200-m" color="PaleGray-900">
+          -d Option
+        </Text>
+        <Text type="p50-r" color="PaleGray-500">
           Additional arguments for running dependency analysis
-        </div>
-      </div>
-      <div className="border-gray-300 inline-flex h-44 w-[365px] flex-col items-start justify-start gap-0.5 rounded-lg border bg-white p-3">
-        <div className="flex h-[15px] flex-col items-start justify-start gap-1.5 self-stretch">
-          <div className="text-gray-400 font-['Spoqa Han Sans Neo'] self-stretch text-xs font-normal">
-            Enter additional arguments{' '}
-          </div>
+        </Text>
+        <div className="flex h-44 w-full items-start justify-start rounded-lg border border-PaleGray-300 bg-white px-2 py-4">
+          <textarea
+            placeholder="gdsgdg"
+            className="h-full w-full flex-grow resize-none text-xs font-normal text-PaleGray-900 outline-none"
+          />
         </div>
       </div>
 
-      <div className="inline-flex flex-col items-start justify-start gap-1">
-        <div className="text-zinc-700 font-['Spoqa Han Sans Neo'] text-[13px] font-medium">
+      <div className="flex w-full flex-col items-start justify-start gap-1">
+        <Text type="p200-m" color="PaleGray-900">
           --no_correction Option
-        </div>
-        <div className="inline-flex items-start justify-start gap-2.5">
-          <div className="text-gray-400 font-['Spoqa Han Sans Neo'] w-[403.27px] text-[11px] font-normal">
-            Check if you don't want to correct OSS information with sbom-info.yaml (Correction mode
-            only supported xlsx format)
-          </div>
+        </Text>
+        <Text type="p50-r" color="PaleGray-500">
+          Check if you don't want to correct OSS information with sbom-info.yaml (Correction mode
+          only supported xlsx format)
+        </Text>
+        <div className="flex w-full flex-col items-end justify-end pr-4">
+          <Toggle type="default" toggled={correct === 'correction'} onToggle={handleToggle} />
         </div>
       </div>
-      <div className="bg-gray-300 flex h-8 w-[54px] items-center justify-start rounded-[100px] py-0.5 pl-0.5 pr-6">
-        <div className="relative h-7 w-7 rounded-[100px] bg-white" />
+
+      <div className="flex w-full flex-col items-end justify-end gap-1">
+        <Button type="primary">Save</Button>
       </div>
     </div>
   );
 };
+
 export default ScannerSetting;
