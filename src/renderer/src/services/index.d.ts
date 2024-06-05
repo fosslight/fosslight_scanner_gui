@@ -1,6 +1,6 @@
 interface AnalyzeCommandConfig {
   mode?: ('source' | 'binary' | 'dependency')[]; // default: ['source', 'binary', 'dependency'] (all)
-  path?: string[]; // default: '.' (current directory)
+  path: string[]; // default: '.' (current directory)
   excludedPath?: string[];
   outputFormat?: 'xlsx' | 'yaml'; // default: ['xlsx']
   outputPath?: string; // default: '.' (current directory)

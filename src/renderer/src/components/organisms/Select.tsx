@@ -30,6 +30,7 @@ const Select: FC<ISelectProps> = ({
   const handleChange = (values: Set<string>) => {
     const newSelectedValues = new Set(values);
     setSelectedValues(newSelectedValues);
+    onChange?.(newSelectedValues);
   };
 
   return (

@@ -6,7 +6,6 @@ import useMeasure from '@renderer/hooks/useMeasure';
 import ModifyModal from './modal/ModifyModal';
 import useModal from '@renderer/hooks/useModal';
 
-
 interface ISourceSelectorProps {
   label: string;
   required?: boolean;
@@ -16,7 +15,7 @@ interface ISourceSelectorProps {
     type: ButtonType;
     title: string;
   };
-  onChange?: (values: any) => void;
+  onChange?: (values: string[]) => void;
 }
 
 const SourceSelector: FC<ISourceSelectorProps> = ({
@@ -44,29 +43,35 @@ const SourceSelector: FC<ISourceSelectorProps> = ({
 
   const handleAddClick = () => {
     if (!pathInfo) return;
-    setPathInfoList([...pathInfoList, pathInfo]);
+    const newPathInfoList = [...pathInfoList, pathInfo];
+    setPathInfoList(newPathInfoList);
     setPathInfo(undefined);
+    onChange?.(newPathInfoList.map((pathInfo) => pathInfo.path));
   };
 
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const handleEditClick = (index: number) => {
     setEditIndex(index);
     console.log(`Edit item at index ${editIndex}`);
-    pathInfoList.map((info,i)=>console.log(`PathList[${i}]: ${info.path}`));
+    pathInfoList.map((info, i) => console.log(`PathList[${i}]: ${info.path}`));
     openModal();
   };
 
   const handleRemoveClick = (index: number) => {
-    setPathInfoList((prevList) => prevList.filter((_, i) => i !== index));
-    console.log(`Remove item at index ${index}`);
+    // console.log(`Remove item at index ${index}`);
+    const newPathInfoList = pathInfoList.filter((_, i) => i !== index);
+    setPathInfoList(newPathInfoList);
+    onChange?.(newPathInfoList.map((pathInfo) => pathInfo.path));
   };
 
   const handleElementChange = (value: string | null, type?: ITextInputOption['type']) => {
     if (editIndex === null) return;
-    setPathInfoList((prevList) =>
-      prevList.map((item, i) => (i === editIndex ? { option: type || item.option, path: value || item.path } : item))
+    const newPathInfoList = pathInfoList.map((item, i) =>
+      i === editIndex ? { option: type || item.option, path: value || item.path } : item
     );
-    console.log(`Modify item at index ${editIndex}`);
+    setPathInfoList(newPathInfoList);
+    // console.log(`Modify item at index ${editIndex}`);
+    onChange?.(newPathInfoList.map((pathInfo) => pathInfo.path));
   };
 
   // option 이랑 path(inputvalue)를 받아서 리스트에 추가 해야함 => 구조체나 객체나 튜플로 받아서 처리해야할듯
@@ -112,7 +117,6 @@ const SourceSelector: FC<ISourceSelectorProps> = ({
           value={pathInfoList[editIndex]?.path}
           onChange={handleElementChange}
         />
-      
       )}
     </div>
   );

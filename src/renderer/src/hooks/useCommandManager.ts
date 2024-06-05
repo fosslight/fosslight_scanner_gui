@@ -27,11 +27,11 @@ const useCommandManager = (): {
 
   const analyze = useCallback(async (): Promise<CommandResponse> => {
     return commandManager.executeCommand(createCommand('analyze'));
-  }, []);
+  }, [context]);
 
   const compare = useCallback(async (): Promise<CommandResponse> => {
     return commandManager.executeCommand(createCommand('compare'));
-  }, []);
+  }, [context]);
 
   // Memory leakage possible
   useEffect(() => {

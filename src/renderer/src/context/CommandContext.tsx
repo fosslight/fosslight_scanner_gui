@@ -1,9 +1,9 @@
-import { FC, ReactNode, createContext, useState } from 'react';
+import { FC, ReactNode, createContext, useEffect, useState } from 'react';
 
 export interface ICommandContext {
   analyzeCommandConfig: AnalyzeCommandConfig;
   compareCommandConfig: CompareCommandConfig;
-  setAnalyzeCommandConfig: (config: AnalyzeCommandConfig) => void;
+  setAnalyzeCommandConfig: any;
   setCompareCommandConfig: (config: CompareCommandConfig) => void;
 }
 
@@ -14,8 +14,14 @@ interface ICommandProviderProps {
 }
 
 export const CommandProvider: FC<ICommandProviderProps> = ({ children }) => {
-  const [analyzeCommandConfig, setAnalyzeCommandConfig] = useState<AnalyzeCommandConfig>({});
+  const [analyzeCommandConfig, setAnalyzeCommandConfig] = useState<AnalyzeCommandConfig>({
+    path: ['.']
+  });
   const [compareCommandConfig, setCompareCommandConfig] = useState<CompareCommandConfig>({});
+
+  useEffect(() => {
+    console.log('analyze command config:', analyzeCommandConfig);
+  }, [analyzeCommandConfig]);
 
   return (
     <CommandContext.Provider

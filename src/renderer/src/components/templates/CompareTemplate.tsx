@@ -2,8 +2,11 @@ import { FC } from 'react';
 import SourceSelector from '../organisms/SourceSelector';
 import TextInput from '../organisms/TextInput';
 import MultiSelectChip from '../molecules/MultiSelectChip';
+import useCommandConfig from '@renderer/hooks/useCommandConfig';
 
 const CompareTemplate: FC = () => {
+  const { updateCompareCommandConfig } = useCommandConfig();
+
   return (
     <div className="flex flex-wrap items-start justify-start gap-16">
       <SourceSelector

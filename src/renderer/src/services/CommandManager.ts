@@ -28,6 +28,7 @@ class CommandManager implements ICommandManager {
     // window.api.onCommandResult((result) => {
     //   message = result;
     // });
+    console.log('command: ', command);
     this.commandQueue.shift();
     return { success: true, message };
   }

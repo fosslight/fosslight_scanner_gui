@@ -3,8 +3,23 @@ import SourceSelector from '../organisms/SourceSelector';
 import TextInput from '../organisms/TextInput';
 import MultiSelectChip from '../molecules/MultiSelectChip';
 import Select from '../organisms/Select';
+import useCommandConfig from '@renderer/hooks/useCommandConfig';
 
 const AnalyzeTemplate: FC = () => {
+  const { updateAnalyzeCommandConfig } = useCommandConfig();
+
+  const handleAnalysisSubjectChange = (values: string[]) => {
+    updateAnalyzeCommandConfig({ path: values });
+  };
+
+  const handleExclusionChange = (values: string[]) => {
+    updateAnalyzeCommandConfig({ excludedPath: values });
+  };
+
+  const handleScannerTypeChange = (values: Set<string>) => {
+    updateAnalyzeCommandConfig({ mode: Array.from(values) as AnalyzeCommandConfig['mode'] });
+  };
+
   return (
     <div className="flex justify-between gap-6">
       <SourceSelector
@@ -21,6 +36,7 @@ const AnalyzeTemplate: FC = () => {
             or local path you want to analyze.
           </>
         }
+        onChange={handleAnalysisSubjectChange}
       />
       <SourceSelector
         label="Exclusion from analysis"
@@ -33,6 +49,7 @@ const AnalyzeTemplate: FC = () => {
           </>
         }
         addButtonConfig={{ type: 'tertiary', title: 'Exclude' }}
+        onChange={handleExclusionChange}
       />
       <div className="flex h-[250px] flex-col justify-between">
         <Select
@@ -43,6 +60,7 @@ const AnalyzeTemplate: FC = () => {
             { value: 'binary', label: 'Binary' },
             { value: 'dependency', label: 'Dependency' }
           ]}
+          onChange={handleScannerTypeChange}
         />
         <TextInput
           label="Storage path for analysis results"
