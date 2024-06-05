@@ -117,11 +117,11 @@ const ModifyModal: FC<IModalProps> = ({
 
         {/* buttons */}
         <div className="flex justify-end gap-[9px]">
-          <Button key="close" type="secondary" onClick={onClose}>
+          <Button key="close" type="tertiary" onClick={onClose}>
             Close
           </Button>
           ,
-          <Button key="modify" type="tertiary" onClick={handleModifyClick}>
+          <Button key="modify" type="primary" onClick={handleModifyClick}>
             Modify
           </Button>
         </div>
