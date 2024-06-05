@@ -4,7 +4,6 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import icon from '../../resources/icon.png?asset';
 
 let mainWindow: BrowserWindow;
-let hiddenWindow: BrowserWindow;
 
 function createWindow(): void {
   // Create the browser window.
@@ -40,25 +39,6 @@ function createWindow(): void {
   }
 }
 
-function createHiddenWindow(): void {
-  hiddenWindow = new BrowserWindow({
-    show: false,
-    webPreferences: {
-      preload: join(__dirname, '../preload/hidden.js'),
-      contextIsolation: true,
-      sandbox: false
-    }
-  });
-
-  hiddenWindow.loadFile(join(__dirname, '../background/index.html'));
-  // const devUrl = 'http://localhost:3000/index.html';
-  // if (is.dev) {
-  //   hiddenWindow.loadURL(devUrl);
-  // } else {
-  //   hiddenWindow.loadFile(join(__dirname, '../background/index.html'));
-  // }
-}
-
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
@@ -74,7 +54,6 @@ app.whenReady().then(() => {
   });
 
   createWindow();
-  createHiddenWindow();
 
   // IPC communication between main and hidden windows
   ipcMain.on('send-command', (event, { command }) => {
@@ -84,7 +63,6 @@ app.whenReady().then(() => {
         ? 'Analyze command executed successfully'
         : 'Compare command executed successfully';
     event.reply('recv-command-result', message);
-    hiddenWindow.webContents.send('recv-command', { command });
   });
 
   ipcMain.on('send-log', (_, { log }) => {
