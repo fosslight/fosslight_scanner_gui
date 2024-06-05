@@ -3,6 +3,8 @@ import TextInput, { ITextInputOption } from './TextInput';
 import ListBox, { PathInfo } from './ListBox';
 import Button, { ButtonType } from '../atoms/button/Button';
 import useMeasure from '@renderer/hooks/useMeasure';
+import ModifyModal from './modal/ModifyModal';
+import useModal from '@renderer/hooks/useModal';
 
 interface ISourceSelectorProps {
   label: string;
@@ -37,14 +39,19 @@ const SourceSelector: FC<ISourceSelectorProps> = ({
     }
   };
 
+  const { openModal, closeModal, modalRef } = useModal();
+
   const handleAddClick = () => {
     if (!pathInfo) return;
     setPathInfoList([...pathInfoList, pathInfo]);
     setPathInfo(undefined);
   };
 
+  const [editIndex, setEditIndex] = useState<number | null>(null);
   const handleEditClick = (index: number) => {
-    console.log(`Edit item at index ${index}`);
+    // 수정: 인덱스를 매개변수로 받음
+    setEditIndex(index); // 추가: 수정할 항목의 인덱스를 저장
+    openModal();
   };
 
   const handleRemoveClick = (index: number) => {
@@ -83,6 +90,23 @@ const SourceSelector: FC<ISourceSelectorProps> = ({
             onRemoveClick={handleRemoveClick}
           />
         </div>
+      )}
+      {editIndex !== null && (
+        <ModifyModal
+          isOpen={editIndex !== null}
+          modalRef={modalRef}
+          title="Would you sure to force quit the analysis?"
+          content="The details such as the analysis list that you've added will be maintained."
+          buttons={[
+            <Button key="force-quit" type="secondary">
+              Force Quit
+            </Button>,
+            <Button key="keep-analyze" type="tertiary" onClick={closeModal}>
+              Keep analyze
+            </Button>
+          ]}
+      
+        />
       )}
     </div>
   );
