@@ -11,7 +11,7 @@ const FileUpload: FC<IFileUploadProps> = ({ fileUploadRef, directory = false, on
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
-    onChange && onChange(files);
+    onChange?.(files);
   };
 
   return (

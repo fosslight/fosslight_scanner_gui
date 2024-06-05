@@ -8,7 +8,7 @@ interface IInputProps {
 
 const Input: FC<IInputProps> = ({ value, placeholder, onChange }) => {
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    onChange && onChange(e.target.value);
+    onChange?.(e.target.value);
   };
 
   return (

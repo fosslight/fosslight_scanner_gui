@@ -1,17 +1,19 @@
-import { FC, useState } from 'react';
+import { FC, ReactNode, useEffect, useState } from 'react';
 import TextInput, { ITextInputOption } from './TextInput';
 import ListBox, { PathInfo } from './ListBox';
 import Button, { ButtonType } from '../atoms/button/Button';
+import useMeasure from '@renderer/hooks/useMeasure';
+import ModifyModal from './modal/ModifyModal';
+import useModal from '@renderer/hooks/useModal';
 
 interface ISourceSelectorProps {
   label: string;
   required?: boolean;
-  options?: any[];
-  children?: string;
+  options: ITextInputOption[];
+  placeholder?: ReactNode;
   addButtonConfig?: {
     type: ButtonType;
     title: string;
-  
   };
   onChange?: (values: any) => void;
 }
@@ -19,38 +21,41 @@ interface ISourceSelectorProps {
 const SourceSelector: FC<ISourceSelectorProps> = ({
   label,
   required,
+  options,
   addButtonConfig,
-  children,
+  placeholder,
   onChange
 }) => {
-  const [pathValue, setPathValue] =  useState<string>(''); //여기를 path option 따로 받거나
-  const [optionValue, setOptionValue] = useState<string>('local'); //여기를 path option 따로 받거나
-  const [path_list, setPathList] = useState<PathInfo[]>([]); // [PathInfo, ...
+  const { ref, width, ready } = useMeasure();
 
-  const textInputOptions: ITextInputOption[] = [
-    { value: 'github', label: 'GitHub repo', type: 'text', placeholder: 'https://github/' }, // Change this option to 'Link' later
-    { value: 'local', label: 'Local path', type: 'file', placeholder: '~/' }
-  ];
+  const [pathInfo, setPathInfo] = useState<PathInfo | undefined>(undefined); //여기를 path option 따로 받거나
+  const [pathInfoList, setPathInfoList] = useState<PathInfo[]>([]); // [PathInfo, ...
 
-  const handleInputChange = (value: string) => {
-    setPathValue(value);
-    setOptionValue(value);
-    onChange && onChange(value);
+  const handleInputChange = (value: string | null, type?: ITextInputOption['type']) => {
+    if (!value || !type) {
+      setPathInfo(undefined);
+    } else {
+      setPathInfo({ option: type, path: value });
+    }
   };
+
+  const { openModal, closeModal, modalRef } = useModal();
 
   const handleAddClick = () => {
-    if (!pathValue) return;
-
-    setPathList([...path_list, { option: optionValue, path: pathValue }]);
-    setPathValue('');
+    if (!pathInfo) return;
+    setPathInfoList([...pathInfoList, pathInfo]);
+    setPathInfo(undefined);
   };
 
+  const [editIndex, setEditIndex] = useState<number | null>(null);
   const handleEditClick = (index: number) => {
-    console.log(`Edit item at index ${index}`);
+    // 수정: 인덱스를 매개변수로 받음
+    setEditIndex(index); // 추가: 수정할 항목의 인덱스를 저장
+    openModal();
   };
 
   const handleRemoveClick = (index: number) => {
-    setPathList((prevList) => prevList.filter((_, i) => i !== index));
+    setPathInfoList((prevList) => prevList.filter((_, i) => i !== index));
     console.log(`Remove item at index ${index}`);
   };
 
@@ -62,24 +67,47 @@ const SourceSelector: FC<ISourceSelectorProps> = ({
 
   return (
     <div className="flex w-fit flex-col gap-4">
-      <TextInput
-        label={label}
-        required={required}
-        options={textInputOptions}
-        suffix={
-          <Button type={addButtonConfig?.type || 'primary'} onClick={handleAddClick}>
-            {addButtonConfig?.title || 'Add'}
-          </Button>
-        }
-        value={pathValue}
-        onChange={handleInputChange}
-      />
-      <ListBox
-        children={children}
-        path_list={path_list}
-        onEditClick={handleEditClick}
-        onRemoveClick={handleRemoveClick}
-      />
+      <div ref={ref}>
+        <TextInput
+          label={label}
+          required={required}
+          options={options}
+          suffix={
+            <Button type={addButtonConfig?.type || 'primary'} onClick={handleAddClick}>
+              {addButtonConfig?.title || 'Add'}
+            </Button>
+          }
+          value={pathInfo?.path}
+          onChange={handleInputChange}
+        />
+      </div>
+      {ready && (
+        <div style={{ width }}>
+          <ListBox
+            emptyText={placeholder}
+            pathInfoList={pathInfoList}
+            onEditClick={handleEditClick}
+            onRemoveClick={handleRemoveClick}
+          />
+        </div>
+      )}
+      {editIndex !== null && (
+        <ModifyModal
+          isOpen={editIndex !== null}
+          modalRef={modalRef}
+          title="Would you sure to force quit the analysis?"
+          content="The details such as the analysis list that you've added will be maintained."
+          buttons={[
+            <Button key="force-quit" type="secondary">
+              Force Quit
+            </Button>,
+            <Button key="keep-analyze" type="tertiary" onClick={closeModal}>
+              Keep analyze
+            </Button>
+          ]}
+      
+        />
+      )}
     </div>
   );
 };

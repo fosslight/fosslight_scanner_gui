@@ -1,31 +1,32 @@
-import { FC } from 'react';
+import { FC, ReactNode } from 'react';
 import ListBoxItem from '../molecules/ListBoxItem';
+import { ITextInputOption } from './TextInput';
 
-export type PathInfo = {
-  option: string;
+export interface PathInfo {
+  option: ITextInputOption['type'];
   path: string;
-};
+}
 
-type ListBoxProps = {
-  path_list: PathInfo[]; 
+interface IListBoxProps {
+  pathInfoList: PathInfo[];
   onEditClick: (index: number) => void;
   onRemoveClick: (index: number) => void;
- children: any;
-};
+  emptyText?: ReactNode;
+}
 
-const ListBox: FC<ListBoxProps> = ({ children, path_list, onEditClick, onRemoveClick }) => {
-  
-  
+const ListBox: FC<IListBoxProps> = ({ emptyText, pathInfoList, onEditClick, onRemoveClick }) => {
   return (
-    <div className="w-[346px] h-44 p-2 bg-white rounded-lg border border-PaleGray-300 flex flex-col justify-start items-start gap-1 overflow-x-hidden overflow-y-auto listbox-scroll">
-      
-       {path_list.length === 0 ? (
-      <div className="self-stretch grow shrink basis-0 flex-col justify-center items-center gap-1.5 flex"> <div className="text-center text-PaleGray-500 text-xs font-normal">{children}</div></div>
+    <div className="listbox-scroll flex h-44 w-full flex-col items-start justify-start gap-1 overflow-y-auto overflow-x-hidden rounded-lg border border-PaleGray-300 bg-white p-2">
+      {pathInfoList.length === 0 ? (
+        <div className="flex shrink grow basis-0 flex-col items-center justify-center gap-1.5 self-stretch">
+          {' '}
+          <div className="text-center text-xs font-normal text-PaleGray-500">{emptyText}</div>
+        </div>
       ) : (
-        path_list.map((path, index) => (
+        pathInfoList.map((pathInfo, index) => (
           <ListBoxItem
-            option={path.option}
-            path={path.path}
+            option={pathInfo.option}
+            path={pathInfo.path}
             onRemoveClick={() => onRemoveClick(index)}
             onEditClick={() => onEditClick(index)}
             key={index}
@@ -37,5 +38,3 @@ const ListBox: FC<ListBoxProps> = ({ children, path_list, onEditClick, onRemoveC
 };
 
 export default ListBox;
-
-

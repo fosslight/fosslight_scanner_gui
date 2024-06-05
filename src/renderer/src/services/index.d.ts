@@ -9,17 +9,24 @@ interface AnalyzeCommandConfig {
 }
 
 interface CompareCommandConfig {
-  reports: [string, string]; // [report1, report2]
+  reports?: [string, string]; // [report1, report2]
   outputFormat?: 'xlsx' | 'json' | 'yaml' | 'html'; // default: ['xlsx']
   outputPath?: string; // default: '.' (current directory)
 }
 
 type CommandConfig = AnalyzeCommandConfig | CompareCommandConfig;
 
-interface Command {
-  type: 'analyze' | 'compare';
-  config: CommandConfig;
+interface AnalyzeCommand {
+  type: 'analyze';
+  config: AnalyzeCommandConfig;
 }
+
+interface CompareCommand {
+  type: 'compare';
+  config: CompareCommandConfig;
+}
+
+type Command = AnalyzeCommand | CompareCommand;
 
 interface CommandResponse {
   success: boolean;
