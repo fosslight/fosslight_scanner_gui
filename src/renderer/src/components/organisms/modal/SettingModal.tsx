@@ -1,5 +1,6 @@
 import IconButton from '@renderer/components/atoms/button/IconButton';
 import Text from '@renderer/components/atoms/text/Text';
+import ScannerSetting from '@renderer/components/molecules/ScannerSetting';
 import SideBar from '@renderer/components/molecules/SideBar';
 import { FC, RefObject } from 'react';
 
@@ -32,6 +33,7 @@ const SettingModal: FC<ISettingModalProps> = ({ modalRef }) => {
         <Header />
         <div className="flex h-full">
           <SideBar />
+          <ScannerSetting />
         </div>
       </div>
       <div className="fixed inset-0 z-20 bg-[#454E5D] bg-opacity-40" onClick={handleCloseModal} />
