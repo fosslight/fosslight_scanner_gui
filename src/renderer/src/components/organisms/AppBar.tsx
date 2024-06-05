@@ -23,7 +23,7 @@ const AppBar: FC = () => {
   return (
     <>
       <div
-        className="main-container z-40 draggable"
+        className="main-container draggable z-40"
         style={{
           position: 'fixed',
           width: '100%',
@@ -31,12 +31,12 @@ const AppBar: FC = () => {
         }}
       >
         <div className="title-bar draggable flex items-center justify-between">
-          <div className="title prevent-select draggable px-4 pb-0.5 justify-start items-center gap-2 flex">
+          <div className="title prevent-select draggable flex items-center justify-start gap-2 px-4 pb-0.5">
             <img src="./src/assets/titlebar/title-logo.svg" alt="fosslogo" className="title-logo" />
             <div style={{ fontFamily: 'Segoe UI, sans-serif' }} className="title-text">
               FOSSLight Scanner
             </div>
-            <div className="w-3 h-[0px] origin-top-left rotate-90 border border-PaleGray-300"></div>
+            <div className="h-[0px] w-3 origin-top-left rotate-90 border border-PaleGray-300"></div>
             <div className="version-text">v1.7.22</div>
           </div>
 
@@ -47,7 +47,7 @@ const AppBar: FC = () => {
             <button id="info" className="no-drag">
               <img src="./src/assets/titlebar/title-info-icon.png" />
             </button>
-            <div className="w-3 h-[0px] origin-top-left rotate-90 border border-PaleGray-300"></div>
+            <div className="h-[0px] w-3 origin-top-left rotate-90 border border-PaleGray-300"></div>
             <button onClick={handleClickMinimizeButton} className="no-drag">
               <img src="./src/assets/titlebar/title-min-icon.png" alt="minimize" />
             </button>
@@ -66,5 +66,3 @@ const AppBar: FC = () => {
 };
 
 export default AppBar;
-
-
