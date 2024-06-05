@@ -2,7 +2,10 @@ import { FC, ReactNode, useEffect, useState } from 'react';
 import TextInput, { ITextInputOption } from './TextInput';
 import ListBox, { PathInfo } from './ListBox';
 import Button, { ButtonType } from '../atoms/button/Button';
-import useMeasure from '../../hooks/useMeasure';
+import useMeasure from '@renderer/hooks/useMeasure';
+import ModifyModal from './modal/ModifyModal';
+import useModal from '@renderer/hooks/useModal';
+
 
 interface ISourceSelectorProps {
   label: string;
@@ -37,19 +40,33 @@ const SourceSelector: FC<ISourceSelectorProps> = ({
     }
   };
 
+  const { openModal, closeModal, modalRef } = useModal();
+
   const handleAddClick = () => {
     if (!pathInfo) return;
     setPathInfoList([...pathInfoList, pathInfo]);
     setPathInfo(undefined);
   };
 
+  const [editIndex, setEditIndex] = useState<number | null>(null);
   const handleEditClick = (index: number) => {
-    console.log(`Edit item at index ${index}`);
+    setEditIndex(index);
+    console.log(`Edit item at index ${editIndex}`);
+    pathInfoList.map((info,i)=>console.log(`PathList[${i}]: ${info.path}`));
+    openModal();
   };
 
   const handleRemoveClick = (index: number) => {
     setPathInfoList((prevList) => prevList.filter((_, i) => i !== index));
     console.log(`Remove item at index ${index}`);
+  };
+
+  const handleElementChange = (value: string | null, type?: ITextInputOption['type']) => {
+    if (editIndex === null) return;
+    setPathInfoList((prevList) =>
+      prevList.map((item, i) => (i === editIndex ? { option: type || item.option, path: value || item.path } : item))
+    );
+    console.log(`Modify item at index ${editIndex}`);
   };
 
   // option 이랑 path(inputvalue)를 받아서 리스트에 추가 해야함 => 구조체나 객체나 튜플로 받아서 처리해야할듯
@@ -83,6 +100,19 @@ const SourceSelector: FC<ISourceSelectorProps> = ({
             onRemoveClick={handleRemoveClick}
           />
         </div>
+      )}
+      {editIndex !== null && (
+        <ModifyModal
+          isOpen={editIndex !== null}
+          modalRef={modalRef}
+          title="Modify Analysis Subject"
+          content="The details such as the analysis list that you've added will be maintained."
+          options={options}
+          onClose={closeModal}
+          value={pathInfoList[editIndex]?.path}
+          onChange={handleElementChange}
+        />
+      
       )}
     </div>
   );
