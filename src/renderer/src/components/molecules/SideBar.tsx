@@ -1,29 +1,26 @@
 import { FC } from 'react';
-import Button from '../atoms/button/Button';
+import SideBarTab from '../atoms/SideBarTab';
 
 interface ISideBarProps {
-  onChangeTab?: () => void;
+  activeTab: 'scanner' | 'token';
+  onChangeTab: (tab: 'scanner' | 'token') => void;
 }
 
-const SideBar: FC<ISideBarProps> = ({ onChangeTab }) => {
-  const handleClick = () => {
-    console.log('Button clicked');
-  };
-
+const SideBar: FC<ISideBarProps> = ({ activeTab, onChangeTab }) => {
   return (
     <div className="flex h-full w-[160px] flex-col gap-3 border-r border-r-PaleGray-300 bg-PaleGray-50 p-3">
-      <SideBarTab />
-      <SideBarTab />
+      <SideBarTab
+        menu="Scanner Option"
+        isActive={activeTab === 'scanner'}
+        onClick={() => onChangeTab('scanner')}
+      />
+      <SideBarTab
+        menu="Private Token"
+        isActive={activeTab === 'token'}
+        onClick={() => onChangeTab('token')}
+      />
     </div>
   );
 };
 
 export default SideBar;
-
-const SideBarTab: FC = () => {
-  return (
-    <div>
-      <Button type="primary">Button</Button>
-    </div>
-  );
-};
