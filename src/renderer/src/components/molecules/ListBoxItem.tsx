@@ -17,7 +17,6 @@ interface IListBoxItemProps {
 }
 
 const ListBoxItem: FC<IListBoxItemProps> = ({ option, path, onEditClick, onRemoveClick }) => {
-  // console.log('option:', option);
 
   return (
     <div className="flex h-9 w-full items-center gap-1.5 rounded-md bg-white p-1">

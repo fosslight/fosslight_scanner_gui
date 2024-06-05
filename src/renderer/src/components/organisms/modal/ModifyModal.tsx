@@ -22,7 +22,6 @@ interface IModalProps {
   value?: string;
   onChange?: (value: string | null, type?: ITextInputOption['type']) => void;
   onClose: () => void;
-  // buttons?: ReactNode[];
 }
 
 const ModifyModal: FC<IModalProps> = ({
@@ -35,20 +34,19 @@ const ModifyModal: FC<IModalProps> = ({
   value,
   onChange,
   onClose
-  // buttons
 }) => {
   const { openFileUpload, fileUploadRef } = useFileUpload();
   const [selectedOption, setSelectedOption] = useState<ITextInputOption>(options[0]);
   const [path, setPath] = useState<string | null>(value || null);
 
-  console.log("rerender");
+  console.log('rerender');
 
   useEffect(() => {
     if (options.length > 0) {
       setSelectedOption(options[0]);
     }
     setPath(value || null);
-  }, [options,value,isOpen]);
+  }, [options, value, isOpen]);
 
   const handleDropdownChange = (value: string) => {
     const selected = options.find((option) => option.value === value) || options[0];
@@ -63,8 +61,7 @@ const ModifyModal: FC<IModalProps> = ({
   const handleModifyClick = () => {
     onChange?.(path, selectedOption.type);
     onClose();
-  }
-
+  };
 
   const handleFileChange = (files: File[]) => {
     setPath(files[0].path);
