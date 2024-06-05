@@ -1,14 +1,18 @@
-import IconButton from '@renderer/components/atoms/button/IconButton';
-import Text from '@renderer/components/atoms/text/Text';
-import ScannerSetting from '@renderer/components/molecules/ScannerSetting';
-import SideBar from '@renderer/components/molecules/SideBar';
-import { FC, RefObject } from 'react';
+import IconButton from '../../atoms/button/IconButton';
+import Text from '../../atoms/text/Text';
+import ScannerSetting from '../../molecules/ScannerSetting';
+import TokenSetting from '../../molecules/TokenSetting';
+
+import SideBar from '../../molecules/SideBar';
+import { FC, RefObject, useState } from 'react';
 
 interface ISettingModalProps {
   modalRef: RefObject<HTMLDialogElement>;
 }
 
 const SettingModal: FC<ISettingModalProps> = ({ modalRef }) => {
+  const [activeSetting, setActiveSetting] = useState<'scanner' | 'token'>('scanner');
+
   const handleCloseModal = () => {
     modalRef.current?.close();
   };
@@ -32,8 +36,11 @@ const SettingModal: FC<ISettingModalProps> = ({ modalRef }) => {
       <div className="fixed top-1/2 z-30 flex h-[540px] w-[75%] max-w-[960px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl bg-white shadow">
         <Header />
         <div className="flex h-full">
-          <SideBar />
-          <ScannerSetting />
+          <SideBar activeTab={activeSetting} onChangeTab={setActiveSetting} />
+          <div className="flex-grow p-3">
+            {activeSetting === 'scanner' && <ScannerSetting />}
+            {activeSetting === 'token' && <TokenSetting />}
+          </div>
         </div>
       </div>
       <div className="fixed inset-0 z-20 bg-[#454E5D] bg-opacity-40" onClick={handleCloseModal} />
