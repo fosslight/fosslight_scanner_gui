@@ -47,6 +47,7 @@ const CompareTemplate: FC = () => {
                 { value: 'yaml', label: '.yaml' },
                 { value: 'html', label: '.html' }
               ]}
+              radio
               onChange={(selectedValues) => console.log(selectedValues)}
             />
           }

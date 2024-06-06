@@ -24,6 +24,14 @@ const AnalyzeTemplate: FC = () => {
     updateAnalyzeCommandConfig({ outputPath: value });
   };
 
+  const handleResultFileNameChange = (value?: string) => {
+    updateAnalyzeCommandConfig({ outputFileName: value });
+  };
+
+  const handleResultFileFormatChange = (values: Set<string>) => {
+    updateAnalyzeCommandConfig({ outputFormat: values.keys().next().value });
+  };
+
   return (
     <div className="flex justify-between gap-6">
       <SourceSelector
@@ -90,9 +98,11 @@ const AnalyzeTemplate: FC = () => {
                 { value: 'excel', label: '.excel' },
                 { value: 'yaml', label: '.yaml' }
               ]}
-              onChange={(selectedValues) => console.log(selectedValues)}
+              radio
+              onChange={handleResultFileFormatChange}
             />
           }
+          onChange={handleResultFileNameChange}
         />
       </div>
     </div>

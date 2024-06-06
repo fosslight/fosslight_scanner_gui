@@ -9,21 +9,36 @@ export interface ISelectChipOption {
 interface IMultiSelectChipProps {
   options: ISelectChipOption[];
   values?: Set<string>;
+  radio?: boolean;
   onChange?: (values: Set<string>) => void;
 }
 
-const MultiSelectChip: FC<IMultiSelectChipProps> = ({ options, values, onChange }) => {
-  const [selectedValues, setSelectedValues] = useState<Set<string>>(values ?? new Set());
+const MultiSelectChip: FC<IMultiSelectChipProps> = ({
+  options,
+  values,
+  radio = false,
+  onChange
+}) => {
+  const [selectedValues, setSelectedValues] = useState<Set<string>>(
+    values ?? new Set(radio ? [options[0].value] : [])
+  );
 
   const handleSelect = (value: string) => (selected: boolean) => {
     const newSelectedValues = new Set(selectedValues);
-    selected ? newSelectedValues.add(value) : newSelectedValues.delete(value);
+    if (radio) {
+      newSelectedValues.clear();
+      newSelectedValues.add(value);
+    } else if (selected) {
+      newSelectedValues.add(value);
+    } else {
+      newSelectedValues.delete(value);
+    }
     setSelectedValues(newSelectedValues);
     onChange?.(newSelectedValues);
   };
 
   useEffect(() => {
-    setSelectedValues(values ?? new Set());
+    setSelectedValues(values ?? new Set(radio ? [options[0].value] : []));
   }, [values]);
 
   return (
