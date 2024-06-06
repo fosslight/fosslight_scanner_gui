@@ -29,7 +29,7 @@ const SourceSelector: FC<ITokenSelectorProps> = ({
   const [pathInfo, setPathInfo] = useState<PathInfo | undefined>(undefined); //여기를 path option 따로 받거나
   const [pathInfoList, setPathInfoList] = useState<PathInfo[]>([]); // [PathInfo, ...
 
-  const handleInputChange = (value: string | null, type?: ITextInputOption['type']) => {
+  const handleInputChange = (value?: string, type?: ITextInputOption['type']) => {
     if (!value || !type) {
       setPathInfo(undefined);
     } else {

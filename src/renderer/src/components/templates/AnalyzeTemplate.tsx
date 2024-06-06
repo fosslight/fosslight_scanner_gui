@@ -20,6 +20,10 @@ const AnalyzeTemplate: FC = () => {
     updateAnalyzeCommandConfig({ mode: Array.from(values) as AnalyzeCommandConfig['mode'] });
   };
 
+  const handleResultStoragePathChange = (value?: string) => {
+    updateAnalyzeCommandConfig({ outputPath: value });
+  };
+
   return (
     <div className="flex justify-between gap-6">
       <SourceSelector
@@ -66,6 +70,7 @@ const AnalyzeTemplate: FC = () => {
           label="Storage path for analysis results"
           required
           options={[{ type: 'file', label: 'Local path', value: 'local', placeholder: '~/' }]}
+          onChange={handleResultStoragePathChange}
         />
         <TextInput
           label="File name and format of analysis results"

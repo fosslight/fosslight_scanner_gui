@@ -1,4 +1,4 @@
-import { FC, ReactNode, useState } from 'react';
+import { FC, ReactNode, useEffect, useState } from 'react';
 import Text from '../atoms/text/Text';
 import Dropdown, { IDropdownOption } from '../molecules/dropdown/Dropdown';
 import Input from '../atoms/input/Input';
@@ -19,7 +19,7 @@ interface ITextInputProps {
   options: ITextInputOption[];
   suffix?: ReactNode;
   value?: string;
-  onChange?: (value: string | null, type?: ITextInputOption['type']) => void;
+  onChange?: (value?: string, type?: ITextInputOption['type']) => void;
 }
 
 const TextInput: FC<ITextInputProps> = ({
@@ -29,24 +29,32 @@ const TextInput: FC<ITextInputProps> = ({
   showInput = true,
   options,
   suffix,
-  value,
+  value: inputValue,
   onChange
 }) => {
   const { openFileUpload, fileUploadRef } = useFileUpload();
   const [selectedOption, setSelectedOption] = useState<ITextInputOption>(options[0]);
+  const [value, setValue] = useState<string>(inputValue ?? '');
 
   const handleDropdownChange = (value: string) => {
     setSelectedOption(options.find((option) => option.value === value) || options[0]);
-    onChange?.(null);
+    setValue('');
+    onChange?.();
   };
 
   const handleInputChange = (value: string) => {
+    setValue(value);
     onChange?.(value, selectedOption.type);
   };
 
   const handleFileChange = (files: File[]) => {
+    setValue(files[0].path);
     onChange?.(files[0].path, selectedOption.type); // Fix: should handle both ordinary file and directory
   };
+
+  useEffect(() => {
+    setValue(inputValue ?? '');
+  }, [inputValue]);
 
   return options.length === 0 ? null : (
     <div className="flex flex-col gap-[6px]">
@@ -97,7 +105,7 @@ const TextInput: FC<ITextInputProps> = ({
               <div className="flex w-full items-center px-[6px]">
                 <Input
                   placeholder={selectedOption.placeholder}
-                  value={value ?? ''}
+                  value={value}
                   onChange={handleInputChange}
                 />
               </div>
