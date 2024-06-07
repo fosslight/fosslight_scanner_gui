@@ -3,12 +3,12 @@ import { dirname, join, resolve } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import icon from '../../resources/icon.png';
 import { fileURLToPath } from 'url';
-import BinaryExecuter from './src/BinaryExecuter';
+import SystemExecuter from './src/SystemExecuter';
 import commandParser from './src/CommandParser';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const binaryExecuter = BinaryExecuter.getInstance();
+const systemExecuter = SystemExecuter.getInstance();
 
 let mainWindow: BrowserWindow;
 let hiddenWindow: BrowserWindow;
@@ -84,14 +84,14 @@ app.whenReady().then(async () => {
   createWindow();
   createHiddenWindow();
 
-  const arg = !binaryExecuter.checkVenv() ? 'false' : undefined; // assign any string is fine
+  const arg = !systemExecuter.checkVenv() ? 'false' : undefined; // assign any string is fine
   console.log('Waiting for setting venv and Fosslight Scanner');
   const progressInterval = setInterval(() => {
     process.stdout.write('.');
   }, 500); // 설치하는 동안 500ms 간격으로 점 출력
 
   // Will take a long time (about 3 min) when the first install the venv and fs.
-  const setVenv: boolean = await binaryExecuter.executeSetVenv(arg);
+  const setVenv: boolean = await systemExecuter.executeSetVenv(arg);
 
   if (!setVenv) {
     console.error(
@@ -104,15 +104,18 @@ app.whenReady().then(async () => {
 
   // IPC communication between main and hidden windows
   ipcMain.on('send-command', async (event, { command }) => {
-    const args: string[] = commandParser.parseCommand(command);
+    const args: string[][] = commandParser.parseCmd2Args(command);
 
     // check venv and fs before executing.
-    if (!binaryExecuter.checkVenv()) {
+    if (!systemExecuter.checkVenv()) {
       console.error(
         '[Error]: Failed to run Fosslight Scanner.\n\t Please check the resources folder and files are in initial condition.\n\t Or try to reinstall this app.'
       );
     } else {
-      const result: string = await binaryExecuter.executeScanner(args);
+      for (let i = 0; i < args.length; i++) {
+        const result: string = await systemExecuter.executeScanner(args);
+      }
+      const setting: Setting = commandParser.parseCmd2Setting(args, command.type); // saving cache does not need to be awaited
 
       const message =
         command.type === 'analyze'

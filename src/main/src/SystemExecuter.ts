@@ -1,10 +1,11 @@
 import { app } from 'electron';
 import fs from 'fs';
 import path from 'path';
-import { execFile, spawn } from 'child_process';
+import util from 'util';
+import { exec, spawn } from 'child_process';
 
-class BinaryExecuter {
-  private static instance: BinaryExecuter;
+class SystemExecuter {
+  private static instance: SystemExecuter;
   private readonly venvPath = path.join(app.getAppPath(), 'resources', 'venv');
   private readonly pythonPath =
     process.platform == 'win32'
@@ -17,12 +18,12 @@ class BinaryExecuter {
 
   private constructor() {}
 
-  public static getInstance(): BinaryExecuter {
+  public static getInstance(): SystemExecuter {
     // Singleton pattern
-    if (!BinaryExecuter.instance) {
-      BinaryExecuter.instance = new BinaryExecuter();
+    if (!SystemExecuter.instance) {
+      SystemExecuter.instance = new SystemExecuter();
     }
-    return BinaryExecuter.instance;
+    return SystemExecuter.instance;
   }
 
   public checkVenv(): boolean {
@@ -34,27 +35,43 @@ class BinaryExecuter {
   }
 
   public async executeSetVenv(arg: string | undefined): Promise<boolean> {
-    return new Promise((resolve, _) => {
-      const binaryPath = path.join(app.getAppPath(), 'resources', 'set_venv');
-      const args = arg ? [arg] : [];
-      execFile(binaryPath, args, (error, _, stderr) => {
-        if (error) {
-          console.error(error);
-          resolve(false);
-        } else if (stderr) {
-          console.error(stderr);
-          resolve(false);
-        } else {
-          resolve(true);
+    const execPromise = util.promisify(exec);
+    try {
+      if (arg) {
+        const { stderr: venvError } = await execPromise('python -m venv ' + this.venvPath);
+        if (venvError) {
+          console.error('Create venv failed: ' + venvError);
+          return false;
         }
-      });
-    });
+      }
+
+      const { stderr: pipError } = await execPromise(
+        this.pythonPath + ' -m pip install --upgrade pip'
+      );
+      if (pipError) {
+        console.error('pip upgrade failed: ' + pipError);
+        return false;
+      }
+
+      const { stderr: pythonError } = await execPromise(
+        this.pythonPath + ' -m pip install fosslight_scanner'
+      );
+      if (pythonError) {
+        console.error('Install and Update fosslight sccanner failed: ' + pythonError);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('An Error occured while setting venv and fosslight_scanner: ' + error);
+      return false;
+    }
   }
 
   public async executeScanner(args: string[]): Promise<string> {
     return new Promise((resolve, reject) => {
-      const binaryPath = path.join(app.getAppPath(), 'resources', 'run_scanner');
-      const child = spawn(binaryPath, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+      const command = path.join(app.getAppPath(), 'resources', 'run_scanner');
+      const child = spawn(command, args, { stdio: ['ignore', 'pipe', 'pipe'] });
 
       child.stdout.on('data', (data) => {
         process.stdout.write(data);
@@ -78,4 +95,4 @@ class BinaryExecuter {
   }
 }
 
-export default BinaryExecuter;
+export default SystemExecuter;
