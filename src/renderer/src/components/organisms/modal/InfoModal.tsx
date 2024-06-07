@@ -1,4 +1,4 @@
-import { FC, RefObject } from 'react';
+import { FC, RefObject, MouseEvent } from 'react';
 import Text from '../../atoms/text/Text';
 import { FossLogo } from '../../../components/atoms/SVGIcons';
 
@@ -11,27 +11,33 @@ const InfoModal: FC<IInfoModalProps> = ({ modalRef }) => {
     modalRef.current?.close();
   };
 
+  const handleLinkClick = (e: MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    const url = e.currentTarget.href;
+    window.open(url, '_blank');
+  };
+
   const Header: FC = () => (
-    <div className="flex items-center justify-between self-stretch border-b border-PaleGray-500 pb-3">
-      <div className="flex items-center gap-2.5">
+    <div className="flex items-center justify-between self-stretch border-b border-PaleGray-500 pb-2">
+      <div className="flex items-center gap-1.5">
         <FossLogo />
-        <Text type="p500-m" color="white">
+        <Text type="p500-m" color="white" className="pl-0.5">
           FOSSLight
         </Text>
       </div>
       <button onClick={handleCloseModal}>
-        <img className="h-5 w-5" src="/src/assets/icons/x-small.svg" alt="close" />
+        <img className="h-6 w-6" src="/src/assets/icons/x-small.svg" alt="close" />
       </button>
     </div>
   );
   return (
-    <dialog ref={modalRef}>
-      <div className="fixed top-1/2 z-30 flex h-[280px] w-[400px] -translate-x-1/2 -translate-y-1/2 flex-col items-start justify-center gap-2.5 overflow-y-auto rounded-xl bg-PaleGray-900 px-5 pb-5 pt-3 shadow">
+    <dialog ref={modalRef} className="modal">
+      <div className="fixed top-1/2 z-30 flex h-[280px] w-[400px] -translate-x-1/2 -translate-y-1/2 flex-col items-start justify-center gap-2.5 overflow-y-auto rounded-xl bg-PaleGray-900 px-5 pb-5 pt-4 shadow">
         <Header />
         <div className="flex flex-col gap-3 text-xs font-normal text-PaleGray-300">
           <div className="flex gap-1">
             <span>FOSSLight :</span>
-            <a href="https://fosslight.org/" className="underline">
+            <a href="https://fosslight.org/" className="underline" onClick={handleLinkClick}>
               https://fosslight.org/
             </a>
           </div>
@@ -41,6 +47,7 @@ const InfoModal: FC<IInfoModalProps> = ({ modalRef }) => {
               <a
                 href="https://github.com/fosslight/fosslight_gui/blob/main/LICENSE"
                 className="underline"
+                onClick={handleLinkClick}
               >
                 https://github.com/fosslight/fosslight_gui/blob/main/LICENSE
               </a>
@@ -49,7 +56,11 @@ const InfoModal: FC<IInfoModalProps> = ({ modalRef }) => {
           <div className="flex flex-col gap-1">
             <div>Github:</div>
             <div>
-              <a href="https://github.com/fosslight/fosslight_gui/" className="underline">
+              <a
+                href="https://github.com/fosslight/fosslight_gui/"
+                className="underline"
+                onClick={handleLinkClick}
+              >
                 https://github.com/fosslight/fosslight_gui/
               </a>
             </div>
@@ -61,12 +72,13 @@ const InfoModal: FC<IInfoModalProps> = ({ modalRef }) => {
               <a
                 href="https://github.com/orgs/fosslight/people/lge-opensource"
                 className="underline"
+                onClick={handleLinkClick}
               >
                 https://github.com/orgs/fosslight/people/lge-opensource
               </a>
               )
             </div>
-            <div> - Yujin Jo, Jinan Jeong, Seongjun Jo, Sooyeon Yeom @SNU</div>
+            <div> - Jinan Jeong, Seongjun Jo, Yujin Jo, Sooyeon Yeom @SNU</div>
           </div>
         </div>
       </div>
