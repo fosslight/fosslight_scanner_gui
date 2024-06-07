@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron';
+import { app, shell, BrowserWindow, ipcMain, screen } from 'electron';
 import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import icon from '../../resources/icon.png?asset';
@@ -6,12 +6,19 @@ import icon from '../../resources/icon.png?asset';
 let mainWindow: BrowserWindow;
 
 function createWindow(): void {
-  // Create the browser window.
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+  const aspectRatio = 17 / 10; // 원하는 가로 세로 비율
+  let optimalWidth = width * 0.9;
+  let optimalHeight = optimalWidth / aspectRatio;
+
+  // 최대 높이 제한(이거 좀 이상해서 바꿔야)
+  if (optimalHeight > height * 0.8) {
+    optimalHeight = height * 0.8;
+    optimalWidth = optimalHeight * aspectRatio;
+  }
   mainWindow = new BrowserWindow({
-    width: 1000,
-    height: 583,
-    minWidth: 720,
-    minHeight: 420,
+    width: optimalWidth,
+    height: optimalHeight,
     show: false,
     frame: false,
     autoHideMenuBar: true,
