@@ -11,14 +11,11 @@ const ButtonBar: FC<IButtonBarProps> = ({ onForceQuit }) => {
   const { mode } = useMode();
   const { analyze, compare } = useCommandManager();
 
-  const handleExecuteClick = () => {
+  const handleExecuteClick = async () => {
     if (mode === 'analyze') {
-      console.log('Analyze button clicked');
-      analyze();
-      return;
+      const result = await analyze();
     } else {
-      console.log('Compare button clicked');
-      compare();
+      const result = await compare();
     }
   };
 

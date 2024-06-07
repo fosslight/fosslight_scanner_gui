@@ -57,13 +57,8 @@ app.whenReady().then(() => {
   createWindow();
 
   // IPC communication between main and hidden windows
-  ipcMain.on('send-command', (event, { command }) => {
+  ipcMain.on('send-command', (_, { command }) => {
     console.log('command: ', command);
-    const message =
-      command.type === 'analyze'
-        ? 'Analyze command executed successfully'
-        : 'Compare command executed successfully';
-    event.reply('recv-command-result', message);
   });
 
   setInterval(() => {
@@ -71,7 +66,6 @@ app.whenReady().then(() => {
   }, 10000);
 
   ipcMain.on('minimizeApp', () => {
-    console.log('minimizeApp');
     mainWindow.minimize();
   });
 

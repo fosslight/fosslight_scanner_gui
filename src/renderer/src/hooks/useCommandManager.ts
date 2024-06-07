@@ -3,8 +3,8 @@ import CommandManager from '@renderer/services/CommandManager';
 import { useCallback, useContext, useEffect, useState } from 'react';
 
 const useCommandManager = (): {
-  analyze: () => Promise<CommandResponse>;
-  compare: () => Promise<CommandResponse>;
+  analyze: () => void;
+  compare: () => void;
   result: string | null;
   log: string | null;
 } => {
@@ -17,30 +17,31 @@ const useCommandManager = (): {
   const [result, setResult] = useState<string | null>(null);
   const [log, setLog] = useState<string | null>(null);
 
-  const analyze = useCallback(async (): Promise<CommandResponse> => {
-    return commandManager.executeCommand({ type: 'analyze', config: context.analyzeCommandConfig });
+  const analyze = useCallback((): void => {
+    commandManager.executeCommand({ type: 'analyze', config: context.analyzeCommandConfig });
   }, [context]);
 
-  const compare = useCallback(async (): Promise<CommandResponse> => {
-    return commandManager.executeCommand({ type: 'compare', config: context.compareCommandConfig });
+  const compare = useCallback((): void => {
+    commandManager.executeCommand({ type: 'compare', config: context.compareCommandConfig });
   }, [context]);
 
-  const handleCommandResult = useCallback((_: unknown, result: CommandResponse) => {
+  const handleCommandResult = useCallback((result: CommandResponse) => {
     setResult(result.message ?? null);
+    // console.log(result);
   }, []);
 
-  const handleLog = useCallback((_: unknown, log: string) => {
+  const handleLog = useCallback((log: string) => {
     setLog(log);
     console.log(log);
   }, []);
 
   useEffect(() => {
-    window.api.onCommandResult(handleCommandResult);
-    window.api.onLog(handleLog);
+    commandManager.subscribe('command-result', handleCommandResult);
+    commandManager.subscribe('log', handleLog);
 
     return () => {
-      window.api.offCommandResult(handleCommandResult);
-      window.api.offLog(handleLog);
+      commandManager.unsubscribe('command-result', handleCommandResult);
+      commandManager.unsubscribe('log', handleLog);
     };
   }, []);
 

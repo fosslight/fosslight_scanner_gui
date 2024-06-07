@@ -33,7 +33,3 @@ interface CommandResponse {
   message?: string;
   data?: any;
 }
-
-interface ICommandManager {
-  executeCommand: (command: Command) => Promise<CommandResponse>;
-}
