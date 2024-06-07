@@ -4,7 +4,7 @@ export interface ICommandContext {
   analyzeCommandConfig: AnalyzeCommandConfig;
   compareCommandConfig: CompareCommandConfig;
   setAnalyzeCommandConfig: any;
-  setCompareCommandConfig: (config: CompareCommandConfig) => void;
+  setCompareCommandConfig: any;
 }
 
 const CommandContext = createContext<ICommandContext | undefined>(undefined);
@@ -12,16 +12,25 @@ const CommandContext = createContext<ICommandContext | undefined>(undefined);
 interface ICommandProviderProps {
   children: ReactNode;
 }
+type CompareCommandConfig = {
+  path: string[];
+};
 
 export const CommandProvider: FC<ICommandProviderProps> = ({ children }) => {
   const [analyzeCommandConfig, setAnalyzeCommandConfig] = useState<AnalyzeCommandConfig>({
     path: ['.']
   });
-  const [compareCommandConfig, setCompareCommandConfig] = useState<CompareCommandConfig>({});
+  const [compareCommandConfig, setCompareCommandConfig] = useState<CompareCommandConfig>({
+    path: ['.']
+  });
 
   useEffect(() => {
     console.log('analyze command config:', analyzeCommandConfig);
   }, [analyzeCommandConfig]);
+
+  useEffect(() => {
+    console.log('compare command config:', compareCommandConfig);
+  }, [compareCommandConfig]);
 
   return (
     <CommandContext.Provider
