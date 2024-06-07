@@ -1,5 +1,5 @@
 import { app, shell, BrowserWindow, ipcMain } from 'electron';
-import { dirname, join, resolve } from 'path';
+import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import BinaryExecuter from './src/BinaryExecuter';
 import commandParser from './src/CommandParser';
@@ -22,7 +22,6 @@ function createWindow(): void {
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
-      nodeIntegration: false,
       sandbox: false
     }
   });
@@ -38,11 +37,11 @@ function createWindow(): void {
 
   // HMR for renderer base on electron-vite cli.
   // Load the remote URL for development or the local html file for production.
-  // if (is.dev) {
-  //   mainWindow.loadURL('http://localhost:3000');
-  // } else {
-  mainWindow.loadFile(join(__dirname, '../src/renderer/index.html'));
-  // }
+  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL']);
+  } else {
+    mainWindow.loadFile(join(__dirname, '../src/renderer/index.html'));
+  }
 }
 
 // This method will be called when Electron has finished
@@ -80,9 +79,8 @@ app.whenReady().then(async () => {
   clearInterval(progressInterval); // 점 출력 정지
 
   // IPC communication between main and hidden windows
-  ipcMain.on('send-command', async (event, { command }) => {
+  ipcMain.on('send-command', async (_, { command }) => {
     const args: string[] = commandParser.parseCommand(command);
-
     // check venv and fs before executing.
     if (!binaryExecuter.checkVenv()) {
       console.error(
@@ -90,9 +88,9 @@ app.whenReady().then(async () => {
       );
     } else {
       const result: string = await binaryExecuter.executeScanner(args);
-
       mainWindow.webContents.send('recv-log', { log: result });
     }
+    console.log('command', command);
   });
 
   ipcMain.on('minimizeApp', () => {
