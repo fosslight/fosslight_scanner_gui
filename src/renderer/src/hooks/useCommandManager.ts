@@ -17,31 +17,23 @@ const useCommandManager = (): {
   const [result, setResult] = useState<string | null>(null);
   const [log, setLog] = useState<string | null>(null);
 
-  const createCommand = useCallback(
-    (type: Command['type']): Command =>
-      type === 'analyze'
-        ? { type, config: context.analyzeCommandConfig }
-        : { type, config: context.compareCommandConfig },
-    [context]
-  );
-
   const analyze = useCallback(async (): Promise<CommandResponse> => {
-    return commandManager.executeCommand(createCommand('analyze'));
+    return commandManager.executeCommand({ type: 'analyze', config: context.analyzeCommandConfig });
   }, [context]);
 
   const compare = useCallback(async (): Promise<CommandResponse> => {
-    return commandManager.executeCommand(createCommand('compare'));
+    return commandManager.executeCommand({ type: 'compare', config: context.compareCommandConfig });
   }, [context]);
 
+  const handleCommandResult = useCallback((result: CommandResponse) => {
+    setResult(result.message ?? null);
+  }, []);
+
+  const handleLog = useCallback((log: string) => {
+    setLog(log);
+  }, []);
+
   useEffect(() => {
-    const handleCommandResult = (result: CommandResponse) => {
-      setResult(result.message ?? null);
-    };
-
-    const handleLog = (log: string) => {
-      setLog(log);
-    };
-
     window.api.onCommandResult(handleCommandResult);
     window.api.onLog(handleLog);
 
