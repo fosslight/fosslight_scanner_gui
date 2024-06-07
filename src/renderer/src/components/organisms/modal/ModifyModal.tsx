@@ -81,11 +81,11 @@ const ModifyModal: FC<IModalProps> = ({
           {content && (
             <div className="flex w-full flex-col gap-3 px-[6px]">
               <div className="flex gap-2">
-                <Dropdown
+                {/*<Dropdown
                   options={options}
                   onChange={handleDropdownChange}
                   value={selectedOption.value}
-                />
+                />*/}
               </div>
               {selectedOption.type === 'file' && (
                 <div className="flex w-full items-center overflow-hidden px-[6px]">
