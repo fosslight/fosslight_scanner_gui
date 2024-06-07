@@ -2,6 +2,13 @@ import { FC } from 'react';
 import SettingModal from './modal/SettingModal';
 import InfoModal from './modal/InfoModal';
 import useModal from '@renderer/hooks/useModal';
+import {
+  InfoModalIcon,
+  SettingModalIcon,
+  AppCloseIcon,
+  AppMaximizeIcon,
+  AppMinimizeIcon
+} from '../atoms/SVGIcons';
 
 const AppBar: FC = () => {
   const { openModal, closeModal, modalRef, modalType } = useModal();
@@ -37,26 +44,26 @@ const AppBar: FC = () => {
             <div style={{ fontFamily: 'Segoe UI, sans-serif' }} className="title-text">
               FOSSLight Scanner
             </div>
-            <div className="h-[0px] w-3 origin-top-left rotate-90 border border-PaleGray-300"></div>
+            <div className="h-[16px] w-[1px] bg-PaleGray-400" />
             <div className="version-text">v1.7.22</div>
           </div>
 
-          <div className="control prevent-select ">
+          <div className="control prevent-select flex items-center justify-start">
             <button id="setting" onClick={() => openModal('setting')} className="no-drag">
-              <img src="./src/assets/titlebar/title-setting-icon.png" />
+              <SettingModalIcon />
             </button>
             <button id="info" onClick={() => openModal('info')} className="no-drag">
-              <img src="./src/assets/titlebar/title-info-icon.png" />
+              <InfoModalIcon />
             </button>
-            <div className="h-[0px] w-3 origin-top-left rotate-90 border border-PaleGray-300"></div>
+            <div className="ml-2 h-[16px] w-[1px] bg-PaleGray-400" />
             <button onClick={handleClickMinimizeButton} className="no-drag">
-              <img src="./src/assets/titlebar/title-min-icon.png" alt="minimize" />
+              <AppMinimizeIcon />
             </button>
             <button onClick={handleClickMaximizeButton} className="no-drag">
-              <img src="./src/assets/titlebar/title-max-icon.png" alt="max" />
+              <AppMaximizeIcon />
             </button>
             <button onClick={handleClickCloseButton} className="no-drag">
-              <img src="./src/assets/titlebar/title-close-icon.png" alt="close" />
+              <AppCloseIcon />
             </button>
           </div>
         </div>
