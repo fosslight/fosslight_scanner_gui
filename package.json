@@ -3,10 +3,9 @@
   "version": "1.0.0",
   "license": "MIT",
   "description": "FOSSLight Scanner GUI Application",
-  "main": "./dist/main/index.js",
+  "main": "./out/main/index.js",
   "author": "example.com",
   "homepage": "https://electron-vite.org",
-  "type": "module",
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint . --ext .js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix",
@@ -20,23 +19,7 @@
     "build:unpack": "npm run build && electron-builder --dir",
     "build:win": "npm run build && electron-builder --win",
     "build:mac": "electron-vite build && electron-builder --mac",
-    "build:linux": "electron-vite build && electron-builder --linux",
-    "dev:ui": "vite --config vite.config.ui.ts",
-    "dev:bg": "vite --config vite.config.bg.ts",
-    "test:dev": "vite && electron .",
-    "test:build": "tsc && vite build",
-    "test:start": "electron ."
-  },
-  "build": {
-    "extraResources": [
-      {
-        "from": "resources/",
-        "to": "resources/",
-        "filter": [
-          "**/*"
-        ]
-      }
-    ]
+    "build:linux": "electron-vite build && electron-builder --linux"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.0",
