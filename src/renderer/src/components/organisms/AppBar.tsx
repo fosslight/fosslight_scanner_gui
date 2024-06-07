@@ -1,9 +1,10 @@
 import { FC } from 'react';
 import SettingModal from './modal/SettingModal';
+import InfoModal from './modal/InfoModal';
 import useModal from '@renderer/hooks/useModal';
 
 const AppBar: FC = () => {
-  const { openModal, closeModal, modalRef } = useModal();
+  const { openModal, closeModal, modalRef, modalType } = useModal();
 
   const handleClickMinimizeButton = (): void => {
     window.nativeApi.minimizeApp();
@@ -38,10 +39,10 @@ const AppBar: FC = () => {
           </div>
 
           <div className="control prevent-select ">
-            <button id="setting" onClick={openModal} className="no-drag">
+            <button id="setting" onClick={() => openModal('setting')} className="no-drag">
               <img src="./src/assets/titlebar/title-setting-icon.png" />
             </button>
-            <button id="info" className="no-drag">
+            <button id="info" onClick={() => openModal('info')} className="no-drag">
               <img src="./src/assets/titlebar/title-info-icon.png" />
             </button>
             <div className="h-[0px] w-3 origin-top-left rotate-90 border border-PaleGray-300"></div>
@@ -57,7 +58,8 @@ const AppBar: FC = () => {
           </div>
         </div>
       </div>
-      <SettingModal modalRef={modalRef} />
+      {modalType === 'setting' && <SettingModal modalRef={modalRef} />}
+      {modalType === 'info' && <InfoModal modalRef={modalRef} />}
     </>
   );
 };
