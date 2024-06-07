@@ -1,10 +1,10 @@
 import { app, shell, BrowserWindow, ipcMain } from 'electron';
 import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
-import BinaryExecuter from './src/BinaryExecuter';
+import SystemExecuter from './src/SystemExecuter';
 import commandParser from './src/CommandParser';
 
-const binaryExecuter = BinaryExecuter.getInstance();
+const systemExecuter = SystemExecuter.getInstance();
 
 let mainWindow: BrowserWindow;
 
@@ -60,14 +60,14 @@ app.whenReady().then(async () => {
 
   createWindow();
 
-  const arg = !binaryExecuter.checkVenv() ? 'false' : undefined; // assign any string is fine
+  const arg = !systemExecuter.checkVenv() ? 'false' : undefined; // assign any string is fine
   console.log('Waiting for setting venv and Fosslight Scanner');
   const progressInterval = setInterval(() => {
     process.stdout.write('.');
   }, 500); // 설치하는 동안 500ms 간격으로 점 출력
 
   // Will take a long time (about 3 min) when the first install the venv and fs.
-  const setVenv: boolean = await binaryExecuter.executeSetVenv(arg);
+  const setVenv: boolean = await systemExecuter.executeSetVenv(arg);
 
   if (!setVenv) {
     console.error(
@@ -80,20 +80,22 @@ app.whenReady().then(async () => {
 
   // IPC communication between main and hidden windows
   ipcMain.on('send-command', async (_, { command }) => {
-    const args: string[] = commandParser.parseCommand(command);
+    const args: string[] = commandParser.parseCmd2Args(command);
+
     // check venv and fs before executing.
-    if (!binaryExecuter.checkVenv()) {
+    if (!systemExecuter.checkVenv()) {
       console.error(
         '[Error]: Failed to run Fosslight Scanner.\n\t Please check the resources folder and files are in initial condition.\n\t Or try to reinstall this app.'
       );
     } else {
-      const result: string = await binaryExecuter.executeScanner(args);
-      mainWindow.webContents.send('recv-log', { log: result });
+      for (let i = 0; i < args.length; i++) {
+        const result: string = await systemExecuter.executeScanner(args);
+      }
+      const setting: Setting = commandParser.parseCmd2Setting(args, command.type); // saving cache does not need to be awaited
     }
-    console.log('command', command);
   });
 
-  ipcMain.on('minimizeApp', () => {
+  ipcMain.on('minimi zeApp', ()  => {
     mainWindow.minimize();
   });
 
@@ -114,6 +116,7 @@ app.whenReady().then(async () => {
     // dock icon is clicked and there are no other windows open.
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
+
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common

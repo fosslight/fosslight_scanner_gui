@@ -1,6 +1,7 @@
 interface AnalyzeCommandConfig {
   mode?: ('source' | 'binary' | 'dependency')[]; // default: ['source', 'binary', 'dependency'] (all)
-  path: string[]; // default: '.' (current directory)
+  path?: string[]; // default: '.' (current directory)
+  link?: string[]; // default: ''
   excludedPath?: string[];
   outputFormat?: 'excel' | 'yaml'; // default: ['excel']
   outputPath?: string; // default: '.' (current directory)
@@ -33,4 +34,25 @@ interface CommandResponse {
   success: boolean;
   message?: string;
   data?: any;
+}
+
+interface Setting {
+  path: string;
+  link: string;
+  dep_argument: string;
+  output: string;
+  exclude_path: string[];
+  format: string;
+  db_url: string;
+  timer: boolean;
+  raw: boolean;
+  core: number;
+  no_correction: boolean;
+  correct_fpath: string;
+  ui: boolean;
+  type: 'compare' | 'analyze';
+}
+
+interface ICommandManager {
+  executeCommand: (command: Command) => Promise<CommandResponse>;
 }
