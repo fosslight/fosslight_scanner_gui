@@ -6,18 +6,15 @@ const AppBar: FC = () => {
   const { openModal, closeModal, modalRef } = useModal();
 
   const handleClickMinimizeButton = (): void => {
-    console.log('client: minimizeApp');
-    window.electron.ipcRenderer.send('minimizeApp');
+    window.nativeApi.minimizeApp();
   };
 
   const handleClickMaximizeButton = (): void => {
-    console.log('client: maximizeApp');
-    window.electron.ipcRenderer.send('maximizeApp');
+    window.nativeApi.maximizeApp();
   };
 
   const handleClickCloseButton = (): void => {
-    console.log('client: closeApp');
-    window.electron.ipcRenderer.send('closeApp');
+    window.nativeApi.closeApp();
   };
 
   return (
