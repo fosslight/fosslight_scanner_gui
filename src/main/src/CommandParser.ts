@@ -11,28 +11,33 @@ const commandParser = {
     let extraOptions: string = '';
 
     if (command.type === 'analyze') {
-      config = command.config as AnalyzeCommandConfig;
+      const analConfig = command.config as AnalyzeCommandConfig;
       mode =
-        !config.mode || config.mode.includes('source' && 'binary' && 'dependency')
+        !analConfig.mode || analConfig.mode.includes('source' && 'binary' && 'dependency')
           ? 'all'
-          : config.mode.join(' ');
-      path = config.path ? config.path : ['undefined'];
-      link = config.link ? config.link : [];
-      excludedPath = config.excludedPath ? '-e ' + config.excludedPath.join(' ') : '';
-      extraOptions = config.extraOptions ? config.extraOptions : '';
+          : analConfig.mode.join(' ');
+      path = analConfig.path ?? ['undefined'];
+      link = analConfig.link ?? [];
+      excludedPath = analConfig.excludedPath ? '-e ' + analConfig.excludedPath.join(' ') : '';
+      extraOptions = analConfig.extraOptions ?? '';
+      config = analConfig;
     } else {
-      config = command.config as CompareCommandConfig;
+      const comConfig = command.config as CompareCommandConfig;
       mode = 'compare';
-      path = [config.reports.join(' ')];
+      path = [comConfig.reports!.join(' ')];
+      config = comConfig;
     }
 
     const outputFormat: string = config.outputFormat ? '-f ' + config.outputFormat : '';
-    const outputFileName: string = config.outputFileName ? config.outputFileName : '';
-    let outputPath: string = config.outputPath ? config.outputPath : '';
+    const outputFileName: string = config.outputFileName ?? '';
+    let outputPath: string = config.outputPath ?? '';
     outputPath = '-o ' + Path.join(outputPath, outputFileName);
 
     // Must push the 'mode' first
-    args.push(mode, outputFormat, outputPath);
+    args.push(mode, '-p ' + path.join(' '), outputFormat, outputPath);
+    // "-p undefined" "-p path1 path2" "-p path"
+    // mode가 compare면 path1 path2 한 번에 넣고, analyze면 path 한 개씩 따로 실행함
+    if (link.length > 0) args.push('-w ' + link.join(' '));
     if (excludedPath) args.push(excludedPath);
     if (extraOptions) args.push(extraOptions);
 

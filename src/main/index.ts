@@ -13,8 +13,8 @@ function createWindow(): void {
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 840,
-    minWidth: 1440,
-    minHeight: 840,
+    minWidth: 720,
+    minHeight: 420,
     show: false,
     frame: false,
     autoHideMenuBar: true,
@@ -88,14 +88,13 @@ app.whenReady().then(async () => {
         '[Error]: Failed to run Fosslight Scanner.\n\t Please check the resources folder and files are in initial condition.\n\t Or try to reinstall this app.'
       );
     } else {
-      for (let i = 0; i < args.length; i++) {
-        const result: string = await systemExecuter.executeScanner(args);
-      }
+      console.log(args);
+      const result: string = await systemExecuter.executeScanner(args);
       const setting: Setting = commandParser.parseCmd2Setting(args, command.type); // saving cache does not need to be awaited
     }
   });
 
-  ipcMain.on('minimi zeApp', ()  => {
+  ipcMain.on('minimizeApp', () => {
     mainWindow.minimize();
   });
 
@@ -116,7 +115,6 @@ app.whenReady().then(async () => {
     // dock icon is clicked and there are no other windows open.
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
-
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common
