@@ -1,4 +1,52 @@
+// {
+//   "files": [],
+//   "references": [{ "path": "./tsconfig.node.json" }, { "path": "./tsconfig.web.json" }]
+// }
+
 {
-  "files": [],
-  "references": [{ "path": "./tsconfig.node.json" }, { "path": "./tsconfig.web.json" }]
+  "compilerOptions": {
+    "target": "ESNext",        // or "ESNext" if you want to use the latest features
+    "module": "ESNext",
+    "jsx": "react-jsx",
+    "moduleResolution": "node",// use Node.js-style module resolution
+    "outDir": "./dist",        // directory to output compiled files
+    "baseUrl": ".",            // base directory to resolve non-relative module names
+    "paths": {                 // setup paths to ensure proper module resolution
+      "@/*": ["./src/*"],
+      "@renderer/*": [
+        "src/renderer/src/*"
+      ]
+    },
+    "esModuleInterop": true,   // enables interoperability between CommonJS and ES Modules
+    "allowSyntheticDefaultImports": true, // allow default imports from modules with no default export
+    "sourceMap": true,         // generate source map files for debugging
+    "strict": true,             // enable all strict type-checking options
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitAny": false,
+    "noImplicitReturns": false,
+  },
+  "include": [
+    "src/**/*",                // include all files in src for compilation
+    "resources/**/*"           // include all files in resources for compilation
+  ],
+  "exclude": [
+    "node_modules",           // exclude node_modules to speed up compilation
+  ]
 }
+
+// "target": "esnext",
+// "module": "esnext",
+// "sourceMap": false,
+// "strict": true,
+// "jsx": "preserve",
+// "esModuleInterop": true,
+// "moduleResolution": "node",
+// "resolveJsonModule": true,
+// "isolatedModules": true,
+// "forceConsistentCasingInFileNames": true,
+// "skipLibCheck": true,
+// "noUnusedLocals": true,
+// "noUnusedParameters": true,
+// "noImplicitAny": false,
+// "noImplicitReturns": true
