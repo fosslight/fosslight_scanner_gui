@@ -33,19 +33,22 @@ const useCommandManager = (): {
     return commandManager.executeCommand(createCommand('compare'));
   }, [context]);
 
-  // Memory leakage possible
   useEffect(() => {
-    window.api.onCommandResult((result) => {
-      setResult(result);
-    });
-    window.api.onLog((log) => {
-      setLog(log);
-    });
+    const handleCommandResult = (result: CommandResponse) => {
+      setResult(result.message ?? null);
+    };
 
-    // return () => {
-    //   window.api.offCommandResult();
-    //   window.api.offLog();
-    // };
+    const handleLog = (log: string) => {
+      setLog(log);
+    };
+
+    window.api.onCommandResult(handleCommandResult);
+    window.api.onLog(handleLog);
+
+    return () => {
+      window.api.removeCommandResultListener(handleCommandResult);
+      window.api.removeLogListener(handleLog);
+    };
   }, []);
 
   return {
