@@ -25,12 +25,13 @@ const useCommandManager = (): {
     return commandManager.executeCommand({ type: 'compare', config: context.compareCommandConfig });
   }, [context]);
 
-  const handleCommandResult = useCallback((result: CommandResponse) => {
+  const handleCommandResult = useCallback((_: unknown, result: CommandResponse) => {
     setResult(result.message ?? null);
   }, []);
 
-  const handleLog = useCallback((log: string) => {
+  const handleLog = useCallback((_: unknown, log: string) => {
     setLog(log);
+    console.log(log);
   }, []);
 
   useEffect(() => {
@@ -38,8 +39,8 @@ const useCommandManager = (): {
     window.api.onLog(handleLog);
 
     return () => {
-      window.api.removeCommandResultListener(handleCommandResult);
-      window.api.removeLogListener(handleLog);
+      window.api.offCommandResult(handleCommandResult);
+      window.api.offLog(handleLog);
     };
   }, []);
 

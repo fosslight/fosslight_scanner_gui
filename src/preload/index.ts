@@ -8,20 +8,20 @@ const api = {
     ipcRenderer.send('send-command', { command });
   },
   // Function to add a listener for command results
-  onCommandResult: (handler: (result: any) => void): void => {
-    ipcRenderer.on('recv-command-result', (_, result) => handler(result));
+  onCommandResult: (handler: (_: unknown, result: any) => void): void => {
+    ipcRenderer.on('recv-command-result', handler);
   },
   // Function to remove the listener for command results
-  removeCommandResultListener: (handler: (result: any) => void): void => {
-    ipcRenderer.removeListener('recv-command-result', (_, result) => handler(result));
+  offCommandResult: (handler: (_: unknown, result: any) => void): void => {
+    ipcRenderer.off('recv-command-result', handler);
   },
   // Function to add a listener for logs
-  onLog: (handler: (log: any) => void): void => {
-    ipcRenderer.on('recv-log', (_, log) => handler(log));
+  onLog: (handler: (_: unknown, log: any) => void): void => {
+    ipcRenderer.on('recv-log', handler);
   },
   // Function to remove the listener for logs
-  removeLogListener: (handler: (log: any) => void): void => {
-    ipcRenderer.removeListener('recv-log', (_, log) => handler(log));
+  offLog: (handler: (_: unknown, log: any) => void): void => {
+    ipcRenderer.off('recv-log', handler);
   }
 };
 

@@ -4,10 +4,10 @@ declare global {
   interface Window {
     api: {
       sendCommand: (command: Command, args?: any) => any;
-      onCommandResult: (callback: (result: any) => void) => void;
-      onLog: (callback: (log: any) => void) => void;
-      removeCommandResultListener: (callback: (result: any) => void) => void;
-      removeLogListener: (callback: (log: any) => void) => void;
+      onCommandResult: (handler: (_: unknown, result: any) => void) => void;
+      offCommandResult: (handler: (_: unknown, result: any) => void) => void;
+      onLog: (handler: (_: unknown, log: any) => void) => void;
+      offLog: (handler: (_: unknown, log: any) => void) => void;
     };
     nativeApi: {
       minimizeApp: () => void;

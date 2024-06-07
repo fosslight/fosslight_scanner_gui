@@ -66,10 +66,9 @@ app.whenReady().then(() => {
     event.reply('recv-command-result', message);
   });
 
-  ipcMain.on('send-log', (_, { log }) => {
-    console.log('log result: ', log);
-    mainWindow.webContents.send('recv-log', { log });
-  });
+  setInterval(() => {
+    mainWindow.webContents.send('recv-log', { log: 'loggggggg' });
+  }, 10000);
 
   ipcMain.on('minimizeApp', () => {
     console.log('minimizeApp');
