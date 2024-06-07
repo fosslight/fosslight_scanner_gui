@@ -8,7 +8,7 @@ const CompareTemplate: FC = () => {
   const { updateCompareCommandConfig } = useCommandConfig();
 
   const handleComparisonSubjectChange = (values: string[]) => {
-    updateCompareCommandConfig({ path: values });
+    updateCompareCommandConfig({ reports: [values[0], values[1]] });
   };
 
   const handleResultStoragePathChange = (value?: string) => {

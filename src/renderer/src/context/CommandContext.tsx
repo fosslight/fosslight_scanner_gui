@@ -12,17 +12,12 @@ const CommandContext = createContext<ICommandContext | undefined>(undefined);
 interface ICommandProviderProps {
   children: ReactNode;
 }
-type CompareCommandConfig = {
-  path: string[];
-};
 
 export const CommandProvider: FC<ICommandProviderProps> = ({ children }) => {
   const [analyzeCommandConfig, setAnalyzeCommandConfig] = useState<AnalyzeCommandConfig>({
     path: ['.']
   });
-  const [compareCommandConfig, setCompareCommandConfig] = useState<CompareCommandConfig>({
-    path: ['.']
-  });
+  const [compareCommandConfig, setCompareCommandConfig] = useState<CompareCommandConfig>({});
 
   useEffect(() => {
     console.log('analyze command config:', analyzeCommandConfig);

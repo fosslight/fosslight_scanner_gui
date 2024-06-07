@@ -27,7 +27,7 @@ const useCommandManager = (): {
 
   const handleCommandResult = useCallback((result: CommandResponse) => {
     setResult(result.message ?? null);
-    // console.log(result);
+    console.log(result);
   }, []);
 
   const handleLog = useCallback((log: string) => {
