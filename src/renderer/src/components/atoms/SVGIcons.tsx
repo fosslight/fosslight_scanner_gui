@@ -42,6 +42,44 @@ export const FileEditIcon: React.FC = (props) => (
   </svg>
 );
 
+export const ModifyModalIcon: React.FC = (props) => (
+  <svg width="20" height="20" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g id="edit">
+      <path
+        id-="Vector"
+        d="M9.44373 4.42281C9.23545 4.21453 8.89776 4.21453 8.68948 4.42281L4.2666 8.84569V11.1999C4.2666 11.4945 4.50538 11.7333 4.79993 11.7333H7.15418L11.5771 7.31039C11.7853 7.10211 11.7853 6.76442 11.5771 6.55614L9.44373 4.42281Z"
+        fill="white"
+      />
+    </g>
+  </svg>
+);
+
+export const ExclamationIcon: React.FC = (props) => (
+  <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g id="exclaim">
+      <path
+        fill-rule="evenodd"
+        clip-rule="evenodd"
+        d="M7 11V1H8V11H7ZM8 13V14.01H7V13H8Z"
+        fill="white"
+      />
+    </g>
+  </svg>
+);
+
+export const QuestionIcon: React.FC = (props) => (
+  <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g id="question">
+      <path
+        fill-rule="evenodd"
+        clip-rule="evenodd"
+        d="M3.67218 1.62075C4.70993 0.583002 6.11742 0 7.58502 0H7.79183C10.122 0 12 1.92493 12 4.24297C12 5.7995 11.1217 7.2482 9.72364 7.94721C8.6673 8.47538 8.00004 9.55504 8.00004 10.7361V12H7.00004V10.7361C7.00004 9.17627 7.88131 7.75035 9.27643 7.05279C10.3299 6.52607 11 5.42726 11 4.24297C11 2.46504 9.55763 1 7.79183 1H7.58502C6.38264 1 5.2295 1.47765 4.37929 2.32786L3.85359 2.85355L3.14648 2.14645L3.67218 1.62075ZM8.00004 15H7.00004V14H8.00004V15Z"
+        fill="white"
+      />
+    </g>
+  </svg>
+);
+
 export const FileDeleteIcon: FC = () => (
   <img src="/src/assets/icons/file-delete.svg" alt="delete" />
 );

@@ -6,6 +6,8 @@ import useFileUpload from '@renderer/hooks/useFileUpload';
 import IconButton from '../../atoms/button/IconButton';
 import FileUpload from '../../atoms/upload/FileUpload';
 import Button from '../../atoms/button/Button';
+import ModalIcon from '@renderer/components/atoms/ModalIcon';
+import { ModifyModalIcon } from '@renderer/components/atoms/SVGIcons';
 
 interface ITextInputOption extends IDropdownOption {
   type: 'text' | 'file';
@@ -36,16 +38,22 @@ const ModifyModal: FC<IModalProps> = ({
   onClose
 }) => {
   const { openFileUpload, fileUploadRef } = useFileUpload();
-  const [selectedOption, setSelectedOption] = useState<ITextInputOption>(options[0]);
+
+  const determineInitialOption = (): ITextInputOption => {
+    if (value && options.some((option) => option.type === 'file' && value.includes('\\'))) {
+      return options.find((option) => option.type === 'file') || options[0];
+    }
+    return options.find((option) => option.type === 'text') || options[0];
+  };
+
+  const [selectedOption, setSelectedOption] = useState<ITextInputOption>(determineInitialOption());
   const [path, setPath] = useState<string | null>(value || null);
 
-  console.log('rerender');
-
   useEffect(() => {
-    if (options.length > 0) {
-      setSelectedOption(options[0]);
+    if (isOpen) {
+      setSelectedOption(determineInitialOption());
+      setPath(value || null);
     }
-    setPath(value || null);
   }, [options, value, isOpen]);
 
   const handleDropdownChange = (value: string) => {
@@ -67,38 +75,52 @@ const ModifyModal: FC<IModalProps> = ({
     setPath(files[0].path);
   };
 
+  const fileOptions = options.filter((option) => option.type === 'file');
+  const textOptions = options.filter((option) => option.type === 'text');
+
   return (
     <dialog ref={modalRef} open={isOpen}>
       <div className="fixed top-1/2 z-30 flex w-[560px] -translate-x-1/2 -translate-y-1/2 flex-col gap-9 overflow-hidden rounded-xl bg-white px-7 py-6 shadow-2xl">
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-[6px]">
-            {icon && <img src={icon} alt="icon" className="h-6 w-6" />}
+        <div className="flex flex-col gap-9">
+          <div className="flex items-center gap-2">
+            <ModalIcon>
+              <ModifyModalIcon />
+            </ModalIcon>
             <Text type="p500-m" color="PaleGray-900">
               {title}
             </Text>
           </div>
 
           {content && (
-            <div className="flex w-full flex-col gap-3 px-[6px]">
+            <div className="flex h-9 w-[504px] items-center rounded-lg border border-PaleGray-300 bg-white px-1">
               <div className="flex gap-2">
-                {/*<Dropdown
-                  options={options}
+                <Dropdown
+                  options={selectedOption.type === 'file' ? fileOptions : textOptions}
                   onChange={handleDropdownChange}
                   value={selectedOption.value}
-                />*/}
+                />
               </div>
+              <div className="h-[16px] w-[1px] bg-PaleGray-400" />
               {selectedOption.type === 'file' && (
                 <div className="flex w-full items-center overflow-hidden px-[6px]">
-                  <Text type="p100-r" color={`PaleGray-${path ? 1000 : 500}`} className="truncate">
-                    {path || selectedOption.placeholder}
-                  </Text>
-                  <IconButton onClick={openFileUpload}>
-                    <img
-                      className="h-4 w-4"
-                      src="/src/assets/icons/more-horizontal.svg"
-                      alt="upload"
-                    />
-                  </IconButton>
+                  <div className="min-w-0 flex-grow overflow-hidden">
+                    <Text
+                      type="p100-r"
+                      color={`PaleGray-${path ? 1000 : 500}`}
+                      className="truncate"
+                    >
+                      {path || selectedOption.placeholder}
+                    </Text>
+                  </div>
+                  <div className="flex flex-shrink-0 items-center gap-1.5">
+                    <IconButton onClick={openFileUpload}>
+                      <img
+                        className="h-4 w-4"
+                        src="/src/assets/icons/more-horizontal.svg"
+                        alt="upload"
+                      />
+                    </IconButton>
+                  </div>
                 </div>
               )}
               {selectedOption.type === 'text' && (
@@ -113,8 +135,6 @@ const ModifyModal: FC<IModalProps> = ({
             </div>
           )}
         </div>
-        {/* {buttons && <div className="flex justify-end gap-[9px]">{buttons}</div>} */}
-
         {/* buttons */}
         <div className="flex justify-end gap-[9px]">
           <Button key="close" type="tertiary" onClick={onClose}>
@@ -126,7 +146,6 @@ const ModifyModal: FC<IModalProps> = ({
           </Button>
         </div>
       </div>
-      <div className="fixed inset-0 z-20 bg-[#454E5D] bg-opacity-40" onClick={onClose} />
       <FileUpload fileUploadRef={fileUploadRef} onChange={handleFileChange} />
     </dialog>
   );

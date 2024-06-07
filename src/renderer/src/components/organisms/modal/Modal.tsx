@@ -1,5 +1,6 @@
 import { FC, ReactNode, RefObject } from 'react';
 import Text from '../../atoms/text/Text';
+import ModalIcon from '../../atoms/ModalIcon';
 
 interface IModalProps {
   modalRef: RefObject<HTMLDialogElement>;
@@ -7,10 +8,11 @@ interface IModalProps {
   title: string;
   content?: string;
   children?: ReactNode;
+  modalicon?: ReactNode;
   buttons?: ReactNode[];
 }
 
-const Modal: FC<IModalProps> = ({ modalRef, icon, title, content, children, buttons }) => {
+const Modal: FC<IModalProps> = ({ modalRef, modalicon, title, content, children, buttons }) => {
   const handleCloseModal = () => {
     modalRef.current?.close();
   };
@@ -19,8 +21,8 @@ const Modal: FC<IModalProps> = ({ modalRef, icon, title, content, children, butt
     <dialog ref={modalRef}>
       <div className="fixed top-1/2 z-30 flex w-[560px] -translate-x-1/2 -translate-y-1/2 flex-col gap-9 overflow-hidden rounded-xl bg-white px-7 py-6 shadow-2xl">
         <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-[6px]">
-            {icon && <img src={icon} alt="icon" className="h-6 w-6" />}
+          <div className="flex items-center gap-2">
+            <ModalIcon>{modalicon}</ModalIcon>
             <Text type="p500-m" color="PaleGray-900">
               {title}
             </Text>

@@ -5,6 +5,7 @@ import SignBox from '../organisms/SignBox';
 import useModal from '@renderer/hooks/useModal';
 import Modal from '../organisms/modal/Modal';
 import Button from '../atoms/button/Button';
+import { ExclamationIcon } from '../atoms/SVGIcons';
 
 interface ILowerTemplateProps {
   data?: any;
@@ -28,6 +29,7 @@ const LowerTemplate: FC<ILowerTemplateProps> = ({ data }) => {
       </div>
       <Modal
         modalRef={modalRef}
+        modalicon=<ExclamationIcon />
         title="Would you sure to force quit the analysis?"
         content="The details such as the analysis list that you've added will be maintained."
         buttons={[
