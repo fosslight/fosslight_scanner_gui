@@ -1,8 +1,6 @@
-import IconButton from '../../atoms/button/IconButton';
 import Text from '../../atoms/text/Text';
 import ScannerSetting from '../../molecules/ScannerSetting';
 import TokenSetting from '../../molecules/TokenSetting';
-
 import SideBar from '../../molecules/SideBar';
 import { FC, RefObject, useState } from 'react';
 

@@ -45,6 +45,17 @@ export const FileEditIcon: React.FC = (props) => (
 export const FileDeleteIcon: FC = () => (
   <img src="/src/assets/icons/file-delete.svg" alt="delete" />
 );
+export const FossLogo: React.FC = (props) => (
+  <svg width="17" height="18" viewBox="0 0 17 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g id="fosslogo">
+      <path
+        opacity="0.7"
+        d="M0 0.520996L7.0258 17.2484L16.9576 10.7145L0 0.520996Z"
+        fill="#BD2C44"
+      />
+    </g>
+  </svg>
+);
 
 export const CheckOnIcon: React.FC = (props) => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

@@ -5,9 +5,7 @@ import IconButton from '../atoms/button/IconButton';
 import { FileDeleteIcon, FileEditIcon } from '../atoms/SVGIcons';
 import { ITextInputOption } from '../organisms/TextInput';
 import Text from '../atoms/text/Text';
-import useModal from '@renderer/hooks/useModal';
-import ModifyModal from '../organisms/modal/ModifyModal';
-import Button from '../atoms/button/Button';
+
 
 interface IListBoxItemProps {
   option: ITextInputOption['type'];

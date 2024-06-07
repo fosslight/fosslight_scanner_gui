@@ -1,19 +1,23 @@
-import { RefObject, useCallback, useEffect, useRef } from 'react';
+import { RefObject, useCallback, useState, useEffect, useRef } from 'react';
 
 interface IUseModal {
-  openModal: () => void;
+  openModal: (type: string) => void;
   closeModal: () => void;
   modalRef: RefObject<HTMLDialogElement>;
+  modalType: string | null;
 }
 
 const useModal = (): IUseModal => {
   const modalRef = useRef<HTMLDialogElement>(null);
+  const [modalType, setModalType] = useState<string | null>(null);
 
-  const openModal = useCallback(() => {
-    modalRef.current?.show();
+  const openModal = useCallback((type: string) => {
+    setModalType(type);
+    modalRef.current?.showModal();
   }, []);
 
   const closeModal = useCallback(() => {
+    setModalType(null);
     modalRef.current?.close();
   }, []);
 
@@ -29,9 +33,9 @@ const useModal = (): IUseModal => {
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [modalRef]);
+  }, []);
 
-  return { openModal, closeModal, modalRef };
+  return { openModal, closeModal, modalRef, modalType };
 };
 
 export default useModal;
