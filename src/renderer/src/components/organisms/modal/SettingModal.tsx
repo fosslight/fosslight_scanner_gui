@@ -35,7 +35,7 @@ const SettingModal: FC<ISettingModalProps> = ({ modalRef }) => {
         <Header />
         <div className="flex h-full">
           <SideBar activeTab={activeSetting} onChangeTab={setActiveSetting} />
-          <div className="flex-grow p-3">
+          <div className="flex-grow px-6 py-4">
             {activeSetting === 'scanner' && <ScannerSetting />}
             {activeSetting === 'token' && <TokenSetting />}
           </div>
