@@ -26,7 +26,7 @@ const InfoModal: FC<IInfoModalProps> = ({ modalRef }) => {
   );
   return (
     <dialog ref={modalRef}>
-      <div className="fixed top-1/2 z-30 flex h-[280px] w-[410px] -translate-x-1/2 -translate-y-1/2 flex-col items-start justify-center gap-2.5 overflow-y-auto whitespace-normal break-words rounded-xl bg-PaleGray-900 px-5 pb-5 pt-3 shadow">
+      <div className="fixed top-1/2 z-30 flex h-[280px] w-[400px] -translate-x-1/2 -translate-y-1/2 flex-col items-start justify-center gap-2.5 overflow-y-auto rounded-xl bg-PaleGray-900 px-5 pb-5 pt-3 shadow">
         <Header />
         <div className="flex flex-col gap-3 text-xs font-normal text-PaleGray-300">
           <div className="flex gap-1">
