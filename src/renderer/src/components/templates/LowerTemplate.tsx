@@ -5,19 +5,23 @@ import SignBox from '../organisms/SignBox';
 import useModal from '@renderer/hooks/useModal';
 import Modal from '../organisms/modal/Modal';
 import Button from '../atoms/button/Button';
+import useCommandConfig from '@renderer/hooks/useCommandConfig';
+import useMode from '@renderer/hooks/useMode';
 
 const LowerTemplate: FC = () => {
-  // const { log, commandResult } = data;
-
+  const { mode } = useMode();
+  const { readyToAnalyze, readyToCompare } = useCommandConfig();
   const { openModal, closeModal, modalRef } = useModal();
 
   const handleForceQuit = () => {
     openModal();
   };
 
+  const showButtonBar = mode === 'analyze' ? readyToAnalyze : readyToCompare;
+
   return (
     <div>
-      <ButtonBar onForceQuit={handleForceQuit} />
+      {showButtonBar && <ButtonBar onForceQuit={handleForceQuit} />}
       <div className="flex h-80 flex-row">
         <LogBox />
         <SignBox />

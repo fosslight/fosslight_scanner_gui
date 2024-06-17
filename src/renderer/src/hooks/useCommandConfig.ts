@@ -1,9 +1,11 @@
 import CommandContext from '@renderer/context/CommandContext';
-import { useCallback, useContext } from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
 
 interface IUseCommandConfig {
   updateAnalyzeCommandConfig: (config: Partial<AnalyzeCommandConfig>) => void;
   updateCompareCommandConfig: (config: Partial<CompareCommandConfig>) => void;
+  readyToAnalyze: boolean;
+  readyToCompare: boolean;
 }
 
 const useCommandConfig = (): IUseCommandConfig => {
@@ -11,6 +13,22 @@ const useCommandConfig = (): IUseCommandConfig => {
   if (!context) {
     throw new Error('useCommand must be used within a CommandProvider.');
   }
+
+  const [readyToAnalyze, setReadyToAnalyze] = useState<boolean>(false);
+  const [readyToCompare, setReadyToCompare] = useState<boolean>(false);
+
+  const requiredFieldsForAnalyze = ['mode', 'path', 'outputFormat', 'outputPath', 'outputFileName'];
+  const requiredFieldsForCompare = ['reports', 'outputFormat', 'outputPath', 'outputFileName'];
+
+  useEffect(() => {
+    const ready = requiredFieldsForAnalyze.every((field) => context.analyzeCommandConfig[field]);
+    setReadyToAnalyze(ready);
+  }, [context.analyzeCommandConfig]);
+
+  useEffect(() => {
+    const ready = requiredFieldsForCompare.every((field) => context.compareCommandConfig[field]);
+    setReadyToCompare(ready);
+  }, [context.compareCommandConfig]);
 
   const updateAnalyzeCommandConfig = useCallback(
     (config: Partial<AnalyzeCommandConfig>) => {
@@ -26,7 +44,12 @@ const useCommandConfig = (): IUseCommandConfig => {
     [context]
   );
 
-  return { updateAnalyzeCommandConfig, updateCompareCommandConfig };
+  return {
+    readyToAnalyze,
+    readyToCompare,
+    updateAnalyzeCommandConfig,
+    updateCompareCommandConfig
+  };
 };
 
 export default useCommandConfig;
