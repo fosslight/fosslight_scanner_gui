@@ -21,12 +21,24 @@ const useCommandConfig = (): IUseCommandConfig => {
   const requiredFieldsForCompare = ['reports', 'outputFormat', 'outputPath', 'outputFileName'];
 
   useEffect(() => {
-    const ready = requiredFieldsForAnalyze.every((field) => context.analyzeCommandConfig[field]);
+    const ready = requiredFieldsForAnalyze.every((field) => {
+      const value = context.analyzeCommandConfig[field];
+      return (
+        (value instanceof Array && value.length > 0) ||
+        (typeof value === 'string' && value.length > 0)
+      );
+    });
     setReadyToAnalyze(ready);
   }, [context.analyzeCommandConfig]);
 
   useEffect(() => {
-    const ready = requiredFieldsForCompare.every((field) => context.compareCommandConfig[field]);
+    const ready = requiredFieldsForCompare.every((field) => {
+      const value = context.compareCommandConfig[field];
+      return (
+        (value instanceof Array && value.length > 0) ||
+        (typeof value === 'string' && value.length > 0)
+      );
+    });
     setReadyToCompare(ready);
   }, [context.compareCommandConfig]);
 
