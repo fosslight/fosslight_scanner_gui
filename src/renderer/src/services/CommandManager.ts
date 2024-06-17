@@ -11,17 +11,19 @@ class CommandManager {
     window.api.onLog((_: unknown, log: string) => this.handleLog(log));
     window.api.onCommandResult((_: unknown, result: CommandResponse) => {
       this.handleCommandResult(result);
-      this.commandQueue.shift();
+      if (this.commandQueue.length > 0) {
+        this.commandQueue.shift();
+      }
     });
   }
 
-  private handleLog(log: string): void {
+  private handleLog = (log: string): void => {
     this.logHandlers.forEach((handler) => handler(log));
-  }
+  };
 
-  private handleCommandResult(result: CommandResponse): void {
+  private handleCommandResult = (result: CommandResponse): void => {
     this.commandResultHandlers.forEach((handler) => handler(result));
-  }
+  };
 
   public static getInstance(): CommandManager {
     // Singleton pattern

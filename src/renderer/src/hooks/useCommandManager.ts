@@ -1,6 +1,7 @@
 import CommandContext from '@renderer/context/CommandContext';
 import CommandManager from '@renderer/services/CommandManager';
 import { useCallback, useContext, useEffect, useState } from 'react';
+import AnsiToHtml from 'ansi-to-html';
 
 const useCommandManager = (): {
   analyze: () => void;
@@ -31,8 +32,9 @@ const useCommandManager = (): {
   }, []);
 
   const handleLog = useCallback((log: string) => {
+    const converter = new AnsiToHtml();
+    const htmlLog = converter.toHtml(log);
     setLog((prev) => (prev ? `${prev}\n${log}` : log));
-    console.log(log);
   }, []);
 
   useEffect(() => {

@@ -2,6 +2,9 @@
 module.exports = {
   content: ['./src/**/*.{js,jsx,ts,tsx}'],
   theme: {
+    fontFamily: {
+      body: ['Spoqa Han Sans Neo', 'sans-serif']
+    },
     colors: {
       transparent: 'transparent',
       current: 'currentColor',

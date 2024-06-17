@@ -74,8 +74,8 @@ class SystemExecuter {
       const command = path.join(app.getAppPath(), 'resources', 'run_scanner');
       const child = spawn(command, args, { stdio: ['ignore', 'pipe', 'pipe'] });
 
-      child.stdout.on('data', this.handleLog.bind(this));
-      child.stderr.on('data', this.handleLog.bind(this));
+      child.stdout.on('data', this.handleLog);
+      child.stderr.on('data', this.handleLog);
 
       child.on('close', (code) => {
         if (code === 0) {
@@ -91,9 +91,9 @@ class SystemExecuter {
     });
   }
 
-  private handleLog(data: any): void {
+  private handleLog = (data: any): void => {
     this.logHandlers.forEach((handler) => handler(data.toString()));
-  }
+  };
 
   public onLog(handler: (data: any) => void): void {
     this.logHandlers.push(handler);

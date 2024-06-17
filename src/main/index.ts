@@ -86,6 +86,8 @@ app.whenReady().then(async () => {
   ipcMain.on('send-command', async (_, { command }) => {
     const args: string[] = commandParser.parseCmd2Args(command);
 
+    console.log('command line: ', args);
+
     // check venv and fs before executing.
     if (!systemExecuter.checkVenv()) {
       console.error(
@@ -93,6 +95,7 @@ app.whenReady().then(async () => {
       );
     } else {
       const result: string = await systemExecuter.executeScanner(args);
+      mainWindow.webContents.send('recv-command-result', result);
       const setting: Setting = commandParser.parseCmd2Setting(args, command.type); // saving cache does not need to be awaited
     }
   });

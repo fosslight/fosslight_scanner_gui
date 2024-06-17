@@ -110,7 +110,6 @@ input:focus {
   -webkit-app-region: drag;
 }
 
-
 .no-drag {
   -webkit-app-region: no-drag;
 }
@@ -128,21 +127,18 @@ input:focus {
   @apply bg-PaleGray-100 text-PaleGray-900 hover:bg-PaleGray-300 active:border active:border-PaleGray-900 active:bg-PaleGray-300;
 }
 
-
 /*스크롤바*/
 .listbox-scroll {
-  padding-right: 10px; }
+  padding-right: 10px;
+}
 
 .listbox-scroll::-webkit-scrollbar {
   width: 4px;
-
 }
 .listbox-scroll::-webkit-scrollbar-track {
   background-color: white;
-  
 }
 .listbox-scroll::-webkit-scrollbar-thumb {
-  background-color: #E7E9EC;
+  background-color: #e7e9ec;
   border-radius: 20px;
 }
-
