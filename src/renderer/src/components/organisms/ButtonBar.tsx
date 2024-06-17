@@ -9,7 +9,7 @@ interface IButtonBarProps {
 
 const ButtonBar: FC<IButtonBarProps> = ({ onForceQuit }) => {
   const { mode } = useMode();
-  const { analyze, compare, ready } = useCommandManager();
+  const { analyze, compare, idle } = useCommandManager();
 
   const handleExecuteClick = () => {
     if (mode === 'analyze') {
@@ -21,7 +21,7 @@ const ButtonBar: FC<IButtonBarProps> = ({ onForceQuit }) => {
 
   return (
     <div className="flex h-11 items-center justify-end gap-2 border-t border-t-PaleGray-300 px-4">
-      {ready ? (
+      {idle ? (
         <Button type="primary" onClick={handleExecuteClick}>
           Start {mode === 'analyze' ? 'Analysis' : 'Comparing'}
         </Button>

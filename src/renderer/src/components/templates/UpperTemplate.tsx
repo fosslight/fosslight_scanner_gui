@@ -8,7 +8,7 @@ import Dimmer from '../atoms/dimmer/Dimmer';
 
 const UpperTemplate: FC = () => {
   const { mode } = useMode();
-  const { ready } = useCommandManager();
+  const { idle } = useCommandManager();
 
   return (
     <div className="relative h-full w-full">
@@ -20,7 +20,7 @@ const UpperTemplate: FC = () => {
           {mode === 'analyze' ? <AnalyzeTemplate /> : <CompareTemplate />}
         </div>
       </div>
-      {!ready && <Dimmer />}
+      {!idle && <Dimmer />}
     </div>
   );
 };

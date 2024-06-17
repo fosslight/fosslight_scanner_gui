@@ -1,11 +1,13 @@
 import { RefObject, useCallback, useEffect, useRef, useState } from 'react';
 
-const useMeasure = (): {
+interface IUseMeasure {
   ref: RefObject<HTMLDivElement>;
   width: number;
   height: number;
   ready: boolean;
-} => {
+}
+
+const useMeasure = (): IUseMeasure => {
   const ref = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState<number>(0);
   const [height, setHeight] = useState<number>(0);

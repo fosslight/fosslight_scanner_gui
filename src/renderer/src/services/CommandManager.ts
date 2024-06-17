@@ -1,4 +1,4 @@
-type ChannelType = 'log' | 'command-result' | 'ready';
+type ChannelType = 'log' | 'command-result' | 'idle';
 
 class CommandManager {
   private static instance: CommandManager;
@@ -6,7 +6,7 @@ class CommandManager {
   private readonly capacity: number = 1;
   private logHandlers: ((log: string) => void)[] = [];
   private commandResultHandlers: ((result: CommandResponse) => void)[] = [];
-  private readyHandlers: ((isReady: boolean) => void)[] = [];
+  private idleHandlers: ((isReady: boolean) => void)[] = [];
 
   private constructor() {
     window.api.onLog((_: unknown, log: string) => this.handleLog(log));
@@ -14,7 +14,7 @@ class CommandManager {
       this.handleCommandResult(result);
       if (this.commandQueue.length > 0) {
         this.commandQueue.shift();
-        this.handleReady(this.commandQueue.length < this.capacity);
+        this.handleIdle(this.commandQueue.length < this.capacity);
       }
     });
   }
@@ -27,8 +27,8 @@ class CommandManager {
     this.commandResultHandlers.forEach((handler) => handler(result));
   };
 
-  private handleReady = (isReady: boolean): void => {
-    this.readyHandlers.forEach((handler) => handler(isReady));
+  private handleIdle = (idle: boolean): void => {
+    this.idleHandlers.forEach((handler) => handler(idle));
   };
 
   public static getInstance(): CommandManager {
@@ -51,7 +51,7 @@ class CommandManager {
     }
 
     this.commandQueue.push(command);
-    this.handleReady(this.commandQueue.length < this.capacity);
+    this.handleIdle(this.commandQueue.length < this.capacity);
     window.api.sendCommand(command);
   }
 
@@ -60,8 +60,8 @@ class CommandManager {
       this.logHandlers.push(handler);
     } else if (channel === 'command-result') {
       this.commandResultHandlers.push(handler);
-    } else if (channel === 'ready') {
-      this.readyHandlers.push(handler);
+    } else if (channel === 'idle') {
+      this.idleHandlers.push(handler);
     }
   }
 
@@ -70,8 +70,8 @@ class CommandManager {
       this.logHandlers = this.logHandlers.filter((h) => h !== handler);
     } else if (channel === 'command-result') {
       this.commandResultHandlers = this.commandResultHandlers.filter((h) => h !== handler);
-    } else if (channel === 'ready') {
-      this.readyHandlers = this.readyHandlers.filter((h) => h !== handler);
+    } else if (channel === 'idle') {
+      this.idleHandlers = this.idleHandlers.filter((h) => h !== handler);
     }
   }
 }
