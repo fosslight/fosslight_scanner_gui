@@ -1,4 +1,4 @@
-type ChannelType = 'log' | 'command-result';
+type ChannelType = 'log' | 'command-result' | 'ready';
 
 class CommandManager {
   private static instance: CommandManager;
@@ -6,6 +6,7 @@ class CommandManager {
   private readonly capacity: number = 1;
   private logHandlers: ((log: string) => void)[] = [];
   private commandResultHandlers: ((result: CommandResponse) => void)[] = [];
+  private readyHandlers: ((isReady: boolean) => void)[] = [];
 
   private constructor() {
     window.api.onLog((_: unknown, log: string) => this.handleLog(log));
@@ -13,6 +14,7 @@ class CommandManager {
       this.handleCommandResult(result);
       if (this.commandQueue.length > 0) {
         this.commandQueue.shift();
+        this.handleReady(this.commandQueue.length < this.capacity);
       }
     });
   }
@@ -23,6 +25,10 @@ class CommandManager {
 
   private handleCommandResult = (result: CommandResponse): void => {
     this.commandResultHandlers.forEach((handler) => handler(result));
+  };
+
+  private handleReady = (isReady: boolean): void => {
+    this.readyHandlers.forEach((handler) => handler(isReady));
   };
 
   public static getInstance(): CommandManager {
@@ -45,6 +51,7 @@ class CommandManager {
     }
 
     this.commandQueue.push(command);
+    this.handleReady(this.commandQueue.length < this.capacity);
     window.api.sendCommand(command);
   }
 
@@ -53,6 +60,8 @@ class CommandManager {
       this.logHandlers.push(handler);
     } else if (channel === 'command-result') {
       this.commandResultHandlers.push(handler);
+    } else if (channel === 'ready') {
+      this.readyHandlers.push(handler);
     }
   }
 
@@ -61,6 +70,8 @@ class CommandManager {
       this.logHandlers = this.logHandlers.filter((h) => h !== handler);
     } else if (channel === 'command-result') {
       this.commandResultHandlers = this.commandResultHandlers.filter((h) => h !== handler);
+    } else if (channel === 'ready') {
+      this.readyHandlers = this.readyHandlers.filter((h) => h !== handler);
     }
   }
 }

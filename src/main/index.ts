@@ -79,6 +79,7 @@ app.whenReady().then(async () => {
   clearInterval(progressInterval); // 점 출력 정지
 
   systemExecuter.onLog((data: any) => {
+    console.log(data.toString());
     mainWindow.webContents.send('recv-log', data.toString());
   });
 

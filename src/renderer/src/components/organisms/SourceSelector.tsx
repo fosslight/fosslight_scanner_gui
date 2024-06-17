@@ -54,7 +54,7 @@ const SourceSelector: FC<ISourceSelectorProps> = ({
     setEditIndex(index);
     console.log(`Edit item at index ${editIndex}`);
     pathInfoList.map((info, i) => console.log(`PathList[${i}]: ${info.path}`));
-    openModal('modify');
+    openModal();
   };
 
   const handleRemoveClick = (index: number) => {
