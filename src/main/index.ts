@@ -85,9 +85,9 @@ app.whenReady().then(async () => {
 
   // IPC communication between main and hidden windows
   ipcMain.on('send-command', async (_, { command }) => {
-    console.log('command: ', command);
-    const args: string[] = commandParser.parseCmd2Args(command);
-    console.log('args: ', args);
+    const args: string[][] = commandParser.parseCmd2Args(command);
+
+    console.log('command line: ', args);
 
     // check venv and fs before executing.
     if (!systemExecuter.checkVenv()) {
@@ -95,9 +95,10 @@ app.whenReady().then(async () => {
         '[Error]: Failed to run Fosslight Scanner.\n\t Please check the resources folder and files are in initial condition.\n\t Or try to reinstall this app.'
       );
     } else {
-      const result: string = await systemExecuter.executeScanner(args);
-      mainWindow.webContents.send('recv-command-result', result);
-      const setting: Setting = commandParser.parseCmd2Setting(args, command.type); // saving cache does not need to be awaited
+      const scannerResult: string = await systemExecuter.executeScanner(args);
+      mainWindow.webContents.send('recv-command-result', scannerResult);
+      const setting: Setting = commandParser.parseCmd2Setting(args, command.type);
+      const settingResult: string = await systemExecuter.saveSetting(setting);
     }
   });
 

@@ -8,7 +8,7 @@ interface AnalyzeCommandConfig {
   outputFormat?: 'excel' | 'yaml'; // default: ['excel']
   outputPath?: string; // default: '.' (current directory)
   outputFileName?: string;
-  extraOptions?: string; // "-r -d "-a 'source /test/Projects/venv/bin/activate' -d 'deactivate'""
+  extraOptions?: string; // "-r -d "-a 'source /test/Projects/venv/bin/activate' -d 'deactivate'" -c"
 }
 
 interface CompareCommandConfig {
@@ -39,10 +39,11 @@ interface CommandResponse {
 }
 
 interface Setting {
-  path: string;
-  link: string;
+  path: string[];
+  link: string[];
   dep_argument: string;
-  output: string;
+  outputDir: string;
+  outputFile: string;
   exclude_path: string[];
   format: string;
   db_url: string;
