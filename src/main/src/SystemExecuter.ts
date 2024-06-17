@@ -15,6 +15,7 @@ class SystemExecuter {
     process.platform == 'win32'
       ? path.join(this.venvPath, 'Scripts', 'activate.bat')
       : path.join(this.venvPath, 'bin', 'activate');
+  private logHandlers: ((data: any) => void)[] = [];
 
   private constructor() {}
 
@@ -73,12 +74,8 @@ class SystemExecuter {
       const command = path.join(app.getAppPath(), 'resources', 'run_scanner');
       const child = spawn(command, args, { stdio: ['ignore', 'pipe', 'pipe'] });
 
-      child.stdout.on('data', (data) => {
-        process.stdout.write(data);
-      });
-      child.stderr.on('data', (data) => {
-        process.stderr.write(data);
-      });
+      child.stdout.on('data', this.handleLog.bind(this));
+      child.stderr.on('data', this.handleLog.bind(this));
 
       child.on('close', (code) => {
         if (code === 0) {
@@ -92,6 +89,18 @@ class SystemExecuter {
         reject(`Failed to run Fosslight Scanner: ${error.message}`);
       });
     });
+  }
+
+  private handleLog(data: any): void {
+    this.logHandlers.forEach((handler) => handler(data.toString()));
+  }
+
+  public onLog(handler: (data: any) => void): void {
+    this.logHandlers.push(handler);
+  }
+
+  public offLog(handler: (data: any) => void): void {
+    this.logHandlers = this.logHandlers.filter((h) => h !== handler);
   }
 }
 

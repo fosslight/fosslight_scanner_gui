@@ -78,6 +78,10 @@ app.whenReady().then(async () => {
   }
   clearInterval(progressInterval); // 점 출력 정지
 
+  systemExecuter.onLog((data: any) => {
+    mainWindow.webContents.send('recv-log', data.toString());
+  });
+
   // IPC communication between main and hidden windows
   ipcMain.on('send-command', async (_, { command }) => {
     const args: string[] = commandParser.parseCmd2Args(command);
@@ -88,7 +92,6 @@ app.whenReady().then(async () => {
         '[Error]: Failed to run Fosslight Scanner.\n\t Please check the resources folder and files are in initial condition.\n\t Or try to reinstall this app.'
       );
     } else {
-      console.log(args);
       const result: string = await systemExecuter.executeScanner(args);
       const setting: Setting = commandParser.parseCmd2Setting(args, command.type); // saving cache does not need to be awaited
     }

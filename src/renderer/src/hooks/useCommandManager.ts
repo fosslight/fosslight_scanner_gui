@@ -31,7 +31,7 @@ const useCommandManager = (): {
   }, []);
 
   const handleLog = useCallback((log: string) => {
-    setLog(log);
+    setLog((prev) => (prev ? `${prev}\n${log}` : log));
     console.log(log);
   }, []);
 
