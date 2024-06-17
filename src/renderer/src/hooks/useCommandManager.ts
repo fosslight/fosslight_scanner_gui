@@ -1,15 +1,16 @@
 import CommandContext from '@renderer/context/CommandContext';
 import CommandManager from '@renderer/services/CommandManager';
-import { ScannerType, parseLog } from '@renderer/utils/parseLog';
+import { parseLog } from '@renderer/utils/parseLog';
 import { useCallback, useContext, useEffect, useState } from 'react';
 
 interface IUseCommandManager {
-  analyze: () => void;
-  compare: () => void;
+  command: Command | null;
   result: string | null;
   log: string | null;
   idle: boolean;
   status: ScannerType | null;
+  analyze: () => void;
+  compare: () => void;
 }
 
 const useCommandManager = (): IUseCommandManager => {
@@ -26,12 +27,14 @@ const useCommandManager = (): IUseCommandManager => {
 
   const analyze = useCallback((): void => {
     if (!idle) return;
-    commandManager.executeCommand({ type: 'analyze', config: context.analyzeCommandConfig });
+    const command: Command = { type: 'analyze', config: context.analyzeCommandConfig };
+    commandManager.executeCommand(command);
   }, [context, idle]);
 
   const compare = useCallback((): void => {
     if (!idle) return;
-    commandManager.executeCommand({ type: 'compare', config: context.compareCommandConfig });
+    const command: Command = { type: 'compare', config: context.compareCommandConfig };
+    commandManager.executeCommand(command);
   }, [context, idle]);
 
   const handleCommandResult = useCallback((result: CommandResponse) => {
@@ -46,29 +49,30 @@ const useCommandManager = (): IUseCommandManager => {
     setLog((prev) => (prev ? `${prev}\n${log}` : log));
   }, []);
 
-  const handleReady = useCallback((idle: boolean) => {
+  const handleIdle = useCallback((idle: boolean) => {
     setIdle(idle);
   }, []);
 
   useEffect(() => {
     commandManager.subscribe('command-result', handleCommandResult);
     commandManager.subscribe('log', handleLog);
-    commandManager.subscribe('idle', handleReady);
+    commandManager.subscribe('idle', handleIdle);
 
     return () => {
       commandManager.unsubscribe('command-result', handleCommandResult);
       commandManager.unsubscribe('log', handleLog);
-      commandManager.unsubscribe('idle', handleReady);
+      commandManager.unsubscribe('idle', handleIdle);
     };
   }, []);
 
   return {
-    analyze,
-    compare,
+    command: commandManager.command,
     result,
     log,
     idle,
-    status
+    status,
+    analyze,
+    compare
   };
 };
 

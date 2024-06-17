@@ -1,5 +1,7 @@
+type ScannerType = 'source' | 'binary' | 'dependency';
+
 interface AnalyzeCommandConfig {
-  mode?: ('source' | 'binary' | 'dependency')[]; // default: ['source', 'binary', 'dependency'] (all)
+  mode?: ScannerType[]; // default: ['source', 'binary', 'dependency'] (all)
   path?: string[]; // default: '.' (current directory)
   link?: string[]; // default: ''
   excludedPath?: string[];

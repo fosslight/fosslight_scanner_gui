@@ -74,6 +74,10 @@ class CommandManager {
       this.idleHandlers = this.idleHandlers.filter((h) => h !== handler);
     }
   }
+
+  get command(): Command | null {
+    return this.commandQueue[0] ?? null;
+  }
 }
 
 export default CommandManager;
