@@ -39,8 +39,6 @@ const ModifyModal: FC<IModalProps> = ({
   const [selectedOption, setSelectedOption] = useState<ITextInputOption>(options[0]);
   const [path, setPath] = useState<string | null>(value || null);
 
-  console.log('rerender');
-
   useEffect(() => {
     if (options.length > 0) {
       setSelectedOption(options[0]);

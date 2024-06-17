@@ -6,11 +6,7 @@ import useModal from '@renderer/hooks/useModal';
 import Modal from '../organisms/modal/Modal';
 import Button from '../atoms/button/Button';
 
-interface ILowerTemplateProps {
-  data?: any;
-}
-
-const LowerTemplate: FC<ILowerTemplateProps> = ({ data }) => {
+const LowerTemplate: FC = () => {
   // const { log, commandResult } = data;
 
   const { openModal, closeModal, modalRef } = useModal();

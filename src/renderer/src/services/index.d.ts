@@ -1,12 +1,14 @@
+type ScannerType = 'source' | 'binary' | 'dependency';
+
 interface AnalyzeCommandConfig {
-  mode?: ('source' | 'binary' | 'dependency')[]; // default: ['source', 'binary', 'dependency'] (all)
+  mode?: ScannerType[]; // default: ['source', 'binary', 'dependency'] (all)
   path?: string[]; // default: '.' (current directory)
   link?: string[]; // default: ''
   excludedPath?: string[];
   outputFormat?: 'excel' | 'yaml'; // default: ['excel']
   outputPath?: string; // default: '.' (current directory)
   outputFileName?: string;
-  extraOptions?: string; // "-r -d "-a 'source /test/Projects/venv/bin/activate' -d 'deactivate'""
+  extraOptions?: string; // "-r -d "-a 'source /test/Projects/venv/bin/activate' -d 'deactivate'" -c"
 }
 
 interface CompareCommandConfig {
@@ -37,10 +39,11 @@ interface CommandResponse {
 }
 
 interface Setting {
-  path: string;
-  link: string;
+  path: string[];
+  link: string[];
   dep_argument: string;
-  output: string;
+  outputDir: string;
+  outputFile: string;
   exclude_path: string[];
   format: string;
   db_url: string;

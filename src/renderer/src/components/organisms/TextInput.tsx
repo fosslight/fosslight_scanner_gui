@@ -7,7 +7,7 @@ import useFileUpload from '@renderer/hooks/useFileUpload';
 import FileUpload from '../atoms/upload/FileUpload';
 
 export interface ITextInputOption extends IDropdownOption {
-  type: 'text' | 'file';
+  type: 'text' | 'dir' | 'file';
   placeholder?: string;
 }
 
@@ -85,7 +85,7 @@ const TextInput: FC<ITextInputProps> = ({
                 <div className="h-[16px] w-[1px] bg-PaleGray-300" />
               </>
             )}
-            {selectedOption.type === 'file' && (
+            {(selectedOption.type === 'dir' || selectedOption.type === 'file') && (
               <>
                 <div className="flex w-full items-center overflow-hidden px-[6px]">
                   <Text type="p100-r" color={`PaleGray-${value ? 1000 : 500}`} className="truncate">
@@ -115,7 +115,11 @@ const TextInput: FC<ITextInputProps> = ({
         {suffix}
       </div>
 
-      <FileUpload fileUploadRef={fileUploadRef} onChange={handleFileChange} />
+      <FileUpload
+        fileUploadRef={fileUploadRef}
+        directory={selectedOption.type === 'dir'}
+        onChange={handleFileChange}
+      />
     </div>
   );
 };

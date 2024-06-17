@@ -39,7 +39,8 @@ const AnalyzeTemplate: FC = () => {
         required
         options={[
           { value: 'github', label: 'GitHub repo', type: 'text', placeholder: 'https://github/' }, // Change this option to 'Link' later
-          { value: 'local', label: 'Local path', type: 'file', placeholder: '~/' }
+          { value: 'local-dir', label: 'Local directory', type: 'dir', placeholder: '~/' },
+          { value: 'local-file', label: 'Local file', type: 'file', placeholder: '~/' }
         ]}
         placeholder={
           <>

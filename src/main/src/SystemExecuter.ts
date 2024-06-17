@@ -15,6 +15,7 @@ class SystemExecuter {
     process.platform == 'win32'
       ? path.join(this.venvPath, 'Scripts', 'activate.bat')
       : path.join(this.venvPath, 'bin', 'activate');
+  private logHandlers: ((data: any) => void)[] = [];
 
   private constructor() {}
 
@@ -53,11 +54,19 @@ class SystemExecuter {
         return false;
       }
 
-      const { stderr: pythonError } = await execPromise(
+      const { stderr: installError } = await execPromise(
         this.pythonPath + ' -m pip install fosslight_scanner'
       );
-      if (pythonError) {
-        console.error('Install and Update fosslight sccanner failed: ' + pythonError);
+      if (installError) {
+        console.error('Install fosslight sccanner failed: ' + installError);
+        return false;
+      }
+
+      const { stderr: updateError } = await execPromise(
+        this.pythonPath + ' -m pip install fosslight_scanner --upgrade --force-reinstall'
+      );
+      if (updateError) {
+        console.error('Update fosslight sccanner failed: ' + updateError);
         return false;
       }
 
@@ -68,30 +77,75 @@ class SystemExecuter {
     }
   }
 
-  public async executeScanner(args: string[]): Promise<string> {
+  public async executeScanner(args: string[][]): Promise<string> {
     return new Promise((resolve, reject) => {
+      const mode: string = args[0].join(' ');
+      const jobs: number = mode === 'compare' ? 1 : args[1].length + args[2].length;
       const command = path.join(app.getAppPath(), 'resources', 'run_scanner');
-      const child = spawn(command, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+      const finalArgs: string[] = [];
 
-      child.stdout.on('data', (data) => {
-        process.stdout.write(data);
-      });
-      child.stderr.on('data', (data) => {
-        process.stderr.write(data);
-      });
+      for (let i = 0; i < jobs; i++) {
+        finalArgs.length = 0;
 
-      child.on('close', (code) => {
-        if (code === 0) {
-          resolve('Fosslight Scanner finished successfully');
+        if (mode === 'compare') {
+          const comparePath = '-p ' + args[1].join(' ');
+          finalArgs.push(mode, comparePath, ...args[3]);
         } else {
-          reject(`Fosslight Scanner stopped with exit code: ${code}`);
+          if (args[1][0] === 'undefined') {
+            finalArgs.push(mode, '-p .', ...args[3]);
+          } else if (i < args[1].length) {
+            finalArgs.push(mode, '-p ' + args[1][i], ...args[3]);
+          } else {
+            finalArgs.push(mode, '-w ' + args[2][i - args[1].length], ...args[3]);
+          }
+        }
+
+        const child = spawn(command, finalArgs, { stdio: ['ignore', 'pipe', 'pipe'] });
+
+        child.stdout.on('data', this.handleLog);
+        child.stderr.on('data', this.handleLog);
+
+        child.on('close', (code) => {
+          if (code === 0) {
+            resolve('Fosslight Scanner finished successfully');
+            child.kill();
+          } else {
+            reject(`Fosslight Scanner stopped with exit code: ${code}`);
+            child.kill();
+          }
+        });
+
+        child.on('error', (error) => {
+          reject(`Failed to run Fosslight Scanner: ${error.message}`);
+          child.kill();
+        });
+      }
+    });
+  }
+
+  public async saveSetting(setting: Setting): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const settingPath = path.join(app.getAppPath(), 'resources', 'setting.json');
+      fs.writeFile(settingPath, JSON.stringify(setting), (error) => {
+        if (error) {
+          reject(`Failed to save setting: ${error.message}`);
+        } else {
+          resolve('Setting file saved successfully');
         }
       });
-
-      child.on('error', (error) => {
-        reject(`Failed to run Fosslight Scanner: ${error.message}`);
-      });
     });
+  }
+
+  private handleLog = (data: any): void => {
+    this.logHandlers.forEach((handler) => handler(data.toString()));
+  };
+
+  public onLog(handler: (data: any) => void): void {
+    this.logHandlers.push(handler);
+  }
+
+  public offLog(handler: (data: any) => void): void {
+    this.logHandlers = this.logHandlers.filter((h) => h !== handler);
   }
 }
 
