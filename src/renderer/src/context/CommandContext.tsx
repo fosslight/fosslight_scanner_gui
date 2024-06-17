@@ -14,8 +14,12 @@ interface ICommandProviderProps {
 }
 
 export const CommandProvider: FC<ICommandProviderProps> = ({ children }) => {
-  const [analyzeCommandConfig, setAnalyzeCommandConfig] = useState<AnalyzeCommandConfig>({});
-  const [compareCommandConfig, setCompareCommandConfig] = useState<CompareCommandConfig>({});
+  const [analyzeCommandConfig, setAnalyzeCommandConfig] = useState<AnalyzeCommandConfig>({
+    outputFormat: 'excel'
+  });
+  const [compareCommandConfig, setCompareCommandConfig] = useState<CompareCommandConfig>({
+    outputFormat: 'excel'
+  });
 
   useEffect(() => {
     console.log('analyze command config:', analyzeCommandConfig);
