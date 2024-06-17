@@ -14,9 +14,7 @@ interface ICommandProviderProps {
 }
 
 export const CommandProvider: FC<ICommandProviderProps> = ({ children }) => {
-  const [analyzeCommandConfig, setAnalyzeCommandConfig] = useState<AnalyzeCommandConfig>({
-    path: ['.']
-  });
+  const [analyzeCommandConfig, setAnalyzeCommandConfig] = useState<AnalyzeCommandConfig>({});
   const [compareCommandConfig, setCompareCommandConfig] = useState<CompareCommandConfig>({});
 
   useEffect(() => {
