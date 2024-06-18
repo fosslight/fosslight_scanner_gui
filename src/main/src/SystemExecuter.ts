@@ -3,6 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import util from 'util';
 import { exec, spawn } from 'child_process';
+import { ChildProcessByStdio } from 'child_process';
+import { Readable } from 'stream';
 
 class SystemExecuter {
   private static instance: SystemExecuter;
@@ -16,6 +18,7 @@ class SystemExecuter {
       ? path.join(this.venvPath, 'Scripts', 'activate.bat')
       : path.join(this.venvPath, 'bin', 'activate');
   private logHandlers: ((data: any) => void)[] = [];
+  private child: ChildProcessByStdio<null, Readable, Readable> | null = null;
 
   private constructor() {}
 
@@ -80,49 +83,34 @@ class SystemExecuter {
   }
 
   public async executeScanner(args: string[][]): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const mode: string = args[0].join(' ');
-      const jobs: number = mode === 'compare' ? 1 : args[1].length + args[2].length;
-      const command = path.join(app.getAppPath(), 'resources', 'run_scanner');
-      const finalArgs: string[] = [];
+    const mode: string = args[0].join(' ');
+    const jobs: number = mode === 'compare' ? 1 : args[1].length + args[2].length;
+    const finalArgs: string[] = [];
 
-      for (let i = 0; i < jobs; i++) {
-        finalArgs.length = 0;
+    for (let i = 0; i < jobs; i++) {
+      finalArgs.length = 0;
 
-        if (mode === 'compare') {
-          const comparePath = '-p ' + args[1].join(' ');
-          finalArgs.push(mode, comparePath, ...args[3]);
+      if (mode === 'compare') {
+        const comparePath = '-p ' + args[1].join(' ');
+        finalArgs.push(mode, comparePath, ...args[3]);
+      } else {
+        if (args[1][0] === 'undefined') {
+          finalArgs.push(mode, '-p .', ...args[3]);
+        } else if (i < args[1].length) {
+          finalArgs.push(mode, '-p ' + args[1][i], ...args[3]);
         } else {
-          if (args[1][0] === 'undefined') {
-            finalArgs.push(mode, '-p .', ...args[3]);
-          } else if (i < args[1].length) {
-            finalArgs.push(mode, '-p ' + args[1][i], ...args[3]);
-          } else {
-            finalArgs.push(mode, '-w ' + args[2][i - args[1].length], ...args[3]);
-          }
+          finalArgs.push(mode, '-w ' + args[2][i - args[1].length], ...args[3]);
         }
-
-        const child = spawn(command, finalArgs, { stdio: ['ignore', 'pipe', 'pipe'] });
-
-        child.stdout.on('data', this.handleLog);
-        child.stderr.on('data', this.handleLog);
-
-        child.on('close', (code) => {
-          if (code === 0) {
-            resolve('Fosslight Scanner finished successfully');
-            child.kill();
-          } else {
-            reject(`Fosslight Scanner stopped with exit code: ${code}`);
-            child.kill();
-          }
-        });
-
-        child.on('error', (error) => {
-          reject(`Failed to run Fosslight Scanner: ${error.message}`);
-          child.kill();
-        });
       }
-    });
+
+      try {
+        await this.scanProcess(finalArgs);
+      } catch (error) {
+        return `${error}`;
+      }
+    }
+
+    return 'Fosslight Scanner finished successfully';
   }
 
   public async saveSetting(setting: Setting): Promise<string> {
@@ -136,6 +124,44 @@ class SystemExecuter {
         }
       });
     });
+  }
+
+  private scanProcess(args: string[]): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const shellCommand =
+        process.platform === 'win32'
+          ? `cmd.exe /c "${this.activatePath} && fosslight ${args.join(' ')}"`
+          : `bash -c "source ${this.activatePath} && fosslight ${args.join(' ')}"`;
+
+      this.child = spawn(shellCommand, { shell: true, stdio: ['ignore', 'pipe', 'pipe'] });
+
+      this.child.stdout.on('data', this.handleLog);
+      this.child.stderr.on('data', this.handleLog);
+
+      this.child.on('close', (code) => {
+        this.child = null;
+        code === 0
+          ? resolve('Fosslight Scanner finished successfully')
+          : reject(`Fosslight Scanner stopped with exit code: ${code}`);
+      });
+
+      this.child.on('error', (error) => {
+        this.child = null;
+        reject(`Failed to run Fosslight Scanner: ${error.message}`);
+      });
+    });
+  }
+
+  public forceQuit() {
+    if (this.child) {
+      try {
+        process.platform == 'win32'
+          ? exec(`taskkill /pid ${this.child.pid} /T /F`)
+          : exec(`kill -9 ${this.child.pid}`);
+      } catch (error) {
+        console.error('Failed to force stop the fosslight scanner: ' + error);
+      }
+    }
   }
 
   private handleLog = (data: any): void => {

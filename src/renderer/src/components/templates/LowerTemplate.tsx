@@ -18,6 +18,11 @@ const LowerTemplate: FC = () => {
     openModal();
   };
 
+  const forceQuit = () => {
+    window.api.forceQuit();
+    closeModal();
+  };
+
   const showButtonBar = mode === 'analyze' ? readyToAnalyze : readyToCompare;
 
   return (
@@ -33,7 +38,7 @@ const LowerTemplate: FC = () => {
         icon={<ExclamationIcon />}
         content="The details such as the analysis list that you've added will be maintained."
         buttons={[
-          <Button key="force-quit" type="secondary">
+          <Button key="force-quit" type="secondary" onClick={forceQuit}>
             Force Quit
           </Button>,
           <Button key="keep-analyze" type="tertiary" onClick={closeModal}>
