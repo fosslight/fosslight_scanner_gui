@@ -19,14 +19,8 @@ const useCommandConfig = (): IUseCommandConfig => {
   const [readyToAnalyze, setReadyToAnalyze] = useState<boolean>(false);
   const [readyToCompare, setReadyToCompare] = useState<boolean>(false);
 
-  const requiredFieldsForAnalyze = [
-    'mode',
-    'subjects',
-    'outputFormat',
-    'outputPath',
-    'outputFileName'
-  ];
-  const requiredFieldsForCompare = ['reports', 'outputFormat', 'outputPath', 'outputFileName'];
+  const requiredFieldsForAnalyze = ['mode', 'subjects', 'outputFormat', 'outputPath'];
+  const requiredFieldsForCompare = ['reports', 'outputFormat', 'outputPath'];
 
   useEffect(() => {
     const ready = requiredFieldsForAnalyze.every((field) => {
@@ -43,6 +37,7 @@ const useCommandConfig = (): IUseCommandConfig => {
     const ready = requiredFieldsForCompare.every((field) => {
       const value = context.compareCommandConfig[field];
       if (field === 'reports') {
+        console.log(value);
         return value instanceof Array && value[0] && value[1];
       }
       return (

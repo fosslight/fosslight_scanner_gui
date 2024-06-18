@@ -5,10 +5,10 @@ import MultiSelectChip from '../molecules/MultiSelectChip';
 import useCommandConfig from '@renderer/hooks/useCommandConfig';
 
 const CompareTemplate: FC = () => {
-  const { updateCompareCommandConfig } = useCommandConfig();
+  const { compareCommandConfig, updateCompareCommandConfig } = useCommandConfig();
 
-  const handleComparisonSubjectChange = (values: string[]) => {
-    updateCompareCommandConfig({ reports: [values[0], values[1]] });
+  const handleComparisonSubjectChange = (values: PathInfo[]) => {
+    updateCompareCommandConfig({ reports: [values[0]?.path, values[1]?.path] });
   };
 
   const handleResultStoragePathChange = (value?: string) => {
@@ -36,6 +36,9 @@ const CompareTemplate: FC = () => {
             you want to compare.
           </>
         }
+        values={compareCommandConfig.reports
+          ?.filter((report) => report)
+          .map((report) => ({ path: report, type: 'file' }))}
         onChange={handleComparisonSubjectChange}
       />
       <div className="flex flex-col justify-start gap-10">
@@ -43,11 +46,11 @@ const CompareTemplate: FC = () => {
           label="Storage path for comparison results"
           required
           options={[{ type: 'file', label: 'Local path', value: 'local', placeholder: '~/' }]}
+          value={compareCommandConfig.outputPath}
           onChange={handleResultStoragePathChange}
         />
         <TextInput
           label="File name and format of comparison results"
-          required
           showDropdown={false}
           options={[
             {
@@ -66,9 +69,11 @@ const CompareTemplate: FC = () => {
                 { value: 'html', label: '.html' }
               ]}
               radio
+              values={new Set([compareCommandConfig.outputFormat!])}
               onChange={handleResultFileFormatChange}
             />
           }
+          value={compareCommandConfig.outputFileName}
           onChange={handleResultFileNameChange}
         />
       </div>

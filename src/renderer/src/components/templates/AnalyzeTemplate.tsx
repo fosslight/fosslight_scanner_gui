@@ -90,7 +90,6 @@ const AnalyzeTemplate: FC = () => {
         />
         <TextInput
           label="File name and format of analysis results"
-          required
           showDropdown={false}
           value={analyzeCommandConfig.outputFileName}
           options={[
@@ -101,6 +100,7 @@ const AnalyzeTemplate: FC = () => {
               placeholder: 'Enter the desired file name.'
             }
           ]}
+          showInput={analyzeCommandConfig?.subjects!.length <= 1 ?? true}
           suffix={
             <MultiSelectChip
               options={[
