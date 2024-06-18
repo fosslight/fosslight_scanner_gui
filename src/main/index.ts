@@ -90,7 +90,7 @@ app.whenReady().then(async () => {
         '[Error]: Failed to run Fosslight Scanner.\n\t Please check the resources folder and files are in initial condition.\n\t Or try to reinstall this app.'
       );
     } else {
-      const scannerResult: string = await systemExecuter.executeScanner(args);
+      const scannerResult: CommandResponse = await systemExecuter.executeScanner(args);
       mainWindow.webContents.send('recv-command-result', scannerResult);
       const setting: Setting = commandParser.parseCmd2Setting(args, command.type);
       await systemExecuter.saveSetting(setting);

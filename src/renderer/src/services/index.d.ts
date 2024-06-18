@@ -40,9 +40,9 @@ interface CompareCommand {
 type Command = AnalyzeCommand | CompareCommand;
 
 interface CommandResponse {
-  success: boolean;
-  message?: string;
-  data?: any;
+  success: boolean; // final success of several jobs
+  message?: string; // success message or error message
+  data?: any; // current usage is string array of successfully scanned paths; ['home/test', 'foo/bar']
 }
 
 interface Setting {

@@ -82,10 +82,11 @@ class SystemExecuter {
     }
   }
 
-  public async executeScanner(args: string[][]): Promise<string> {
+  public async executeScanner(args: string[][]): Promise<CommandResponse> {
     const mode: string = args[0].join(' ');
     const jobs: number = mode === 'compare' ? 1 : args[1].length + args[2].length;
     const finalArgs: string[] = [];
+    const result: CommandResponse = { success: false, message: '', data: [] };
 
     for (let i = 0; i < jobs; i++) {
       finalArgs.length = 0;
@@ -104,13 +105,17 @@ class SystemExecuter {
       }
 
       try {
-        await this.scanProcess(finalArgs);
+        const scannedPath: string = await this.scanProcess(finalArgs);
+        result.data.push(scannedPath);
       } catch (error) {
-        return `${error}`;
+        result.message = `${error}`;
+        return result;
       }
     }
 
-    return 'Fosslight Scanner finished successfully';
+    result.success = true;
+    result.message = 'Fosslight Scanner finished successfully';
+    return result;
   }
 
   public async saveSetting(setting: Setting): Promise<string> {
@@ -128,10 +133,18 @@ class SystemExecuter {
 
   private scanProcess(args: string[]): Promise<string> {
     return new Promise((resolve, reject) => {
+      let path: string = '';
       const shellCommand =
         process.platform === 'win32'
           ? `cmd.exe /c "${this.activatePath} && fosslight ${args.join(' ')}"`
           : `bash -c "source ${this.activatePath} && fosslight ${args.join(' ')}"`;
+
+      args.forEach((arg) => {
+        if (arg.startsWith('-p')) path = arg.replace('-p ', '');
+        else if (arg.startsWith('-w')) path = arg.replace('-w ', '');
+      });
+
+      console.log(`shellCommand: ${shellCommand}`);
 
       this.child = spawn(shellCommand, { shell: true, stdio: ['ignore', 'pipe', 'pipe'] });
 
@@ -141,13 +154,13 @@ class SystemExecuter {
       this.child.on('close', (code) => {
         this.child = null;
         code === 0
-          ? resolve('Fosslight Scanner finished successfully')
-          : reject(`Fosslight Scanner stopped with exit code: ${code}`);
+          ? resolve(path)
+          : reject(`scan is stopped where path: ${path}, with exit code: ${code}`);
       });
 
       this.child.on('error', (error) => {
         this.child = null;
-        reject(`Failed to run Fosslight Scanner: ${error.message}`);
+        reject(`scan is stopped where path: ${path}, with error: ${error.message}`);
       });
     });
   }
@@ -159,7 +172,9 @@ class SystemExecuter {
           ? exec(`taskkill /pid ${this.child.pid} /T /F`)
           : exec(`kill -9 ${this.child.pid}`);
       } catch (error) {
-        console.error('Failed to force stop the fosslight scanner: ' + error);
+        // TODO : Need to handle force quit error
+        // console.error('Failed to force stop the fosslight scanner: ' + error);
+        return;
       }
     }
   }
