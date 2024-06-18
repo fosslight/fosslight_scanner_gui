@@ -6,46 +6,45 @@ import commandParser from './src/CommandParser';
 
 const systemExecuter = SystemExecuter.getInstance();
 
-const mainWindows: BrowserWindow[] = [];
+let mainWindow: BrowserWindow;
 
-function createWindows(): void {
-  const displays = screen.getAllDisplays();
+function createWindow(): void {
+  const display = screen.getPrimaryDisplay();
 
-  displays.forEach((display) => {
-    const window = new BrowserWindow({
-      x: display.bounds.x,
-      y: display.bounds.y,
-      width: display.bounds.width,
-      height: display.bounds.height,
-      frame: false,
-      autoHideMenuBar: true,
-      ...(process.platform === 'linux' ? {} : {}),
-      webPreferences: {
-        preload: join(__dirname, '../preload/index.js'),
-        contextIsolation: true,
-        sandbox: false
-      }
-    });
-
-    window.on('ready-to-show', () => {
-      window.show();
-    });
-
-    window.webContents.setWindowOpenHandler((details) => {
-      shell.openExternal(details.url);
-      return { action: 'deny' };
-    });
-
-    // HMR for renderer based on electron-vite cli.
-    // Load the remote URL for development or the local html file for production.
-    if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-      window.loadURL(process.env['ELECTRON_RENDERER_URL']);
-    } else {
-      window.loadFile(join(__dirname, '../renderer/index.html'));
+  mainWindow = new BrowserWindow({
+    x: display.bounds.x,
+    y: display.bounds.y,
+    width: display.bounds.width,
+    height: display.bounds.height,
+    minWidth: 800,
+    minHeight: 600,
+    show: false,
+    frame: false,
+    autoHideMenuBar: true,
+    ...(process.platform === 'linux' ? {} : {}),
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      contextIsolation: true,
+      sandbox: false
     }
-
-    mainWindows.push(window);
   });
+
+  mainWindow.on('ready-to-show', () => {
+    mainWindow.show();
+  });
+
+  mainWindow.webContents.setWindowOpenHandler((details) => {
+    shell.openExternal(details.url);
+    return { action: 'deny' };
+  });
+
+  // HMR for renderer based on electron-vite cli.
+  // Load the remote URL for development or the local html file for production.
+  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL']);
+  } else {
+    mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
+  }
 }
 
 // This method will be called when Electron has finished
@@ -62,7 +61,7 @@ app.whenReady().then(async () => {
     optimizer.watchWindowShortcuts(window);
   });
 
-  createWindows();
+  createWindow();
 
   const arg = !systemExecuter.checkVenv() ? 'false' : undefined; // assign any string is fine
   console.log('Waiting for setting venv and Fosslight Scanner');
@@ -94,9 +93,7 @@ app.whenReady().then(async () => {
       );
     } else {
       const scannerResult: string = await systemExecuter.executeScanner(args);
-      mainWindows.forEach((window) => {
-        window.webContents.send('recv-command-result', scannerResult);
-      });
+      mainWindow.webContents.send('recv-command-result', scannerResult);
       const setting: Setting = commandParser.parseCmd2Setting(args, command.type);
       const settingResult: string = await systemExecuter.saveSetting(setting);
     }
@@ -104,35 +101,31 @@ app.whenReady().then(async () => {
 
   ipcMain.on('minimizeApp', () => {
     console.log('minimizeApp');
-    mainWindows.forEach((window) => window.minimize());
+    mainWindow.minimize();
   });
 
   ipcMain.on('maximizeApp', () => {
-    mainWindows.forEach((window) => {
-      if (window.isMaximized()) {
-        window.restore();
-      } else {
-        window.maximize();
-      }
-    });
+    if (mainWindow.isMaximized()) {
+      mainWindow.restore();
+    } else {
+      mainWindow.maximize();
+    }
   });
 
   ipcMain.on('closeApp', () => {
-    mainWindows.forEach((window) => window.close());
+    mainWindow.close();
   });
 
   // IPC communication between main and FOSSLight Scanner
   systemExecuter.onLog((data: any) => {
     console.log(data.toString());
-    mainWindows.forEach((window) => {
-      window.webContents.send('recv-log', data.toString());
-    });
+    mainWindow.webContents.send('recv-log', data.toString());
   });
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
-    if (BrowserWindow.getAllWindows().length === 0) createWindows();
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
 

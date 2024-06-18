@@ -100,7 +100,7 @@ const AnalyzeTemplate: FC = () => {
               placeholder: 'Enter the desired file name.'
             }
           ]}
-          showInput={analyzeCommandConfig?.subjects!.length <= 1 ?? true}
+          showInput={analyzeCommandConfig?.subjects && analyzeCommandConfig.subjects.length <= 1}
           suffix={
             <MultiSelectChip
               options={[
