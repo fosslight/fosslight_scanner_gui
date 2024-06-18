@@ -80,49 +80,35 @@ class SystemExecuter {
   }
 
   public async executeScanner(args: string[][]): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const mode: string = args[0].join(' ');
-      const jobs: number = mode === 'compare' ? 1 : args[1].length + args[2].length;
-      const command = path.join(app.getAppPath(), 'resources', 'run_scanner');
-      const finalArgs: string[] = [];
+    const mode: string = args[0].join(' ');
+    const jobs: number = mode === 'compare' ? 1 : args[1].length + args[2].length;
+    const command = path.join(app.getAppPath(), 'resources', 'run_scanner');
+    const finalArgs: string[] = [];
 
-      for (let i = 0; i < jobs; i++) {
-        finalArgs.length = 0;
+    for (let i = 0; i < jobs; i++) {
+      finalArgs.length = 0;
 
-        if (mode === 'compare') {
-          const comparePath = '-p ' + args[1].join(' ');
-          finalArgs.push(mode, comparePath, ...args[3]);
+      if (mode === 'compare') {
+        const comparePath = '-p ' + args[1].join(' ');
+        finalArgs.push(mode, comparePath, ...args[3]);
+      } else {
+        if (args[1][0] === 'undefined') {
+          finalArgs.push(mode, '-p .', ...args[3]);
+        } else if (i < args[1].length) {
+          finalArgs.push(mode, '-p ' + args[1][i], ...args[3]);
         } else {
-          if (args[1][0] === 'undefined') {
-            finalArgs.push(mode, '-p .', ...args[3]);
-          } else if (i < args[1].length) {
-            finalArgs.push(mode, '-p ' + args[1][i], ...args[3]);
-          } else {
-            finalArgs.push(mode, '-w ' + args[2][i - args[1].length], ...args[3]);
-          }
+          finalArgs.push(mode, '-w ' + args[2][i - args[1].length], ...args[3]);
         }
-
-        const child = spawn(command, finalArgs, { stdio: ['ignore', 'pipe', 'pipe'] });
-
-        child.stdout.on('data', this.handleLog);
-        child.stderr.on('data', this.handleLog);
-
-        child.on('close', (code) => {
-          if (code === 0) {
-            resolve('Fosslight Scanner finished successfully');
-            child.kill();
-          } else {
-            reject(`Fosslight Scanner stopped with exit code: ${code}`);
-            child.kill();
-          }
-        });
-
-        child.on('error', (error) => {
-          reject(`Failed to run Fosslight Scanner: ${error.message}`);
-          child.kill();
-        });
       }
-    });
+
+      try {
+        await this.scanProcess(command, finalArgs);
+      } catch (error) {
+        return Promise.reject(error);
+      }
+    }
+
+    return Promise.resolve('Fosslight Scanner finished successfully');
   }
 
   public async saveSetting(setting: Setting): Promise<string> {
@@ -134,6 +120,29 @@ class SystemExecuter {
         } else {
           resolve('Setting file saved successfully');
         }
+      });
+    });
+  }
+
+  private scanProcess(command: string, args: string[]): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const child = spawn(command, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+
+      child.stdout.on('data', this.handleLog);
+      child.stderr.on('data', this.handleLog);
+
+      child.on('close', (code) => {
+        child.kill('SIGKILL');
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(`Fosslight Scanner stopped with exit code: ${code}`));
+        }
+      });
+
+      child.on('error', (error) => {
+        child.kill('SIGKILL');
+        reject(new Error(`Failed to run Fosslight Scanner: ${error.message}`));
       });
     });
   }
