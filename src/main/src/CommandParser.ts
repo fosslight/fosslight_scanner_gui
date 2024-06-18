@@ -7,10 +7,10 @@ const commandParser = {
     const args: string[][] = [[], [], [], [], [], []];
     let config: CommandConfig;
     let mode: string;
-    let path: string[];
-    let link: string[] = [];
+    let path: string[] = [];
+    const link: string[] = [];
     let excludedPath: string = '';
-    let excludedPathArray: string[] = [];
+    const excludedPathArray: string[] = [];
     let extraOptions: string = '';
 
     if (command.type === 'analyze') {
@@ -23,10 +23,18 @@ const commandParser = {
           analConfig.mode.includes('dependency'))
           ? 'all'
           : analConfig.mode.join(' ');
-      path = analConfig.subjects ?? (analConfig.link ? [] : ['undefined']);
-      link = analConfig.link ?? [];
-      excludedPath = analConfig.excludedPath ? '-e ' + analConfig.excludedPath.join(' ') : '';
-      excludedPathArray = analConfig.excludedPath ?? [];
+      if (analConfig.subjects) {
+        for (const sub of analConfig.subjects) {
+          sub.type === 'dir' ? path.push(sub.path) : link.push(sub.path);
+        }
+      }
+      if (analConfig.exclusions) {
+        for (const exclusion of analConfig.exclusions) {
+          excludedPath = exclusion.path + ' ' + excludedPath;
+          excludedPathArray.push(exclusion.path);
+        }
+        excludedPath = '-e ' + excludedPath;
+      }
       extraOptions = analConfig.extraOptions ?? '';
       config = analConfig;
     } else {
@@ -43,8 +51,8 @@ const commandParser = {
     output = output ? '-o ' + output : '';
 
     args[0].push(mode);
-    if (path.length > 0) args[1].push(path.join(' '));
-    if (link.length > 0) args[2].push(link.join(' '));
+    if (path.length > 0) args[1] = Array.from(path);
+    if (link.length > 0) args[2] = Array.from(link);
     args[3].push(outputFormat, output, excludedPath, extraOptions);
     args[4].push(outputPath, outputFileName);
     args[5] = Array.from(excludedPathArray);
