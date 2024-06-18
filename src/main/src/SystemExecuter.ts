@@ -3,6 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import util from 'util';
 import { exec, spawn } from 'child_process';
+import { ChildProcessByStdio } from 'child_process';
+import { Readable } from 'stream';
 
 class SystemExecuter {
   private static instance: SystemExecuter;
@@ -16,6 +18,7 @@ class SystemExecuter {
       ? path.join(this.venvPath, 'Scripts', 'activate.bat')
       : path.join(this.venvPath, 'bin', 'activate');
   private logHandlers: ((data: any) => void)[] = [];
+  private child: ChildProcessByStdio<null, Readable, Readable> | null = null;
 
   private constructor() {}
 
@@ -82,7 +85,6 @@ class SystemExecuter {
   public async executeScanner(args: string[][]): Promise<string> {
     const mode: string = args[0].join(' ');
     const jobs: number = mode === 'compare' ? 1 : args[1].length + args[2].length;
-    const command = path.join(app.getAppPath(), 'resources', 'run_scanner');
     const finalArgs: string[] = [];
 
     for (let i = 0; i < jobs; i++) {
@@ -102,13 +104,13 @@ class SystemExecuter {
       }
 
       try {
-        await this.scanProcess(command, finalArgs);
+        await this.scanProcess(finalArgs);
       } catch (error) {
-        return Promise.reject(error);
+        return `${error}`;
       }
     }
 
-    return Promise.resolve('Fosslight Scanner finished successfully');
+    return 'Fosslight Scanner finished successfully';
   }
 
   public async saveSetting(setting: Setting): Promise<string> {
@@ -124,27 +126,42 @@ class SystemExecuter {
     });
   }
 
-  private scanProcess(command: string, args: string[]): Promise<void> {
+  private scanProcess(args: string[]): Promise<string> {
     return new Promise((resolve, reject) => {
-      const child = spawn(command, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+      const shellCommand =
+        process.platform === 'win32'
+          ? `cmd.exe /c "${this.activatePath} && fosslight ${args.join(' ')}"`
+          : `bash -c "source ${this.activatePath} && fosslight ${args.join(' ')}"`;
 
-      child.stdout.on('data', this.handleLog);
-      child.stderr.on('data', this.handleLog);
+      this.child = spawn(shellCommand, { shell: true, stdio: ['ignore', 'pipe', 'pipe'] });
 
-      child.on('close', (code) => {
-        child.kill('SIGKILL');
-        if (code === 0) {
-          resolve();
-        } else {
-          reject(new Error(`Fosslight Scanner stopped with exit code: ${code}`));
-        }
+      this.child.stdout.on('data', this.handleLog);
+      this.child.stderr.on('data', this.handleLog);
+
+      this.child.on('close', (code) => {
+        this.child = null;
+        code === 0
+          ? resolve('Fosslight Scanner finished successfully')
+          : reject(`Fosslight Scanner stopped with exit code: ${code}`);
       });
 
-      child.on('error', (error) => {
-        child.kill('SIGKILL');
-        reject(new Error(`Failed to run Fosslight Scanner: ${error.message}`));
+      this.child.on('error', (error) => {
+        this.child = null;
+        reject(`Failed to run Fosslight Scanner: ${error.message}`);
       });
     });
+  }
+
+  public forceQuit() {
+    if (this.child) {
+      try {
+        process.platform == 'win32'
+          ? exec(`taskkill /pid ${this.child.pid} /T /F`)
+          : exec(`kill -9 ${this.child.pid}`);
+      } catch (error) {
+        console.error('Failed to force stop the fosslight scanner: ' + error);
+      }
+    }
   }
 
   private handleLog = (data: any): void => {

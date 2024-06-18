@@ -68,7 +68,7 @@ app.whenReady().then(async () => {
   console.log('Waiting for setting venv and Fosslight Scanner');
   const progressInterval = setInterval(() => {
     process.stdout.write('.');
-  }, 500); // 설치하는 동안 500ms 간격으로 점 출력
+  }, 500); // print '.' every 500ms while setting
 
   // Will take a long time (about 3 min) when the first install the venv and fs.
   const setVenv: boolean = await systemExecuter.executeSetVenv(arg);
@@ -79,13 +79,11 @@ app.whenReady().then(async () => {
   } else {
     console.log('Fosslight Scanner is ready to use.');
   }
-  clearInterval(progressInterval); // 점 출력 정지
+  clearInterval(progressInterval); // stop printing '.'
 
   // IPC communication between main and renderers
   ipcMain.on('send-command', async (_, { command }) => {
-    console.log('command: ', command);
     const args: string[][] = commandParser.parseCmd2Args(command);
-    console.log('args: ', args);
 
     // check venv and fs before executing.
     if (!systemExecuter.checkVenv()) {
@@ -98,8 +96,12 @@ app.whenReady().then(async () => {
         window.webContents.send('recv-command-result', scannerResult);
       });
       const setting: Setting = commandParser.parseCmd2Setting(args, command.type);
-      const settingResult: string = await systemExecuter.saveSetting(setting);
+      await systemExecuter.saveSetting(setting);
     }
+  });
+
+  ipcMain.on('force-quit', () => {
+    systemExecuter.forceQuit();
   });
 
   ipcMain.on('minimizeApp', () => {

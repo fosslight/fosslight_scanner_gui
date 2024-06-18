@@ -1,5 +1,4 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { electronAPI } from '@electron-toolkit/preload';
 
 // Custom APIs for renderer
 const api = {
@@ -22,6 +21,10 @@ const api = {
   // Function to remove the listener for logs
   offLog: (handler: (_: unknown, log: any) => void): void => {
     ipcRenderer.off('recv-log', handler);
+  },
+  // Function to force quit the scan
+  forceQuit: (): void => {
+    ipcRenderer.send('force-quit');
   }
 };
 
@@ -37,6 +40,7 @@ const nativeApi = {
   },
   // Function to close the app window
   closeApp: (): void => {
+    ipcRenderer.send('force-quit');
     ipcRenderer.send('closeApp');
   }
 };

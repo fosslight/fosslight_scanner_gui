@@ -8,6 +8,7 @@ declare global {
       offCommandResult: (handler: (_: unknown, result: any) => void) => void;
       onLog: (handler: (_: unknown, log: any) => void) => void;
       offLog: (handler: (_: unknown, log: any) => void) => void;
+      forceQuit: () => void;
     };
     nativeApi: {
       minimizeApp: () => void;
