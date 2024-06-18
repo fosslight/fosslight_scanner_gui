@@ -1,9 +1,12 @@
 import { app, shell, BrowserWindow, ipcMain, screen } from 'electron';
 import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
-import icon from '../../resources/icon.png?asset';
+import SystemExecuter from './src/SystemExecuter';
+import commandParser from './src/CommandParser';
 
-let mainWindows: BrowserWindow[] = [];
+const systemExecuter = SystemExecuter.getInstance();
+
+const mainWindows: BrowserWindow[] = [];
 
 function createWindows(): void {
   const displays = screen.getAllDisplays();
@@ -48,7 +51,7 @@ function createWindows(): void {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron');
 
@@ -61,21 +64,42 @@ app.whenReady().then(() => {
 
   createWindows();
 
-  // IPC communication between main and hidden windows
-  ipcMain.on('send-command', (event, { command }) => {
-    console.log('command: ', command);
-    const message =
-      command.type === 'analyze'
-        ? 'Analyze command executed successfully'
-        : 'Compare command executed successfully';
-    event.reply('recv-command-result', message);
-  });
+  const arg = !systemExecuter.checkVenv() ? 'false' : undefined; // assign any string is fine
+  console.log('Waiting for setting venv and Fosslight Scanner');
+  const progressInterval = setInterval(() => {
+    process.stdout.write('.');
+  }, 500); // 설치하는 동안 500ms 간격으로 점 출력
 
-  ipcMain.on('send-log', (_, { log }) => {
-    console.log('log result: ', log);
-    mainWindows.forEach((window) => {
-      window.webContents.send('recv-log', { log });
-    });
+  // Will take a long time (about 3 min) when the first install the venv and fs.
+  const setVenv: boolean = await systemExecuter.executeSetVenv(arg);
+  if (!setVenv) {
+    console.error(
+      '[Error]: Failed to set venv and install Fosslight Scanner.\n\t Please check the resources folder and files are in initial condition.\n\t Or try to reinstall this app.'
+    );
+  } else {
+    console.log('Fosslight Scanner is ready to use.');
+  }
+  clearInterval(progressInterval); // 점 출력 정지
+
+  // IPC communication between main and renderers
+  ipcMain.on('send-command', async (_, { command }) => {
+    console.log('command: ', command);
+    const args: string[][] = commandParser.parseCmd2Args(command);
+    console.log('args: ', args);
+
+    // check venv and fs before executing.
+    if (!systemExecuter.checkVenv()) {
+      console.error(
+        '[Error]: Failed to run Fosslight Scanner.\n\t Please check the resources folder and files are in initial condition.\n\t Or try to reinstall this app.'
+      );
+    } else {
+      const scannerResult: string = await systemExecuter.executeScanner(args);
+      mainWindows.forEach((window) => {
+        window.webContents.send('recv-command-result', scannerResult);
+      });
+      const setting: Setting = commandParser.parseCmd2Setting(args, command.type);
+      const settingResult: string = await systemExecuter.saveSetting(setting);
+    }
   });
 
   ipcMain.on('minimizeApp', () => {
@@ -95,6 +119,14 @@ app.whenReady().then(() => {
 
   ipcMain.on('closeApp', () => {
     mainWindows.forEach((window) => window.close());
+  });
+  
+  // IPC communication between main and FOSSLight Scanner
+  systemExecuter.onLog((data: any) => {
+    console.log(data.toString());
+    mainWindows.forEach((window) => {
+      window.webContents.send('recv-log', data.toString());
+    });
   });
 
   app.on('activate', function () {

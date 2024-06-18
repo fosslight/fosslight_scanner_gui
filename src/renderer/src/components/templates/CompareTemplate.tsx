@@ -7,6 +7,22 @@ import useCommandConfig from '@renderer/hooks/useCommandConfig';
 const CompareTemplate: FC = () => {
   const { updateCompareCommandConfig } = useCommandConfig();
 
+  const handleComparisonSubjectChange = (values: string[]) => {
+    updateCompareCommandConfig({ reports: [values[0], values[1]] });
+  };
+
+  const handleResultStoragePathChange = (value?: string) => {
+    updateCompareCommandConfig({ outputPath: value });
+  };
+
+  const handleResultFileNameChange = (value?: string) => {
+    updateCompareCommandConfig({ outputFileName: value });
+  };
+
+  const handleResultFileFormatChange = (values: Set<string>) => {
+    updateCompareCommandConfig({ outputFormat: values.keys().next().value });
+  };
+
   return (
     <div className="flex flex-wrap items-start justify-start gap-16">
       <SourceSelector
@@ -20,12 +36,14 @@ const CompareTemplate: FC = () => {
             you want to compare.
           </>
         }
+        onChange={handleComparisonSubjectChange}
       />
       <div className="flex flex-col justify-start gap-10">
         <TextInput
           label="Storage path for comparison results"
           required
           options={[{ type: 'file', label: 'Local path', value: 'local', placeholder: '~/' }]}
+          onChange={handleResultStoragePathChange}
         />
         <TextInput
           label="File name and format of comparison results"
@@ -48,9 +66,10 @@ const CompareTemplate: FC = () => {
                 { value: 'html', label: '.html' }
               ]}
               radio
-              onChange={(selectedValues) => console.log(selectedValues)}
+              onChange={handleResultFileFormatChange}
             />
           }
+          onChange={handleResultFileNameChange}
         />
       </div>
     </div>

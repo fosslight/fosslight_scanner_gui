@@ -1,7 +1,8 @@
 {
   "name": "fosslight_gui",
   "version": "1.0.0",
-  "description": "An Electron application with React and TypeScript",
+  "license": "MIT",
+  "description": "FOSSLight Scanner GUI Application",
   "main": "./out/main/index.js",
   "author": "example.com",
   "homepage": "https://electron-vite.org",
@@ -19,6 +20,17 @@
     "build:win": "npm run build && electron-builder --win",
     "build:mac": "electron-vite build && electron-builder --mac",
     "build:linux": "electron-vite build && electron-builder --linux"
+  },
+  "build": {
+    "extraResources": [
+      {
+        "from": "resources/",
+        "to": "resources/",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ]
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.0",

@@ -13,3 +13,10 @@ out
 # Python Virtual Environment
 venv
 .venv
+resources/venv
+
+# FOSSLight 
+fosslight*
+
+# GUI setting file
+resources/setting.json

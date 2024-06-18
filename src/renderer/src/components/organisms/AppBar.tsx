@@ -11,21 +11,19 @@ import {
 } from '../atoms/SVGIcons';
 
 const AppBar: FC = () => {
-  const { openModal, closeModal, modalRef, modalType } = useModal();
+  const { openModal: openSettingModal, modalRef: settingModalRef } = useModal();
+  const { openModal: openInfoModal, modalRef: infoModalRef } = useModal();
 
   const handleClickMinimizeButton = (): void => {
-    console.log('client: minimizeApp');
-    window.electron.ipcRenderer.send('minimizeApp');
+    window.nativeApi.minimizeApp();
   };
 
   const handleClickMaximizeButton = (): void => {
-    console.log('client: maximizeApp');
-    window.electron.ipcRenderer.send('maximizeApp');
+    window.nativeApi.maximizeApp();
   };
 
   const handleClickCloseButton = (): void => {
-    console.log('client: closeApp');
-    window.electron.ipcRenderer.send('closeApp');
+    window.nativeApi.closeApp();
   };
 
   return (
@@ -49,10 +47,10 @@ const AppBar: FC = () => {
           </div>
 
           <div className="control prevent-select flex items-center justify-start">
-            <button id="setting" onClick={() => openModal('setting')} className="no-drag">
+            <button id="setting" onClick={openSettingModal} className="no-drag">
               <SettingModalIcon />
             </button>
-            <button id="info" onClick={() => openModal('info')} className="no-drag">
+            <button id="info" onClick={openInfoModal} className="no-drag">
               <InfoModalIcon />
             </button>
             <div className="ml-2 h-[16px] w-[1px] bg-PaleGray-400" />
@@ -68,8 +66,8 @@ const AppBar: FC = () => {
           </div>
         </div>
       </div>
-      {modalType === 'setting' && <SettingModal modalRef={modalRef} />}
-      {modalType === 'info' && <InfoModal modalRef={modalRef} />}
+      <SettingModal modalRef={settingModalRef} />
+      <InfoModal modalRef={infoModalRef} />
     </>
   );
 };

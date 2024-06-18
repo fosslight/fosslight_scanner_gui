@@ -4,7 +4,7 @@ export interface ICommandContext {
   analyzeCommandConfig: AnalyzeCommandConfig;
   compareCommandConfig: CompareCommandConfig;
   setAnalyzeCommandConfig: any;
-  setCompareCommandConfig: (config: CompareCommandConfig) => void;
+  setCompareCommandConfig: any;
 }
 
 const CommandContext = createContext<ICommandContext | undefined>(undefined);
@@ -15,13 +15,19 @@ interface ICommandProviderProps {
 
 export const CommandProvider: FC<ICommandProviderProps> = ({ children }) => {
   const [analyzeCommandConfig, setAnalyzeCommandConfig] = useState<AnalyzeCommandConfig>({
-    path: ['.']
+    outputFormat: 'excel'
   });
-  const [compareCommandConfig, setCompareCommandConfig] = useState<CompareCommandConfig>({});
+  const [compareCommandConfig, setCompareCommandConfig] = useState<CompareCommandConfig>({
+    outputFormat: 'excel'
+  });
 
   useEffect(() => {
     console.log('analyze command config:', analyzeCommandConfig);
   }, [analyzeCommandConfig]);
+
+  useEffect(() => {
+    console.log('compare command config:', compareCommandConfig);
+  }, [compareCommandConfig]);
 
   return (
     <CommandContext.Provider

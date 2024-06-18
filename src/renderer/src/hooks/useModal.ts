@@ -1,23 +1,19 @@
 import { RefObject, useCallback, useState, useEffect, useRef } from 'react';
 
 interface IUseModal {
-  openModal: (type: string) => void;
+  openModal: () => void;
   closeModal: () => void;
   modalRef: RefObject<HTMLDialogElement>;
-  modalType: string | null;
 }
 
 const useModal = (): IUseModal => {
   const modalRef = useRef<HTMLDialogElement>(null);
-  const [modalType, setModalType] = useState<string | null>(null);
 
-  const openModal = useCallback((type: string) => {
-    setModalType(type);
+  const openModal = useCallback(() => {
     modalRef.current?.showModal();
   }, []);
 
   const closeModal = useCallback(() => {
-    setModalType(null);
     modalRef.current?.close();
   }, []);
 
@@ -35,7 +31,7 @@ const useModal = (): IUseModal => {
     };
   }, []);
 
-  return { openModal, closeModal, modalRef, modalType };
+  return { openModal, closeModal, modalRef };
 };
 
 export default useModal;

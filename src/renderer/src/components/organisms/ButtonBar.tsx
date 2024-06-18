@@ -9,28 +9,30 @@ interface IButtonBarProps {
 
 const ButtonBar: FC<IButtonBarProps> = ({ onForceQuit }) => {
   const { mode } = useMode();
-  const { analyze, compare } = useCommandManager();
+  const { analyze, compare, idle } = useCommandManager();
 
   const handleExecuteClick = () => {
     if (mode === 'analyze') {
-      console.log('Analyze button clicked');
       analyze();
-      return;
     } else {
-      console.log('Compare button clicked');
       compare();
     }
   };
 
   return (
     <div className="flex h-11 items-center justify-end gap-2 border-t border-t-PaleGray-300 px-4">
-      <Button type="primary" onClick={handleExecuteClick}>
-        Start {mode === 'analyze' ? 'Analysis' : 'Comparing'}
-      </Button>
-      <Button type="secondary" onClick={onForceQuit}>
-        Force Quit
-      </Button>
-      <Button type="tertiary">Open storage path</Button>
+      {idle ? (
+        <Button type="primary" onClick={handleExecuteClick}>
+          Start {mode === 'analyze' ? 'Analysis' : 'Comparing'}
+        </Button>
+      ) : (
+        <>
+          <Button type="secondary" onClick={onForceQuit}>
+            Force Quit
+          </Button>
+          <Button type="tertiary">Open storage path</Button>
+        </>
+      )}
     </div>
   );
 };

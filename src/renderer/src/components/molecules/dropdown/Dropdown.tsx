@@ -49,7 +49,7 @@ const Dropdown: FC<IDropdownProps> = ({ options, value, onChange }) => {
         ref={toggleRef}
         onClick={handleToggle}
       >
-        <Text type="p50-m" color="PaleGray-800">
+        <Text type="p50-m" color="PaleGray-800" className="truncate">
           {selectedOption.label}
         </Text>
         {hasOptions &&

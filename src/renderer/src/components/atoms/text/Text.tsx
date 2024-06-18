@@ -1,25 +1,29 @@
-import { FC, ReactNode } from 'react';
+import { FC, HTMLAttributes, ReactNode } from 'react';
 
-interface ITextProps {
+interface ITextProps extends HTMLAttributes<HTMLElement> {
   type: TextType;
   color?: ColorType;
   inner?: boolean;
+  log?: boolean;
   className?: string;
-  children: ReactNode;
+  children?: ReactNode;
 }
 
 const Text: FC<ITextProps> = ({
   type,
   color,
   inner = false,
+  log = false,
   className: inputClassName,
-  children
+  children,
+  ...inputProps
 }) => {
   const [size, weight] = type.split('-');
-  const className = `${sizeClass[size]} ${weightClass[weight]} ${colorClass[color!]} ${inputClassName}`;
-  const props = { className, children };
+  const className = `font-body ${sizeClass[size]} ${weightClass[weight]} ${colorClass[color!]} ${inputClassName}`;
+  const props = { className, children, ...inputProps };
 
   if (inner) return <span {...props} />;
+  if (log) return <pre {...props} />;
   if (size[0] === 'p') return <p {...props} />;
   if (size === 'h700') return <h4 {...props} />;
   if (size === 'h800') return <h3 {...props} />;
