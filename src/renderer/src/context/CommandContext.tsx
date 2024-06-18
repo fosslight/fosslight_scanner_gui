@@ -21,14 +21,6 @@ export const CommandProvider: FC<ICommandProviderProps> = ({ children }) => {
     outputFormat: 'excel'
   });
 
-  // useEffect(() => {
-  //   console.log('analyze command config:', analyzeCommandConfig);
-  // }, [analyzeCommandConfig]);
-
-  // useEffect(() => {
-  //   console.log('compare command config:', compareCommandConfig);
-  // }, [compareCommandConfig]);
-
   return (
     <CommandContext.Provider
       value={{

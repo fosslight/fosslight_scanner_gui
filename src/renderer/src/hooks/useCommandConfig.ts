@@ -19,7 +19,13 @@ const useCommandConfig = (): IUseCommandConfig => {
   const [readyToAnalyze, setReadyToAnalyze] = useState<boolean>(false);
   const [readyToCompare, setReadyToCompare] = useState<boolean>(false);
 
-  const requiredFieldsForAnalyze = ['mode', 'path', 'outputFormat', 'outputPath', 'outputFileName'];
+  const requiredFieldsForAnalyze = [
+    'mode',
+    'subjects',
+    'outputFormat',
+    'outputPath',
+    'outputFileName'
+  ];
   const requiredFieldsForCompare = ['reports', 'outputFormat', 'outputPath', 'outputFileName'];
 
   useEffect(() => {
