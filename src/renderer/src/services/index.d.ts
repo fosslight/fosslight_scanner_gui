@@ -1,10 +1,17 @@
 type ScannerType = 'source' | 'binary' | 'dependency';
+type PathType = 'text' | 'dir' | 'file';
+
+interface PathInfo {
+  type: PathType;
+  path: string;
+}
 
 interface AnalyzeCommandConfig {
   mode?: ScannerType[]; // default: ['source', 'binary', 'dependency'] (all)
-  path?: string[]; // default: '.' (current directory)
-  link?: string[]; // default: ''
-  excludedPath?: string[];
+  // path?: string[]; // default: '.' (current directory)
+  // link?: string[]; // default: ''
+  subjects?: PathInfo[];
+  exclusions?: PathInfo[];
   outputFormat?: 'excel' | 'yaml'; // default: ['excel']
   outputPath?: string; // default: '.' (current directory)
   outputFileName?: string;

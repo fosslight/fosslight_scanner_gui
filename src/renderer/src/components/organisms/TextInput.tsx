@@ -16,6 +16,7 @@ interface ITextInputProps {
   required?: boolean;
   showDropdown?: boolean;
   showInput?: boolean;
+  fullWidth?: boolean;
   options: ITextInputOption[];
   suffix?: ReactNode;
   value?: string;
@@ -27,6 +28,7 @@ const TextInput: FC<ITextInputProps> = ({
   required = false,
   showDropdown = true,
   showInput = true,
+  fullWidth = false,
   options,
   suffix,
   value: inputValue,
@@ -47,9 +49,9 @@ const TextInput: FC<ITextInputProps> = ({
     onChange?.(value, selectedOption.type);
   };
 
-  const handleFileChange = (files: File[]) => {
-    setValue(files[0].path);
-    onChange?.(files[0].path, selectedOption.type); // Fix: should handle both ordinary file and directory
+  const handlePathChange = (path: string) => {
+    setValue(path);
+    onChange?.(path, selectedOption.type);
   };
 
   useEffect(() => {
@@ -72,7 +74,9 @@ const TextInput: FC<ITextInputProps> = ({
       )}
       <div className="flex w-full gap-2">
         {showInput && (
-          <div className="flex h-[36px] w-[280px] min-w-[280px] items-center rounded-lg border border-PaleGray-300 bg-white px-1">
+          <div
+            className={`flex h-[36px] w-[280px] min-w-[280px] items-center rounded-lg border border-PaleGray-300 bg-white px-1 ${fullWidth && 'w-full'}`}
+          >
             {showDropdown && (
               <>
                 <div className="mr-2">
@@ -118,7 +122,7 @@ const TextInput: FC<ITextInputProps> = ({
       <FileUpload
         fileUploadRef={fileUploadRef}
         directory={selectedOption.type === 'dir'}
-        onChange={handleFileChange}
+        onPathChange={handlePathChange}
       />
     </div>
   );

@@ -2,10 +2,12 @@ import CommandContext from '@renderer/context/CommandContext';
 import { useCallback, useContext, useEffect, useState } from 'react';
 
 interface IUseCommandConfig {
-  updateAnalyzeCommandConfig: (config: Partial<AnalyzeCommandConfig>) => void;
-  updateCompareCommandConfig: (config: Partial<CompareCommandConfig>) => void;
+  analyzeCommandConfig: AnalyzeCommandConfig;
+  compareCommandConfig: CompareCommandConfig;
   readyToAnalyze: boolean;
   readyToCompare: boolean;
+  updateAnalyzeCommandConfig: (config: Partial<AnalyzeCommandConfig>) => void;
+  updateCompareCommandConfig: (config: Partial<CompareCommandConfig>) => void;
 }
 
 const useCommandConfig = (): IUseCommandConfig => {
@@ -60,6 +62,8 @@ const useCommandConfig = (): IUseCommandConfig => {
   );
 
   return {
+    analyzeCommandConfig: context.analyzeCommandConfig,
+    compareCommandConfig: context.compareCommandConfig,
     readyToAnalyze,
     readyToCompare,
     updateAnalyzeCommandConfig,

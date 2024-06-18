@@ -33,7 +33,7 @@ const SourceSelector: FC<ITokenSelectorProps> = ({
     if (!value || !type) {
       setPathInfo(undefined);
     } else {
-      setPathInfo({ option: type, path: value });
+      setPathInfo({ type: type, path: value });
     }
   };
 

@@ -3,7 +3,7 @@ import ListBoxItem from '../molecules/ListBoxItem';
 import { ITextInputOption } from './TextInput';
 
 export interface PathInfo {
-  option: ITextInputOption['type'];
+  type: ITextInputOption['type'];
   path: string;
 }
 
@@ -25,7 +25,7 @@ const ListBox: FC<IListBoxProps> = ({ emptyText, pathInfoList, onEditClick, onRe
       ) : (
         pathInfoList.map((pathInfo, index) => (
           <ListBoxItem
-            option={pathInfo.option}
+            option={pathInfo.type}
             path={pathInfo.path}
             onRemoveClick={() => onRemoveClick(index)}
             onEditClick={() => onEditClick(index)}

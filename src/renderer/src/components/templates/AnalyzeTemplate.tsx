@@ -1,4 +1,4 @@
-import { FC } from 'react';
+import { FC, useEffect } from 'react';
 import SourceSelector from '../organisms/SourceSelector';
 import TextInput from '../organisms/TextInput';
 import MultiSelectChip from '../molecules/MultiSelectChip';
@@ -6,14 +6,18 @@ import Select from '../organisms/Select';
 import useCommandConfig from '@renderer/hooks/useCommandConfig';
 
 const AnalyzeTemplate: FC = () => {
-  const { updateAnalyzeCommandConfig } = useCommandConfig();
+  const { analyzeCommandConfig, updateAnalyzeCommandConfig } = useCommandConfig();
 
-  const handleAnalysisSubjectChange = (values: string[]) => {
-    updateAnalyzeCommandConfig({ path: values });
+  useEffect(() => {
+    console.log(analyzeCommandConfig);
+  }, [analyzeCommandConfig]);
+
+  const handleAnalysisSubjectChange = (values: PathInfo[]) => {
+    updateAnalyzeCommandConfig({ subjects: values });
   };
 
-  const handleExclusionChange = (values: string[]) => {
-    updateAnalyzeCommandConfig({ excludedPath: values });
+  const handleExclusionChange = (values: PathInfo[]) => {
+    updateAnalyzeCommandConfig({ exclusions: values });
   };
 
   const handleScannerTypeChange = (values: Set<string>) => {
@@ -38,9 +42,8 @@ const AnalyzeTemplate: FC = () => {
         label="Analysis subject"
         required
         options={[
-          { value: 'github', label: 'GitHub repo', type: 'text', placeholder: 'https://github/' }, // Change this option to 'Link' later
-          { value: 'local-dir', label: 'Local directory', type: 'dir', placeholder: '~/' },
-          { value: 'local-file', label: 'Local file', type: 'file', placeholder: '~/' }
+          { type: 'text', value: 'github', label: 'GitHub repo', placeholder: 'https://github/' }, // Change this option to 'Link' later
+          { type: 'dir', value: 'local-dir', label: 'Local directory', placeholder: '~/' }
         ]}
         placeholder={
           <>
@@ -49,11 +52,12 @@ const AnalyzeTemplate: FC = () => {
             or local path you want to analyze.
           </>
         }
+        values={analyzeCommandConfig.subjects}
         onChange={handleAnalysisSubjectChange}
       />
       <SourceSelector
         label="Exclusion from analysis"
-        options={[{ value: 'local', label: 'Local path', type: 'file', placeholder: '~/' }]}
+        options={[{ type: 'file', value: 'local', label: 'Local path', placeholder: '~/' }]}
         placeholder={
           <>
             Exclude the local paths
@@ -62,6 +66,7 @@ const AnalyzeTemplate: FC = () => {
           </>
         }
         addButtonConfig={{ type: 'tertiary', title: 'Exclude' }}
+        values={analyzeCommandConfig.exclusions}
         onChange={handleExclusionChange}
       />
       <div className="flex h-[250px] flex-col justify-between">
@@ -73,18 +78,21 @@ const AnalyzeTemplate: FC = () => {
             { value: 'binary', label: 'Binary' },
             { value: 'dependency', label: 'Dependency' }
           ]}
+          values={new Set(analyzeCommandConfig.mode)}
           onChange={handleScannerTypeChange}
         />
         <TextInput
           label="Storage path for analysis results"
           required
-          options={[{ type: 'file', label: 'Local path', value: 'local', placeholder: '~/' }]}
+          options={[{ type: 'dir', label: 'Local directory', value: 'local', placeholder: '~/' }]}
+          value={analyzeCommandConfig.outputPath}
           onChange={handleResultStoragePathChange}
         />
         <TextInput
           label="File name and format of analysis results"
           required
           showDropdown={false}
+          value={analyzeCommandConfig.outputFileName}
           options={[
             {
               type: 'text',
@@ -100,6 +108,7 @@ const AnalyzeTemplate: FC = () => {
                 { value: 'yaml', label: '.yaml' }
               ]}
               radio
+              values={new Set([analyzeCommandConfig.outputFormat!])}
               onChange={handleResultFileFormatChange}
             />
           }

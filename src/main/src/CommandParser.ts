@@ -23,7 +23,7 @@ const commandParser = {
           analConfig.mode.includes('dependency'))
           ? 'all'
           : analConfig.mode.join(' ');
-      path = analConfig.path ?? (analConfig.link ? [] : ['undefined']);
+      path = analConfig.subjects ?? (analConfig.link ? [] : ['undefined']);
       link = analConfig.link ?? [];
       excludedPath = analConfig.excludedPath ? '-e ' + analConfig.excludedPath.join(' ') : '';
       excludedPathArray = analConfig.excludedPath ?? [];

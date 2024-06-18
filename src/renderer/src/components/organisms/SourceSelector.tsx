@@ -1,10 +1,12 @@
-import { FC, ReactNode, useState } from 'react';
+import { FC, ReactNode, useEffect, useState } from 'react';
 import TextInput, { ITextInputOption } from './TextInput';
-import ListBox, { PathInfo } from './ListBox';
+import ListBox from './ListBox';
 import Button, { ButtonType } from '../atoms/button/Button';
 import useMeasure from '@renderer/hooks/useMeasure';
 import ModifyModal from './modal/ModifyModal';
 import useModal from '@renderer/hooks/useModal';
+import Modal from './modal/Modal';
+import { ModifyModalIcon } from '../atoms/SVGIcons';
 
 interface ISourceSelectorProps {
   label: string;
@@ -15,7 +17,8 @@ interface ISourceSelectorProps {
     type: ButtonType;
     title: string;
   };
-  onChange?: (values: string[]) => void;
+  values?: PathInfo[];
+  onChange?: (values: PathInfo[]) => void;
 }
 
 const SourceSelector: FC<ISourceSelectorProps> = ({
@@ -24,18 +27,19 @@ const SourceSelector: FC<ISourceSelectorProps> = ({
   options,
   addButtonConfig,
   placeholder,
+  values,
   onChange
 }) => {
   const { ref, width, ready } = useMeasure();
 
-  const [pathInfo, setPathInfo] = useState<PathInfo | undefined>(undefined); //여기를 path option 따로 받거나
-  const [pathInfoList, setPathInfoList] = useState<PathInfo[]>([]); // [PathInfo, ...
+  const [pathInfo, setPathInfo] = useState<PathInfo | undefined>(undefined);
+  const [pathInfoList, setPathInfoList] = useState<PathInfo[]>(values ?? []);
 
   const handleInputChange = (value?: string, type?: ITextInputOption['type']) => {
     if (!value || !type) {
       setPathInfo(undefined);
     } else {
-      setPathInfo({ option: type, path: value });
+      setPathInfo({ type: type, path: value });
     }
   };
 
@@ -46,39 +50,51 @@ const SourceSelector: FC<ISourceSelectorProps> = ({
     const newPathInfoList = [...pathInfoList, pathInfo];
     setPathInfoList(newPathInfoList);
     setPathInfo(undefined);
-    onChange?.(newPathInfoList.map((pathInfo) => pathInfo.path));
+    onChange?.(newPathInfoList);
   };
 
   const [editIndex, setEditIndex] = useState<number | null>(null);
+  const [editPath, setEditPath] = useState<string | null>(null);
+
   const handleEditClick = (index: number) => {
     setEditIndex(index);
-    console.log(`Edit item at index ${editIndex}`);
-    pathInfoList.map((info, i) => console.log(`PathList[${i}]: ${info.path}`));
+    setEditPath(pathInfoList[index].path);
     openModal();
   };
 
   const handleRemoveClick = (index: number) => {
-    // console.log(`Remove item at index ${index}`);
     const newPathInfoList = pathInfoList.filter((_, i) => i !== index);
     setPathInfoList(newPathInfoList);
-    onChange?.(newPathInfoList.map((pathInfo) => pathInfo.path));
+    onChange?.(newPathInfoList);
   };
 
-  const handleElementChange = (value: string | null, type?: ITextInputOption['type']) => {
+  const handleElementChange = (index: number | null) => (value?: string) => {
+    if (index === null) return;
+    setEditPath(value ?? '');
+  };
+
+  const handleCloseClick = () => {
+    setEditIndex(null);
+    setEditPath(null);
+    closeModal();
+  };
+
+  const handleModifyClick = () => {
     if (editIndex === null) return;
-    const newPathInfoList = pathInfoList.map((item, i) =>
-      i === editIndex ? { option: type || item.option, path: value || item.path } : item
-    );
+    const newPathInfoList = [...pathInfoList];
+    newPathInfoList[editIndex].path = editPath || '';
     setPathInfoList(newPathInfoList);
-    // console.log(`Modify item at index ${editIndex}`);
-    onChange?.(newPathInfoList.map((pathInfo) => pathInfo.path));
+    onChange?.(newPathInfoList);
+    setEditIndex(null);
+    setEditPath(null);
+    closeModal();
   };
 
-  // option 이랑 path(inputvalue)를 받아서 리스트에 추가 해야함 => 구조체나 객체나 튜플로 받아서 처리해야할듯
-  // add 버튼 누르면 리스트에 추가됨
-  // 어쨋튼 리스트는 여기서 관리가 되고 있을테니, 그 리스트를 ListBox로 넘겨주면 될듯
-  // ListBox에서는 리스트를 받아서 렌더링만 해주면 됨
-  // path_list : [(option, path), (option, path), ...]
+  useEffect(() => {
+    if (values) {
+      setPathInfoList(values);
+    }
+  }, [values]);
 
   return (
     <div className="flex w-fit flex-col gap-4">
@@ -106,7 +122,7 @@ const SourceSelector: FC<ISourceSelectorProps> = ({
           />
         </div>
       )}
-      {editIndex !== null && (
+      {/* {editIndex !== null && (
         <ModifyModal
           isOpen={editIndex !== null}
           modalRef={modalRef}
@@ -117,6 +133,35 @@ const SourceSelector: FC<ISourceSelectorProps> = ({
           value={pathInfoList[editIndex]?.path}
           onChange={handleElementChange}
         />
+      )} */}
+      {editIndex !== null && (
+        <Modal
+          modalRef={modalRef}
+          title="Modify Analysis Subject"
+          icon={<ModifyModalIcon />}
+          buttons={[
+            <Button key="close" type="tertiary" onClick={handleCloseClick}>
+              Close
+            </Button>,
+            <Button key="modify" type="primary" onClick={handleModifyClick}>
+              Modify
+            </Button>
+          ]}
+        >
+          <TextInput
+            fullWidth
+            options={[
+              {
+                type: pathInfoList[editIndex]?.type,
+                label: pathInfoList[editIndex]?.type === 'text' ? 'Github repo' : 'Local directory',
+                value: 'fixed',
+                placeholder: pathInfoList[editIndex]?.type === 'text' ? 'https://github/' : '~/'
+              }
+            ]}
+            value={pathInfoList[editIndex]?.path}
+            onChange={handleElementChange(editIndex)}
+          />
+        </Modal>
       )}
     </div>
   );

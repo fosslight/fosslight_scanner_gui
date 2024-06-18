@@ -29,8 +29,8 @@ const LowerTemplate: FC = () => {
       </div>
       <Modal
         modalRef={modalRef}
-        modalicon=<ExclamationIcon />
         title="Would you sure to force quit the analysis?"
+        icon={<ExclamationIcon />}
         content="The details such as the analysis list that you've added will be maintained."
         buttons={[
           <Button key="force-quit" type="secondary">
