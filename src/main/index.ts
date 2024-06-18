@@ -19,7 +19,7 @@ function createWindows(): void {
       height: display.bounds.height,
       frame: false,
       autoHideMenuBar: true,
-      ...(process.platform === 'linux' ? { icon } : {}),
+      ...(process.platform === 'linux' ? {} : {}),
       webPreferences: {
         preload: join(__dirname, '../preload/index.js'),
         contextIsolation: true,
@@ -120,7 +120,7 @@ app.whenReady().then(async () => {
   ipcMain.on('closeApp', () => {
     mainWindows.forEach((window) => window.close());
   });
-  
+
   // IPC communication between main and FOSSLight Scanner
   systemExecuter.onLog((data: any) => {
     console.log(data.toString());
