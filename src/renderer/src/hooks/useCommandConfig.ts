@@ -37,7 +37,6 @@ const useCommandConfig = (): IUseCommandConfig => {
     const ready = requiredFieldsForCompare.every((field) => {
       const value = context.compareCommandConfig[field];
       if (field === 'reports') {
-        console.log(value);
         return value instanceof Array && value[0] && value[1];
       }
       return (

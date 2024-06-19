@@ -3,7 +3,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 // Custom APIs for renderer
 const api = {
   // Function to send a command to the main process
-  sendCommand: (command: any): void => {
+  sendCommand: (command: Command): void => {
     ipcRenderer.send('send-command', { command });
   },
   // Function to add a listener for command results

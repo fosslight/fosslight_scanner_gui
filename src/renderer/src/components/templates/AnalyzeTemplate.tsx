@@ -57,7 +57,10 @@ const AnalyzeTemplate: FC = () => {
       />
       <SourceSelector
         label="Exclusion from analysis"
-        options={[{ type: 'file', value: 'local', label: 'Local path', placeholder: '~/' }]}
+        options={[
+          { type: 'dir', value: 'local-dir', label: 'Local directory', placeholder: '~/' },
+          { type: 'file', value: 'local-file', label: 'Local file', placeholder: '~/' }
+        ]}
         placeholder={
           <>
             Exclude the local paths

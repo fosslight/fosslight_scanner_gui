@@ -4,10 +4,10 @@ import useMode from '@renderer/hooks/useMode';
 import useCommandManager from '@renderer/hooks/useCommandManager';
 
 interface IButtonBarProps {
-  onForceQuit: () => void;
+  onForceQuitClick: () => void;
 }
 
-const ButtonBar: FC<IButtonBarProps> = ({ onForceQuit }) => {
+const ButtonBar: FC<IButtonBarProps> = ({ onForceQuitClick }) => {
   const { mode } = useMode();
   const { analyze, compare, idle } = useCommandManager();
 
@@ -27,7 +27,7 @@ const ButtonBar: FC<IButtonBarProps> = ({ onForceQuit }) => {
         </Button>
       ) : (
         <>
-          <Button type="secondary" onClick={onForceQuit}>
+          <Button type="secondary" onClick={onForceQuitClick}>
             Force Quit
           </Button>
           <Button type="tertiary">Open storage path</Button>

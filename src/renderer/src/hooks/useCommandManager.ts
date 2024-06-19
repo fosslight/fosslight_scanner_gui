@@ -5,7 +5,7 @@ import { useCallback, useContext, useEffect, useState } from 'react';
 
 interface IUseCommandManager {
   command: Command | null;
-  result: string | null;
+  result: CommandResponse | null;
   log: string | null;
   idle: boolean;
   status: ScannerType | null;
@@ -20,7 +20,7 @@ const useCommandManager = (): IUseCommandManager => {
   }
 
   const commandManager = CommandManager.getInstance();
-  const [result, setResult] = useState<string | null>(null);
+  const [result, setResult] = useState<CommandResponse | null>(null);
   const [log, setLog] = useState<string | null>(null);
   const [idle, setIdle] = useState<boolean>(true);
   const [status, setStatus] = useState<ScannerType | null>(null);
@@ -39,8 +39,7 @@ const useCommandManager = (): IUseCommandManager => {
 
   const handleCommandResult = useCallback((result: CommandResponse) => {
     setStatus(null);
-    setResult(result.message ?? null);
-    console.log(result);
+    setResult(result);
   }, []);
 
   const handleLog = useCallback((log: string) => {

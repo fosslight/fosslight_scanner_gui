@@ -28,7 +28,7 @@ const CompareTemplate: FC = () => {
       <SourceSelector
         label="Comparison Subject"
         required
-        options={[{ value: 'local', label: 'Local path', type: 'file', placeholder: '~/' }]}
+        options={[{ type: 'file', value: 'local', label: 'Local file', placeholder: '~/' }]}
         placeholder={
           <>
             Add two analysis result files
@@ -45,7 +45,9 @@ const CompareTemplate: FC = () => {
         <TextInput
           label="Storage path for comparison results"
           required
-          options={[{ type: 'file', label: 'Local path', value: 'local', placeholder: '~/' }]}
+          options={[
+            { type: 'dir', label: 'Local directory', value: 'local-dir', placeholder: '~/' }
+          ]}
           value={compareCommandConfig.outputPath}
           onChange={handleResultStoragePathChange}
         />
