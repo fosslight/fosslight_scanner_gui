@@ -46,6 +46,7 @@ interface CommandResponse {
 }
 
 interface Setting {
+  mode: string[];
   path: string[];
   link: string[];
   dep_argument: string;

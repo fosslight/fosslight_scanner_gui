@@ -62,6 +62,7 @@ const commandParser = {
 
   parseCmd2Setting: (args: string[][], type: 'analyze' | 'compare'): Setting => {
     const setting: Setting = {
+      mode: [],
       path: [],
       link: [],
       dep_argument: '',
@@ -81,6 +82,7 @@ const commandParser = {
     const paths = args[1];
     const links = args[2];
     const otherOptions = args[3];
+    setting.mode = Array.from(args[0]);
     setting.path = paths[0] === 'undefined' ? [] : Array.from(paths);
     setting.link = links.length > 0 ? Array.from(links) : [];
     setting.outputDir = args[4][0];
