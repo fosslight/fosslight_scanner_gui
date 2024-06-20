@@ -14,7 +14,7 @@ const LowerTemplate: FC = () => {
   const { mode } = useMode();
   const { analyzeCommandConfig, compareCommandConfig, readyToAnalyze, readyToCompare } =
     useCommandConfig();
-  const { result } = useCommandManager();
+  const { result, log } = useCommandManager();
   const forceQuitModal = useModal();
   const successfulModal = useModal();
   const failedModal = useModal();

@@ -39,7 +39,7 @@ const ButtonBar: FC<IButtonBarProps> = ({ onForceQuitClick }) => {
           <Button type="primary" onClick={handleExecuteClick}>
             Start {mode === 'analyze' ? 'Analysis' : 'Comparing'}
           </Button>
-          {log && (
+          {log !== null && (
             <Button type="tertiary" onClick={handleClearLogClick}>
               Clear Log
             </Button>

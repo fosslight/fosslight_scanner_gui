@@ -27,7 +27,7 @@ const useCommandManager = (): IUseCommandManager => {
 
   const commandManager = CommandManager.getInstance();
   const [result, setResult] = useState<CommandResponse | null>(null);
-  const [log, setLog] = useState<string | null>(null);
+  const [log, setLog] = useState<string | null>(commandManager.logHistory === null ? null : '');
   const [idle, setIdle] = useState<boolean>(true);
   const [scanner, setScanner] = useState<ScannerType | null>(null);
   const [subject, setSubject] = useState<string | null>(null);
