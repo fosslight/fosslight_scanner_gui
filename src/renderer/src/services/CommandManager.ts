@@ -4,7 +4,7 @@ class CommandManager {
   private static instance: CommandManager;
   private readonly commandQueue: Command[] = [];
   private readonly capacity: number = 1;
-  private logHandlers: ((log: string) => void)[] = [];
+  private logHandlers: ((log: string | null) => void)[] = [];
   private commandResultHandlers: ((result: CommandResponse) => void)[] = [];
   private idleHandlers: ((isReady: boolean) => void)[] = [];
 
@@ -77,6 +77,10 @@ class CommandManager {
 
   get command(): Command | null {
     return this.commandQueue[0] ?? null;
+  }
+
+  public clearLog(): void {
+    this.logHandlers.forEach((handler) => handler(null));
   }
 }
 

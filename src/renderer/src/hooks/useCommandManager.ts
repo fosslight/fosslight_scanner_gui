@@ -16,6 +16,7 @@ interface IUseCommandManager {
   subject: string | null;
   analyze: () => void;
   compare: () => void;
+  clearLog: () => void;
 }
 
 const useCommandManager = (): IUseCommandManager => {
@@ -43,18 +44,26 @@ const useCommandManager = (): IUseCommandManager => {
     commandManager.executeCommand(command);
   }, [context, idle]);
 
+  const clearLog = useCallback(() => {
+    commandManager.clearLog();
+  }, []);
+
   const handleCommandResult = useCallback((result: CommandResponse) => {
     setScanner(null);
     setSubject(null);
     setResult(result);
   }, []);
 
-  const handleLog = useCallback((log: string) => {
-    const scanner = parseLogToScanner(log);
-    if (scanner) setScanner(scanner);
-    const subject = parseLogToSubject(log);
-    if (subject) setSubject(subject);
-    setLog((prev) => (prev ? `${prev}\n${log}` : log));
+  const handleLog = useCallback((log: string | null) => {
+    if (log === null) {
+      setLog(null);
+    } else {
+      const scanner = parseLogToScanner(log);
+      if (scanner) setScanner(scanner);
+      const subject = parseLogToSubject(log);
+      if (subject) setSubject(subject);
+      setLog((prev) => (prev ? `${prev}\n${log}` : log));
+    }
   }, []);
 
   const handleIdle = useCallback((idle: boolean) => {
@@ -81,7 +90,8 @@ const useCommandManager = (): IUseCommandManager => {
     scanner,
     subject,
     analyze,
-    compare
+    compare,
+    clearLog
   };
 };
 

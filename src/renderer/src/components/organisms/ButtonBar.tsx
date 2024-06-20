@@ -10,7 +10,7 @@ interface IButtonBarProps {
 
 const ButtonBar: FC<IButtonBarProps> = ({ onForceQuitClick }) => {
   const { mode } = useMode();
-  const { analyze, compare, idle } = useCommandManager();
+  const { idle, log, analyze, compare, clearLog } = useCommandManager();
   const { analyzeCommandConfig, compareCommandConfig } = useCommandConfig();
 
   const handleExecuteClick = () => {
@@ -28,12 +28,23 @@ const ButtonBar: FC<IButtonBarProps> = ({ onForceQuitClick }) => {
     );
   };
 
+  const handleClearLogClick = () => {
+    clearLog();
+  };
+
   return (
     <div className="flex h-11 items-center justify-end gap-2 border-t border-t-PaleGray-300 px-4">
       {idle ? (
-        <Button type="primary" onClick={handleExecuteClick}>
-          Start {mode === 'analyze' ? 'Analysis' : 'Comparing'}
-        </Button>
+        <>
+          <Button type="primary" onClick={handleExecuteClick}>
+            Start {mode === 'analyze' ? 'Analysis' : 'Comparing'}
+          </Button>
+          {log && (
+            <Button type="tertiary" onClick={handleClearLogClick}>
+              Clear Log
+            </Button>
+          )}
+        </>
       ) : (
         <>
           <Button type="secondary" onClick={onForceQuitClick}>
