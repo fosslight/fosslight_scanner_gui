@@ -2,6 +2,7 @@ import { FC } from 'react';
 import Button from '../atoms/button/Button';
 import useMode from '@renderer/hooks/useMode';
 import useCommandManager from '@renderer/hooks/useCommandManager';
+import useCommandConfig from '@renderer/hooks/useCommandConfig';
 
 interface IButtonBarProps {
   onForceQuitClick: () => void;
@@ -10,6 +11,7 @@ interface IButtonBarProps {
 const ButtonBar: FC<IButtonBarProps> = ({ onForceQuitClick }) => {
   const { mode } = useMode();
   const { analyze, compare, idle } = useCommandManager();
+  const { analyzeCommandConfig, compareCommandConfig } = useCommandConfig();
 
   const handleExecuteClick = () => {
     if (mode === 'analyze') {
@@ -17,6 +19,13 @@ const ButtonBar: FC<IButtonBarProps> = ({ onForceQuitClick }) => {
     } else {
       compare();
     }
+  };
+
+  const handleOpenStoragePathClick = () => {
+    window.nativeApi.openFileExplorer(
+      (mode === 'analyze' ? analyzeCommandConfig.outputPath : compareCommandConfig.outputPath) ??
+        './'
+    );
   };
 
   return (
@@ -30,7 +39,9 @@ const ButtonBar: FC<IButtonBarProps> = ({ onForceQuitClick }) => {
           <Button type="secondary" onClick={onForceQuitClick}>
             Force Quit
           </Button>
-          <Button type="tertiary">Open storage path</Button>
+          <Button type="tertiary" onClick={handleOpenStoragePathClick}>
+            Open storage path
+          </Button>
         </>
       )}
     </div>
