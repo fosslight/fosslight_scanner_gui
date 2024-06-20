@@ -144,8 +144,6 @@ class SystemExecuter {
         else if (arg.startsWith('-w')) path = arg.replace('-w ', '');
       });
 
-      console.log(`shellCommand: ${shellCommand}`);
-
       this.child = spawn(shellCommand, { shell: true, stdio: ['ignore', 'pipe', 'pipe'] });
 
       this.child.stdout.on('data', this.handleLog);

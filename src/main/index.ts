@@ -82,12 +82,7 @@ app.whenReady().then(async () => {
 
   // IPC communication between main and renderers
   ipcMain.on('send-command', async (_, { command }) => {
-    console.log('command: ', command);
-
     const args: string[][] = commandParser.parseCmd2Args(command);
-
-    console.log('args:', args);
-
     // check venv and fs before executing.
     if (!systemExecuter.checkVenv()) {
       console.error(
