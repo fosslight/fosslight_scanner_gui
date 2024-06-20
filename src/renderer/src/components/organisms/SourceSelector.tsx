@@ -3,7 +3,6 @@ import TextInput, { ITextInputOption } from './TextInput';
 import ListBox from './ListBox';
 import Button, { ButtonType } from '../atoms/button/Button';
 import useMeasure from '@renderer/hooks/useMeasure';
-import ModifyModal from './modal/ModifyModal';
 import useModal from '@renderer/hooks/useModal';
 import Modal from './modal/Modal';
 import { ModifyModalIcon } from '../atoms/SVGIcons';

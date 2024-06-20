@@ -12,8 +12,9 @@ import useCommandManager from '@renderer/hooks/useCommandManager';
 
 const LowerTemplate: FC = () => {
   const { mode } = useMode();
-  const { readyToAnalyze, readyToCompare } = useCommandConfig();
-  const { result } = useCommandManager();
+  const { analyzeCommandConfig, compareCommandConfig, readyToAnalyze, readyToCompare } =
+    useCommandConfig();
+  const { result, log } = useCommandManager();
   const forceQuitModal = useModal();
   const successfulModal = useModal();
   const failedModal = useModal();
@@ -25,6 +26,13 @@ const LowerTemplate: FC = () => {
   const handleForceQuit = () => {
     window.api.forceQuit();
     forceQuitModal.closeModal();
+  };
+
+  const handleOpenStoragePathClick = () => {
+    window.nativeApi.openFileExplorer(
+      (mode === 'analyze' ? analyzeCommandConfig.outputPath : compareCommandConfig.outputPath) ??
+        './'
+    );
   };
 
   useEffect(() => {
@@ -73,7 +81,7 @@ const LowerTemplate: FC = () => {
           <Button key="close" type="tertiary" onClick={successfulModal.closeModal}>
             Go back to start
           </Button>,
-          <Button key="open-storage" type="primary">
+          <Button key="open-storage" type="primary" onClick={handleOpenStoragePathClick}>
             Open storage path
           </Button>
         ]}

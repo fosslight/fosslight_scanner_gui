@@ -4,7 +4,8 @@ class CommandManager {
   private static instance: CommandManager;
   private readonly commandQueue: Command[] = [];
   private readonly capacity: number = 1;
-  private logHandlers: ((log: string) => void)[] = [];
+  private _logHistory: string | null = null;
+  private logHandlers: ((log: string | null) => void)[] = [];
   private commandResultHandlers: ((result: CommandResponse) => void)[] = [];
   private idleHandlers: ((isReady: boolean) => void)[] = [];
 
@@ -20,6 +21,7 @@ class CommandManager {
   }
 
   private handleLog = (log: string): void => {
+    this._logHistory += log;
     this.logHandlers.forEach((handler) => handler(log));
   };
 
@@ -77,6 +79,15 @@ class CommandManager {
 
   get command(): Command | null {
     return this.commandQueue[0] ?? null;
+  }
+
+  get logHistory(): string | null {
+    return this._logHistory;
+  }
+
+  public clearLog(): void {
+    this._logHistory = null;
+    this.logHandlers.forEach((handler) => handler(null));
   }
 }
 

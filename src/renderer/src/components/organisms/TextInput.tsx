@@ -3,8 +3,6 @@ import Text from '../atoms/text/Text';
 import Dropdown, { IDropdownOption } from '../molecules/dropdown/Dropdown';
 import Input from '../atoms/input/Input';
 import IconButton from '../atoms/button/IconButton';
-import useFileUpload from '@renderer/hooks/useFileUpload';
-import FileUpload from '../atoms/upload/FileUpload';
 
 export interface ITextInputOption extends IDropdownOption {
   type: 'text' | 'dir' | 'file';
@@ -34,7 +32,6 @@ const TextInput: FC<ITextInputProps> = ({
   value: inputValue,
   onChange
 }) => {
-  const { openFileUpload, fileUploadRef } = useFileUpload();
   const [selectedOption, setSelectedOption] = useState<ITextInputOption>(options[0]);
   const [value, setValue] = useState<string>(inputValue ?? '');
 
@@ -49,9 +46,18 @@ const TextInput: FC<ITextInputProps> = ({
     onChange?.(value, selectedOption.type);
   };
 
-  const handlePathChange = (path: string) => {
-    setValue(path);
-    onChange?.(path, selectedOption.type);
+  const handleFileUploadClick = () => {
+    if (selectedOption.type === 'dir') {
+      window.nativeApi.openDirSelector((dirPath) => {
+        setValue(dirPath);
+        onChange?.(dirPath, selectedOption.type);
+      });
+    } else {
+      window.nativeApi.openFileSelector((filePath) => {
+        setValue(filePath);
+        onChange?.(filePath, selectedOption.type);
+      });
+    }
   };
 
   useEffect(() => {
@@ -96,7 +102,7 @@ const TextInput: FC<ITextInputProps> = ({
                     {value || selectedOption.placeholder}
                   </Text>
                 </div>
-                <IconButton onClick={openFileUpload}>
+                <IconButton onClick={handleFileUploadClick}>
                   <img
                     className="h-4 w-4"
                     src="/src/assets/icons/more-horizontal.svg"
@@ -118,12 +124,6 @@ const TextInput: FC<ITextInputProps> = ({
         )}
         {suffix}
       </div>
-
-      <FileUpload
-        fileUploadRef={fileUploadRef}
-        directory={selectedOption.type === 'dir'}
-        onPathChange={handlePathChange}
-      />
     </div>
   );
 };

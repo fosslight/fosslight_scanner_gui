@@ -1,16 +1,22 @@
 import CommandContext from '@renderer/context/CommandContext';
 import CommandManager from '@renderer/services/CommandManager';
-import { parseLog } from '@renderer/utils/parseLog';
+import { parseLogToScanner, parseLogToSubject } from '@renderer/utils/parseLog';
 import { useCallback, useContext, useEffect, useState } from 'react';
 
+interface ScanningStatus {
+  scanner: ScannerType | null;
+  subject: string | null;
+}
 interface IUseCommandManager {
   command: Command | null;
   result: CommandResponse | null;
   log: string | null;
   idle: boolean;
-  status: ScannerType | null;
+  scanner: ScannerType | null;
+  subject: string | null;
   analyze: () => void;
   compare: () => void;
+  clearLog: () => void;
 }
 
 const useCommandManager = (): IUseCommandManager => {
@@ -21,9 +27,10 @@ const useCommandManager = (): IUseCommandManager => {
 
   const commandManager = CommandManager.getInstance();
   const [result, setResult] = useState<CommandResponse | null>(null);
-  const [log, setLog] = useState<string | null>(null);
+  const [log, setLog] = useState<string | null>(commandManager.logHistory === null ? null : '');
   const [idle, setIdle] = useState<boolean>(true);
-  const [status, setStatus] = useState<ScannerType | null>(null);
+  const [scanner, setScanner] = useState<ScannerType | null>(null);
+  const [subject, setSubject] = useState<string | null>(null);
 
   const analyze = useCallback((): void => {
     if (!idle) return;
@@ -37,15 +44,26 @@ const useCommandManager = (): IUseCommandManager => {
     commandManager.executeCommand(command);
   }, [context, idle]);
 
+  const clearLog = useCallback(() => {
+    commandManager.clearLog();
+  }, []);
+
   const handleCommandResult = useCallback((result: CommandResponse) => {
-    setStatus(null);
+    setScanner(null);
+    setSubject(null);
     setResult(result);
   }, []);
 
-  const handleLog = useCallback((log: string) => {
-    const status = parseLog(log);
-    if (status) setStatus(status);
-    setLog((prev) => (prev ? `${prev}\n${log}` : log));
+  const handleLog = useCallback((log: string | null) => {
+    if (log === null) {
+      setLog(null);
+    } else {
+      const scanner = parseLogToScanner(log);
+      if (scanner) setScanner(scanner);
+      const subject = parseLogToSubject(log);
+      if (subject) setSubject(subject);
+      setLog((prev) => (prev ? `${prev}\n${log}` : log));
+    }
   }, []);
 
   const handleIdle = useCallback((idle: boolean) => {
@@ -69,9 +87,11 @@ const useCommandManager = (): IUseCommandManager => {
     result,
     log,
     idle,
-    status,
+    scanner,
+    subject,
     analyze,
-    compare
+    compare,
+    clearLog
   };
 };
 

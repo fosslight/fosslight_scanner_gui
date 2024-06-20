@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain, screen } from 'electron';
+import { app, shell, BrowserWindow, ipcMain, screen, dialog } from 'electron';
 import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import SystemExecuter from './src/SystemExecuter';
@@ -86,6 +86,8 @@ app.whenReady().then(async () => {
 
     const args: string[][] = commandParser.parseCmd2Args(command);
 
+    console.log('args:', args);
+
     // check venv and fs before executing.
     if (!systemExecuter.checkVenv()) {
       console.error(
@@ -118,6 +120,24 @@ app.whenReady().then(async () => {
 
   ipcMain.on('closeApp', () => {
     mainWindow.close();
+  });
+
+  ipcMain.on('open-file-explorer', (_, filePath: string) => {
+    shell.showItemInFolder(filePath);
+  });
+
+  ipcMain.handle('open-file-selector', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openFile']
+    });
+    return result.filePaths[0];
+  });
+
+  ipcMain.handle('open-dir-selector', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory']
+    });
+    return result.filePaths[0];
   });
 
   // IPC communication between main and FOSSLight Scanner
