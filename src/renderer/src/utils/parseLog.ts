@@ -9,9 +9,15 @@ export const convertLogToHtml = (log: string): { __html: string } => ({
   __html: log.replace(/\x1b\[\d+m/g, (match) => converter[match] ?? match)
 });
 
-export const parseLog = (log: string): ScannerType | null => {
+export const parseLogToScanner = (log: string): ScannerType | null => {
   if (log.includes('## Start to run Source Analysis')) return 'source';
   if (log.includes('## Start to run Binary Analysis')) return 'binary';
   if (log.includes('## Start to run Dependency Analysis')) return 'dependency';
   return null;
+};
+
+export const parseLogToSubject = (log: string): string | null => {
+  // |--- Path to analyze : C:\Users\jeong\Desktop\fosslight_test\tests
+  const match = log.match(/\|--- Path to analyze : (.+)/);
+  return match ? match[1] : null;
 };

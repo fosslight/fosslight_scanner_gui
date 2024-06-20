@@ -6,8 +6,9 @@ import useMode from '@renderer/hooks/useMode';
 
 const SignBox: FC = () => {
   const { mode } = useMode();
-  const { idle, status, command } = useCommandManager();
-  const [statusStack, setStatusStack] = useState<ScannerType[]>([]);
+  const { idle, scanner, subject, command } = useCommandManager();
+  const [scannerStack, setScannerStack] = useState<ScannerType[]>([]);
+  const [currentSubject, setCurrentSubject] = useState<string | null>(null);
 
   const scannerOrder = ['source', 'binary', 'dependency'];
   const handleSortScannerType = (a: ScannerType, b: ScannerType) =>
@@ -17,17 +18,23 @@ const SignBox: FC = () => {
   const scannerSign =
     mode === 'compare'
       ? 'Comparing two subjects...'
-      : statusStack.length === 0
+      : scannerStack.length === 0
         ? 'Preparing analysis...'
-        : `Currently analyzing scanner : ${statusStack.map(handleMapScannerType).join(' > ')}... (${statusStack.length}/${selectedScannerList?.length})`;
+        : `Currently analyzing scanner : ${scannerStack.map(handleMapScannerType).join(' > ')}... (${scannerStack.length}/${selectedScannerList?.length})`;
 
   useEffect(() => {
-    if (status) {
-      setStatusStack((prev) => [...prev, status]);
+    if (scanner && !scannerStack.includes(scanner)) {
+      setScannerStack((prev) => [...prev, scanner]);
+    } else if (scanner) {
+      setScannerStack([scanner]);
     } else {
-      setStatusStack([]);
+      setScannerStack([]);
     }
-  }, [status]);
+  }, [scanner]);
+
+  useEffect(() => {
+    setCurrentSubject(subject);
+  }, [subject]);
 
   return (
     <div className="flex h-full w-full flex-col gap-2 border border-PaleGray-200 bg-PaleGray-50 py-6 pl-4 pr-6">
@@ -43,12 +50,19 @@ const SignBox: FC = () => {
             alt="loading-indicator"
           />
           {mode === 'analyze' && (
-            <Text type="p200-r" color="PaleGray-900">
-              {`Selected Scanner : ${selectedScannerList
-                ?.sort(handleSortScannerType)
-                .map(handleMapScannerType)
-                .join(', ')}`}
-            </Text>
+            <>
+              <Text type="p200-r" color="PaleGray-900">
+                {`Selected Scanner : ${selectedScannerList
+                  ?.sort(handleSortScannerType)
+                  .map(handleMapScannerType)
+                  .join(', ')}`}
+              </Text>
+              {scannerStack.length !== 0 && currentSubject && (
+                <Text type="p200-r" color="PaleGray-900">
+                  {`Current Subject : ${currentSubject}`}
+                </Text>
+              )}
+            </>
           )}
           <div className="flex items-center justify-start">
             <Spinner />
