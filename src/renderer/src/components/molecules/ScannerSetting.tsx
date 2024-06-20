@@ -35,7 +35,7 @@ const ScannerSetting: FC = () => {
           --no_correction Option
         </Text>
         <Text type="p50-r" color="PaleGray-500">
-          Check if you don't want to correct OSS information with sbom-info.yaml (Correction mode
+          Check if you do not want to correct OSS information with sbom-info.yaml (Correction mode
           only supported xlsx format)
         </Text>
         <div className="flex w-full flex-col items-end justify-end pr-4">

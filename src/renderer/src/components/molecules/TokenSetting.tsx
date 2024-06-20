@@ -13,7 +13,7 @@ const TokenSetting: FC = () => {
       <Text type="p50-r" color="PaleGray-500">
         Can store multiple private GitHub tokens and view or modify the list of stored tokens.
       </Text>
-      <TokenSelctor label="label"  />
+      <TokenSelctor label="label" />
     </div>
   );
 };

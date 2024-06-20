@@ -11,7 +11,7 @@ export const ModeScanIcon: React.FC = (props) => (
         id="Vector"
         d="M0.533447 5.3332V2.66654C0.533447 1.48833 1.48857 0.533203 2.66678 0.533203H5.33345M10.6668 0.533203H13.3334C14.5117 0.533203 15.4668 1.48833 15.4668 2.66654V5.3332M0.533447 10.6665V13.3332C0.533447 14.5114 1.48857 15.4665 2.66678 15.4665H5.33345M15.4668 10.6665V13.3332C15.4668 14.5114 14.5117 15.4665 13.3334 15.4665H10.6668M2.13345 7.99987H13.8668"
         stroke="#A1A9B0"
-        stroke-width="1.06667"
+        strokeWidth="1.06667"
       />
     </g>
   </svg>
@@ -21,10 +21,10 @@ export const ModeCompareIcon: React.FC = (props) => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
     <g id="compare">
       <path
-        id-="Vector"
+        id="Vector"
         d="M1.6001 11.7336V6.93356C1.6001 5.75535 2.55522 4.80023 3.73343 4.80023C4.91164 4.80023 5.86676 5.75535 5.86676 6.93356V11.7336M1.6001 9.06689H5.86676M12.8001 8.00023H10.1334M12.8001 8.00023C13.6838 8.00023 14.4001 7.28388 14.4001 6.40023C14.4001 5.51657 13.6838 4.80023 12.8001 4.80023H10.1334V8.00023M12.8001 8.00023C13.6838 8.00023 14.4001 8.71657 14.4001 9.60023C14.4001 10.4839 13.6838 11.2002 12.8001 11.2002H10.1334V8.00023M8.0001 1.06689V14.9336"
         stroke="#A50034"
-        stroke-width="1.06667"
+        strokeWidth="1.06667"
       />
     </g>
   </svg>
@@ -34,7 +34,7 @@ export const FileEditIcon: React.FC = (props) => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
     <g id="edit">
       <path
-        id-="Vector"
+        id="Vector"
         d="M9.44373 4.42281C9.23545 4.21453 8.89776 4.21453 8.68948 4.42281L4.2666 8.84569V11.1999C4.2666 11.4945 4.50538 11.7333 4.79993 11.7333H7.15418L11.5771 7.31039C11.7853 7.10211 11.7853 6.76442 11.5771 6.55614L9.44373 4.42281Z"
         fill="#626B74"
       />
@@ -46,7 +46,7 @@ export const ModifyModalIcon: React.FC = (props) => (
   <svg width="20" height="20" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
     <g id="edit">
       <path
-        id-="Vector"
+        id="Vector"
         d="M9.44373 4.42281C9.23545 4.21453 8.89776 4.21453 8.68948 4.42281L4.2666 8.84569V11.1999C4.2666 11.4945 4.50538 11.7333 4.79993 11.7333H7.15418L11.5771 7.31039C11.7853 7.10211 11.7853 6.76442 11.5771 6.55614L9.44373 4.42281Z"
         fill="white"
       />
@@ -58,8 +58,8 @@ export const ExclamationIcon: React.FC = (props) => (
   <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
     <g id="exclaim">
       <path
-        fill-rule="evenodd"
-        clip-rule="evenodd"
+        fillRule="evenodd"
+        clipRule="evenodd"
         d="M7 11V1H8V11H7ZM8 13V14.01H7V13H8Z"
         fill="white"
       />
@@ -94,8 +94,8 @@ export const CheckOnIcon: React.FC = (props) => (
     <g id="tick-circle">
       <path
         id="Vector"
-        fill-rule="evenodd"
-        clip-rule="evenodd"
+        fillRule="evenodd"
+        clipRule="evenodd"
         d="M0 12C0 5.37258 5.37258 0 12 0C18.6274 0 24 5.37258 24 12C24 18.6274 18.6274 24 12 24C5.37258 24 0 18.6274 0 12ZM11.3149 17.137L18.2247 8.49971L16.9753 7.5002L11.0852 14.8629L6.91219 11.3854L5.88789 12.6145L11.3149 17.137Z"
         fill="#A50034"
       />
@@ -110,7 +110,7 @@ export const CheckOffIcon: React.FC = (props) => (
         id="Vector"
         d="M6.40029 12.0003L11.2003 16.0003L17.6003 8.00029M12.0003 23.2003C5.8147 23.2003 0.800293 18.1859 0.800293 12.0003C0.800293 5.8147 5.8147 0.800293 12.0003 0.800293C18.1859 0.800293 23.2003 5.8147 23.2003 12.0003C23.2003 18.1859 18.1859 23.2003 12.0003 23.2003Z"
         stroke="#BDC2C7"
-        stroke-width="1.33333"
+        strokeWidth="1.33333"
       />
     </g>
   </svg>
@@ -119,22 +119,22 @@ export const CheckOffIcon: React.FC = (props) => (
 export const SettingModalIcon: React.FC = (props) => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path
-      fill-rule="evenodd"
-      clip-rule="evenodd"
+      fillRule="evenodd"
+      clipRule="evenodd"
       d="M6.34014 0.533203L6.24841 0.999023L5.89748 2.70352C5.33641 2.91778 4.8276 3.2216 4.36787 3.5819L2.65267 3.0084L2.19188 2.86556L1.95295 3.27702L0.772135 5.25117L0.533203 5.6627L0.883073 5.96862L2.21001 7.09746C2.16201 7.39273 2.10015 7.68479 2.10015 7.99499C2.10015 8.30518 2.16201 8.5973 2.21001 8.89258L0.883073 10.0214L0.533203 10.3273L0.772135 10.7388L1.95295 12.713L2.19188 13.1255L2.65267 12.9816L4.36787 12.4081C4.8276 12.7684 5.33641 13.0722 5.89748 13.2865L6.24841 14.991L6.34014 15.4568H9.65855L9.75134 14.991L10.1012 13.2865C10.6623 13.0722 11.1711 12.7684 11.6308 12.4081L13.346 12.9816L13.8068 13.1255L14.0468 12.713L15.2265 10.7388L15.4665 10.3273L15.1156 10.0214L13.7887 8.89258C13.8377 8.5973 13.8985 8.30518 13.8985 7.99499C13.8985 7.68479 13.8377 7.39273 13.7887 7.09746L15.1156 5.96862L15.4665 5.6627L15.2265 5.25117L14.0468 3.27702L13.8068 2.86556L13.346 3.0084L11.6308 3.5819C11.1711 3.2216 10.6623 2.91778 10.1012 2.70352L9.75134 0.999023L9.65855 0.533203H6.34014Z"
       stroke="#A1A9B0"
-      stroke-width="1.064"
-      stroke-linecap="square"
-      stroke-linejoin="round"
+      strokeWidth="1.064"
+      strokeLinecap="square"
+      strokeLinejoin="round"
     />
     <path
-      fill-rule="evenodd"
-      clip-rule="evenodd"
+      fillRule="evenodd"
+      clipRule="evenodd"
       d="M10.1328 7.99499C10.1328 9.17182 9.17708 10.127 7.99948 10.127C6.82188 10.127 5.86615 9.17182 5.86615 7.99499C5.86615 6.81816 6.82188 5.86309 7.99948 5.86309C9.17708 5.86309 10.1328 6.81816 10.1328 7.99499Z"
       stroke="#A1A9B0"
-      stroke-width="1.064"
-      stroke-linecap="square"
-      stroke-linejoin="round"
+      strokeWidth="1.064"
+      strokeLinecap="square"
+      strokeLinejoin="round"
     />
   </svg>
 );
