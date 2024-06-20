@@ -42,6 +42,15 @@ const nativeApi = {
   closeApp: (): void => {
     ipcRenderer.send('force-quit');
     ipcRenderer.send('closeApp');
+  },
+  openFileExplorer: (filePath: string): void => {
+    ipcRenderer.send('open-file-explorer', filePath);
+  },
+  openFileSelector: (callback: (filePath: string) => void): void => {
+    ipcRenderer.invoke('open-file-selector').then(callback);
+  },
+  openDirSelector: (callback: (dirPath: string) => void): void => {
+    ipcRenderer.invoke('open-dir-selector').then(callback);
   }
 };
 // Use `contextBridge` APIs to expose Electron APIs to

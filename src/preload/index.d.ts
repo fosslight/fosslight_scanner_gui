@@ -14,6 +14,9 @@ declare global {
       minimizeApp: () => void;
       maximizeApp: () => void;
       closeApp: () => void;
+      openFileExplorer: (filePath: string) => void;
+      openFileSelector: (callback: (filePath: string) => void) => void;
+      openDirSelector: (callback: (dirPath: string) => void) => void;
     };
   }
 }
