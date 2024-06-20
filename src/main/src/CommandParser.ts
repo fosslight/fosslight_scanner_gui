@@ -60,7 +60,7 @@ const commandParser = {
     return args;
   },
 
-  parseCmd2Setting: (args: string[][], type: 'analyze' | 'compare'): Setting => {
+  parseArgs2Setting: (args: string[][], type: 'analyze' | 'compare'): Setting => {
     const setting: Setting = {
       mode: [],
       path: [],

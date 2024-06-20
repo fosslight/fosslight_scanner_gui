@@ -94,7 +94,7 @@ app.whenReady().then(async () => {
     } else {
       const scannerResult: CommandResponse = await systemExecuter.executeScanner(args);
       mainWindow.webContents.send('recv-command-result', scannerResult);
-      const setting: Setting = commandParser.parseCmd2Setting(args, command.type);
+      const setting: Setting = commandParser.parseArgs2Setting(args, command.type);
       await systemExecuter.saveSetting(setting);
     }
   });
