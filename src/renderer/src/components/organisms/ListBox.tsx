@@ -2,13 +2,13 @@ import { FC, ReactNode } from 'react';
 import ListBoxItem from '../molecules/ListBoxItem';
 import { ITextInputOption } from './TextInput';
 
-export interface PathInfo {
+export interface ListBoxPathInfo {
   type: ITextInputOption['type'];
   path: string;
 }
 
 interface IListBoxProps {
-  pathInfoList: PathInfo[];
+  pathInfoList: ListBoxPathInfo[];
   onEditClick: (index: number) => void;
   onRemoveClick: (index: number) => void;
   emptyText?: ReactNode;

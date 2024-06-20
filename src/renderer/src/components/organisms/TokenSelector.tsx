@@ -1,6 +1,6 @@
-import { FC, ReactNode, useEffect, useState } from 'react';
+import { FC, ReactNode, useState } from 'react';
 import TextInput, { ITextInputOption } from './TextInput';
-import ListBox, { PathInfo } from './ListBox';
+import { TokenBoxPathInfo } from './TokenBox';
 import Button, { ButtonType } from '../atoms/button/Button';
 import useMeasure from '@renderer/hooks/useMeasure';
 import TokenBox from './TokenBox';
@@ -26,8 +26,8 @@ const SourceSelector: FC<ITokenSelectorProps> = ({
 }) => {
   const { ref, width, ready } = useMeasure();
 
-  const [pathInfo, setPathInfo] = useState<PathInfo | undefined>(undefined); //여기를 path option 따로 받거나
-  const [pathInfoList, setPathInfoList] = useState<PathInfo[]>([]); // [PathInfo, ...
+  const [pathInfo, setPathInfo] = useState<TokenBoxPathInfo | undefined>(undefined); //여기를 path option 따로 받거나
+  const [pathInfoList, setPathInfoList] = useState<TokenBoxPathInfo[]>([]); // [PathInfo, ...
 
   const handleInputChange = (value?: string, type?: ITextInputOption['type']) => {
     if (!value || !type) {

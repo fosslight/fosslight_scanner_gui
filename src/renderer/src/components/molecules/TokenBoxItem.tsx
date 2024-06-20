@@ -7,13 +7,13 @@ import { ITextInputOption } from '../organisms/TextInput';
 import Text from '../atoms/text/Text';
 
 interface ITokenBoxItemProps {
-  option: ITextInputOption['type'];
+  type: ITextInputOption['type'];
   path: string;
   token: string;
   onRemoveClick: () => void;
 }
 
-const TokenBoxItem: FC<ITokenBoxItemProps> = ({ option, path, token, onRemoveClick }) => {
+const TokenBoxItem: FC<ITokenBoxItemProps> = ({ type: option, path, token, onRemoveClick }) => {
   return (
     <div className="flex h-9 w-full items-center justify-start gap-1.5 rounded-md bg-white p-1">
       {option === 'file' ? <Localchip /> : <Githubchip />}

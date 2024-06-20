@@ -2,13 +2,13 @@ import { FC, ReactNode } from 'react';
 import TokenBoxItem from '../molecules/TokenBoxItem';
 import { ITextInputOption } from './TextInput';
 
-export interface PathInfo {
-  option: ITextInputOption['type'];
+export interface TokenBoxPathInfo {
+  type: ITextInputOption['type'];
   path: string;
 }
 
 interface ITokenBoxProps {
-  pathInfoList: PathInfo[];
+  pathInfoList: TokenBoxPathInfo[];
   onRemoveClick: (index: number) => void;
   emptyText?: ReactNode;
 }
@@ -24,7 +24,7 @@ const TokenBox: FC<ITokenBoxProps> = ({ emptyText, pathInfoList, onRemoveClick }
       ) : (
         pathInfoList.map((pathInfo, index) => (
           <TokenBoxItem
-            option={pathInfo.option}
+            type={pathInfo.type}
             path={pathInfo.path}
             token={pathInfo.path}
             onRemoveClick={() => onRemoveClick(index)}
