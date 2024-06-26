@@ -64,19 +64,23 @@ app.whenReady().then(async () => {
   createWindow();
 
   const arg = !systemExecuter.checkVenv() ? 'false' : undefined; // assign any string is fine
-  console.log('Waiting for setting venv and Fosslight Scanner');
+  await new Promise((resolve) => setTimeout(resolve, 500)); // await little time for window to send the following message
+  mainWindow.webContents.send(
+    'recv-log',
+    'Please wait for setting venv and Fosslight Scanner (will take a few minutes)\nYou may not interact with this app during this time.'
+  );
+  // await new Promise((resolve) => setTimeout(resolve, 500));
+
   const progressInterval = setInterval(() => {
-    process.stdout.write('.');
-  }, 500); // print '.' every 500ms while setting
+    mainWindow.webContents.send('recv-log', '.');
+  }, 1000); // print '.' every 1ms while setting
 
   // Will take a long time (about 3 min) when the first install the venv and fs.
-  const setVenv: boolean = await systemExecuter.executeSetVenv(arg);
-  if (!setVenv) {
-    console.error(
-      '[Error]: Failed to set venv and install Fosslight Scanner.\n\t Please check the resources folder and files are in initial condition.\n\t Or try to reinstall this app.'
-    );
+  const setVenv: string = await systemExecuter.executeSetVenv(arg);
+  if (setVenv === 'success') {
+    mainWindow.webContents.send('recv-log', 'Fosslight Scanner is ready to use.');
   } else {
-    console.log('Fosslight Scanner is ready to use.');
+    mainWindow.webContents.send('recv-log', setVenv);
   }
   clearInterval(progressInterval); // stop printing '.'
 
@@ -85,8 +89,9 @@ app.whenReady().then(async () => {
     const args: string[][] = commandParser.parseCmd2Args(command);
     // check venv and fs before executing.
     if (!systemExecuter.checkVenv()) {
-      console.error(
-        '[Error]: Failed to run Fosslight Scanner.\n\t Please check the resources folder and files are in initial condition.\n\t Or try to reinstall this app.'
+      mainWindow.webContents.send(
+        'recv-log',
+        '[Error]: Failed to run Fosslight Scanner.\nPlease check the resources folder and files are in initial condition.\nOr try to reinstall this app.'
       );
     } else {
       const scannerResult: CommandResponse = await systemExecuter.executeScanner(args);

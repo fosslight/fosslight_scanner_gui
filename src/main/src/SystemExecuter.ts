@@ -8,7 +8,9 @@ import { Readable } from 'stream';
 
 class SystemExecuter {
   private static instance: SystemExecuter;
-  private readonly venvPath = path.join(app.getAppPath(), 'resources', 'venv');
+  private readonly asarPath = app.getAppPath();
+  private readonly appPath = this.asarPath.substring(0, this.asarPath.lastIndexOf(path.sep));
+  private readonly venvPath = path.join(this.appPath, 'resources', 'venv');
   private readonly pythonPath =
     process.platform == 'win32'
       ? path.join(this.venvPath, 'Scripts', 'python.exe')
@@ -38,32 +40,23 @@ class SystemExecuter {
     return true;
   }
 
-  public async executeSetVenv(arg: string | undefined): Promise<boolean> {
+  public async executeSetVenv(arg: string | undefined): Promise<string> {
     const execPromise = util.promisify(exec);
     try {
       if (arg) {
         const { stderr: venvError } = await execPromise('python -m venv ' + this.venvPath);
-        if (venvError) {
-          console.error('Create venv failed: ' + venvError);
-          return false;
-        }
+        if (venvError) return venvError;
       }
 
       const { stderr: pipError } = await execPromise(
         this.pythonPath + ' -m pip install --upgrade pip'
       );
-      if (pipError) {
-        console.error('pip upgrade failed: ' + pipError);
-        return false;
-      }
+      if (pipError) return pipError;
 
       const { stderr: installError } = await execPromise(
         this.pythonPath + ' -m pip install fosslight_scanner'
       );
-      if (installError) {
-        console.error('Install fosslight sccanner failed: ' + installError);
-        return false;
-      }
+      if (installError) return installError;
 
       /* TODO: This 'always update' takes long time. Need to check the version first.
       const { stderr: updateError } = await execPromise(
@@ -75,10 +68,9 @@ class SystemExecuter {
       }
       */
 
-      return true;
+      return 'success';
     } catch (error) {
-      console.error('An Error occured while setting venv and fosslight_scanner: ' + error);
-      return false;
+      return `${error}`;
     }
   }
 
