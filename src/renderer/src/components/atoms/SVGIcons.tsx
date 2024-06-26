@@ -1,8 +1,19 @@
 import React, { FC } from 'react';
 
-interface ISVGIconProps {
-  size: number;
-}
+export const AppIcon: React.FC = (props) => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      opacity="0.8"
+      d="M1.30444 1.41016L6.85248 14.5897H14.6917L1.30444 1.41016Z"
+      fill="#A50034"
+    />
+    <path
+      opacity="0.7"
+      d="M1.30444 1.41016L6.85248 14.5897L14.6953 9.44163L1.30444 1.41016Z"
+      fill="#A50034"
+    />
+  </svg>
+);
 
 export const ModeScanIcon: React.FC = (props) => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">

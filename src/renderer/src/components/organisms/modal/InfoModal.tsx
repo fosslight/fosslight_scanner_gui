@@ -1,6 +1,6 @@
 import { FC, RefObject, MouseEvent } from 'react';
 import Text from '../../atoms/text/Text';
-import { FossLogo } from '../../../components/atoms/SVGIcons';
+import { FossLogo, AppCloseIcon } from '../../../components/atoms/SVGIcons';
 
 interface IInfoModalProps {
   modalRef: RefObject<HTMLDialogElement>;
@@ -26,7 +26,7 @@ const InfoModal: FC<IInfoModalProps> = ({ modalRef }) => {
         </Text>
       </div>
       <button onClick={handleCloseModal}>
-        <img className="h-6 w-6" src="/src/assets/icons/x-small.svg" alt="close" />
+        <AppCloseIcon />
       </button>
     </div>
   );

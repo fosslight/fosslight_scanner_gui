@@ -3,6 +3,7 @@ import ScannerSetting from '../../molecules/ScannerSetting';
 import TokenSetting from '../../molecules/TokenSetting';
 import SideBar from '../../molecules/SideBar';
 import { FC, RefObject, useState } from 'react';
+import { SettingModalIcon, AppCloseIcon } from '../../atoms/SVGIcons';
 
 interface ISettingModalProps {
   modalRef: RefObject<HTMLDialogElement>;
@@ -18,13 +19,13 @@ const SettingModal: FC<ISettingModalProps> = ({ modalRef }) => {
   const Header: FC = () => (
     <div className="flex h-9 items-center justify-between border-b border-b-PaleGray-300 bg-PaleGray-50 px-4">
       <div className="flex items-center gap-[6px]">
-        <img className="h-4 w-4" src="/src/assets/icons/cog.svg" alt="settings" />
+        <SettingModalIcon />
         <Text type="p200-r" color="PaleGray-600">
           Settings
         </Text>
       </div>
       <button onClick={handleCloseModal}>
-        <img className="h-5 w-5" src="/src/assets/icons/x-small.svg" alt="close" />
+        <AppCloseIcon />
       </button>
     </div>
   );

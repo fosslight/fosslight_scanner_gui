@@ -3,6 +3,7 @@ import SettingModal from './modal/SettingModal';
 import InfoModal from './modal/InfoModal';
 import useModal from '@renderer/hooks/useModal';
 import {
+  AppIcon,
   InfoModalIcon,
   SettingModalIcon,
   AppCloseIcon,
@@ -38,7 +39,7 @@ const AppBar: FC = () => {
       >
         <div className="title-bar draggable flex items-center justify-between">
           <div className="title prevent-select draggable flex items-center justify-start gap-2 px-4 pb-0.5">
-            <img src="./src/assets/titlebar/title-logo.svg" alt="fosslogo" className="title-logo" />
+            <AppIcon />
             <div style={{ fontFamily: 'Segoe UI, sans-serif' }} className="title-text">
               FOSSLight Scanner
             </div>
