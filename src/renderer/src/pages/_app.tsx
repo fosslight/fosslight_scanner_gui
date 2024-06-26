@@ -10,14 +10,10 @@ import { CommandProvider } from '@renderer/context/CommandContext';
 const App: FC = () => {
   return (
     <div className="fixed h-full w-full">
-      <Router>
-        <AppBar />
-        <AppProvider providers={[ModeProvider, CommandProvider]}>
-          <Routes>
-            <Route path="/" element={<Main />} />
-          </Routes>
-        </AppProvider>
-      </Router>
+      <AppBar />
+      <AppProvider providers={[ModeProvider, CommandProvider]}>
+        <Main />
+      </AppProvider>
     </div>
   );
 };
