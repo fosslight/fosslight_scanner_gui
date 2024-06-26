@@ -29,14 +29,7 @@ $ yarn dev
 ### Build
 
 ```bash
-# For windows
-$ yarn build:win
-
-# For macOS
-$ yarn build:mac
-
-# For Linux
-$ yarn build:linux
+$ yarn build
 ```
 
 ## Bug Report

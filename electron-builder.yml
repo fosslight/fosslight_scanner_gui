@@ -11,8 +11,6 @@ files:
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
 extraResources:
   - 'resources/icon.png'
-asarUnpack:
-  - resources/**
 win:
   executableName: fosslight_gui
   target:
