@@ -1,4 +1,5 @@
-import { useState, FC } from 'react';
+import { FC } from 'react';
+import { CheckIcon, CheckSelectedIcon } from '../SVGIcons';
 
 interface ISelectChipProps {
   title: string;
@@ -20,11 +21,7 @@ const SelectChip: FC<ISelectChipProps> = ({ title, selected = false, onSelect })
       className={`${bgClassName} flex h-9 min-w-fit items-center gap-[2px] rounded-lg pl-[6px] pr-[10px]`}
       onClick={handleClick}
     >
-      {selected ? (
-        <img src="/src/assets/icons/tick-small-selected.svg" alt="tick-small-selected" />
-      ) : (
-        <img src="/src/assets/icons/tick-small.svg" alt="tick-small" />
-      )}
+      {selected ? <CheckSelectedIcon /> : <CheckIcon />}
       <p className="text-[12px] font-medium text-PaleGray-900">{title}</p>
     </button>
   );

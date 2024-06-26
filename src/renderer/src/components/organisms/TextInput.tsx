@@ -1,5 +1,6 @@
 import { FC, ReactNode, useEffect, useState } from 'react';
 import Text from '../atoms/text/Text';
+import { BrowseIcon } from '../atoms/SVGIcons';
 import Dropdown, { IDropdownOption } from '../molecules/dropdown/Dropdown';
 import Input from '../atoms/input/Input';
 import IconButton from '../atoms/button/IconButton';
@@ -103,11 +104,7 @@ const TextInput: FC<ITextInputProps> = ({
                   </Text>
                 </div>
                 <IconButton onClick={handleFileUploadClick}>
-                  <img
-                    className="h-4 w-4"
-                    src="/src/assets/icons/more-horizontal.svg"
-                    alt="upload"
-                  />
+                  <BrowseIcon />
                 </IconButton>
               </>
             )}

@@ -1,4 +1,5 @@
-import React, { ChangeEvent, FC, useRef } from 'react';
+import { ChangeEvent, FC, useRef } from 'react';
+import { BrowseIcon } from '../../atoms/SVGIcons';
 
 const UploadButton: FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -22,7 +23,7 @@ const UploadButton: FC = () => {
         className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-PaleGray-100 hover:bg-PaleGray-200"
         onClick={handleButtonClick}
       >
-        <img className="h-4 w-4" src="/src/assets/more-horizontal.png" alt="upload" />
+        <BrowseIcon />
       </button>
       <input
         type="file"

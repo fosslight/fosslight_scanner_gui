@@ -7,7 +7,7 @@ import IconButton from '../../atoms/button/IconButton';
 import FileUpload from '../../atoms/upload/FileUpload';
 import Button from '../../atoms/button/Button';
 import ModalIcon from '@renderer/components/atoms/ModalIcon';
-import { ModifyModalIcon } from '@renderer/components/atoms/SVGIcons';
+import { ModifyModalIcon, BrowseIcon } from '@renderer/components/atoms/SVGIcons';
 
 interface ITextInputOption extends IDropdownOption {
   type: 'text' | 'file';
@@ -114,11 +114,7 @@ const ModifyModal: FC<IModalProps> = ({
                   </div>
                   <div className="flex flex-shrink-0 items-center gap-1.5">
                     <IconButton onClick={openFileUpload}>
-                      <img
-                        className="h-4 w-4"
-                        src="/src/assets/icons/more-horizontal.svg"
-                        alt="upload"
-                      />
+                      <BrowseIcon />
                     </IconButton>
                   </div>
                 </div>

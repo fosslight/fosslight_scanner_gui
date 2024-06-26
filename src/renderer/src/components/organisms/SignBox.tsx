@@ -1,6 +1,7 @@
 import { FC, useEffect, useState } from 'react';
 import Text from '../atoms/text/Text';
 import Spinner from '../atoms/spinner/Spinner';
+import { LoadingIndicatorIcon } from '../atoms/SVGIcons';
 import useCommandManager from '@renderer/hooks/useCommandManager';
 import useMode from '@renderer/hooks/useMode';
 
@@ -44,11 +45,7 @@ const SignBox: FC = () => {
         </Text>
       ) : (
         <>
-          <img
-            className="h-[16px] w-[32px]"
-            src="/src/assets/icons/loading-indicator.svg"
-            alt="loading-indicator"
-          />
+          <LoadingIndicatorIcon />
           {mode === 'analyze' && (
             <>
               <Text type="p200-r" color="PaleGray-900">

@@ -1,4 +1,5 @@
 import { FC, useEffect, useState } from 'react';
+import { SpinnerIcon } from '../SVGIcons';
 
 const Spinner: FC = () => {
   const spinnerElements = ['-90', '-135', '180', '135', '90', '45', '0', '-45'];
@@ -14,11 +15,13 @@ const Spinner: FC = () => {
   }, []);
 
   return (
-    <img
-      className="flex h-4 w-4 items-center justify-center"
-      src={`/src/assets/icons/angles/angle=${spinnerElements[currIndex]}.svg`}
-      alt="spinner"
-    />
+    <SpinnerIcon />
+    // TODO : Make SpinerIcon rotate
+    // <img
+    //   className="flex h-4 w-4 items-center justify-center"
+    //   src={`/src/assets/icons/angles/angle=${spinnerElements[currIndex]}.svg`}
+    //   alt="spinner"
+    // />
   );
 };
 

@@ -1,5 +1,6 @@
-import { ChangeEvent, FC, useRef, useState } from 'react';
+import { FC, useRef, useState } from 'react';
 import Text from '../../atoms/text/Text';
+import { ArrowDownIcon, ArrowUpIcon } from '../../atoms/SVGIcons';
 import useClickOutside from '@renderer/hooks/useClickOutside';
 
 export interface IDropdownOption {
@@ -52,12 +53,7 @@ const Dropdown: FC<IDropdownProps> = ({ options, value, onChange }) => {
         <Text type="p50-m" color="PaleGray-800" className="truncate">
           {selectedOption.label}
         </Text>
-        {hasOptions &&
-          (opened ? (
-            <img src="/src/assets/icons/up-small.svg" alt="up-small" />
-          ) : (
-            <img src="/src/assets/icons/down-small.svg" alt="down-small" />
-          ))}
+        {hasOptions && (opened ? <ArrowUpIcon /> : <ArrowDownIcon />)}
       </div>
       {opened && hasOptions && (
         <div
