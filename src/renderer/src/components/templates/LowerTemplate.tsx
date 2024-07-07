@@ -60,15 +60,15 @@ const LowerTemplate: FC = () => {
       </div>
       <Modal
         modalRef={forceQuitModal.modalRef}
-        title={`Would you sure to force quit the ${mode === 'analyze' ? 'analysis' : 'comparison'}?`}
+        title={`Are you sure you want to force quit the ${mode === 'analyze' ? 'analysis' : 'comparison'}?`}
         icon={<ExclamationIcon />}
-        content={`The details such as the ${mode === 'analyze' ? 'analysis' : 'comparison'} list that you've added will be maintained.`}
+        content={`The details, including the ${mode === 'analyze' ? 'analysis' : 'comparison'} list you have added, will be maintained.`}
         buttons={[
           <Button key="force-quit" type="secondary" onClick={handleForceQuit}>
             Force Quit
           </Button>,
           <Button key="keep-analyze" type="tertiary" onClick={forceQuitModal.closeModal}>
-            Keep analyze
+            Keep Analyze
           </Button>
         ]}
       />
@@ -79,10 +79,10 @@ const LowerTemplate: FC = () => {
         content={`If you want to view the ${mode === 'analyze' ? 'analysis' : 'comparison'} results, please open the storage path to check.`}
         buttons={[
           <Button key="close" type="tertiary" onClick={successfulModal.closeModal}>
-            Go back to start
+            Go Back to Start
           </Button>,
           <Button key="open-storage" type="primary" onClick={handleOpenStoragePathClick}>
-            Open storage path
+            Open Storage Path
           </Button>
         ]}
       />
@@ -93,10 +93,10 @@ const LowerTemplate: FC = () => {
         content="Please try again or contact the support center for assistance."
         buttons={[
           <Button key="support-center" type="tertiary">
-            Contact support center
+            Contact Support Center
           </Button>,
           <Button key="close" type="primary" onClick={failedModal.closeModal}>
-            Go back to try again
+            Try Again
           </Button>
         ]}
       />
