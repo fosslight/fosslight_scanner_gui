@@ -7,8 +7,9 @@ import commandParser from './src/CommandParser';
 const systemExecuter = SystemExecuter.getInstance();
 
 let mainWindow: BrowserWindow;
+let subWindow: BrowserWindow;
 
-function createWindow(): void {
+function createMainWindow(): void {
   const display = screen.getPrimaryDisplay();
 
   mainWindow = new BrowserWindow({
@@ -29,9 +30,9 @@ function createWindow(): void {
     }
   });
 
-  mainWindow.on('ready-to-show', () => {
-    mainWindow.show();
-  });
+  // mainWindow.on('ready-to-show', () => {
+  //   mainWindow.show();
+  // });
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url);
@@ -44,6 +45,38 @@ function createWindow(): void {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL']);
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
+  }
+}
+
+function createSubWindow(): void {
+  subWindow = new BrowserWindow({
+    width: 300,
+    height: 300,
+    show: false,
+    frame: false,
+    autoHideMenuBar: true,
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      contextIsolation: true,
+      sandbox: false
+    }
+  });
+
+  subWindow.on('ready-to-show', () => {
+    subWindow.show();
+  });
+
+  subWindow.webContents.setWindowOpenHandler((details) => {
+    shell.openExternal(details.url);
+    return { action: 'deny' };
+  });
+
+  // HMR for renderer based on electron-vite cli.
+  // Load the remote URL for development or the local html file for production.
+  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+    subWindow.loadURL(process.env['ELECTRON_RENDERER_URL']);
+  } else {
+    subWindow.loadFile(join(__dirname, '../renderer/index.html'));
   }
 }
 
@@ -61,28 +94,18 @@ app.whenReady().then(async () => {
     optimizer.watchWindowShortcuts(window);
   });
 
-  createWindow();
+  createMainWindow();
+  createSubWindow();
 
-  const arg = !systemExecuter.checkVenv() ? 'false' : undefined; // assign any string is fine
-  await new Promise((resolve) => setTimeout(resolve, 500)); // await little time for window to send the following message
-  mainWindow.webContents.send(
-    'recv-log',
-    'Please wait for setting venv and Fosslight Scanner (will take a few minutes)\nYou may not interact with this app during this time.'
-  );
-  // await new Promise((resolve) => setTimeout(resolve, 500));
-
-  const progressInterval = setInterval(() => {
-    mainWindow.webContents.send('recv-log', '.');
-  }, 1000); // print '.' every 1ms while setting
-
-  // Will take a long time (about 3 min) when the first install the venv and fs.
-  const setVenv: string = await systemExecuter.executeSetVenv(arg);
-  if (setVenv === 'success') {
-    mainWindow.webContents.send('recv-log', 'Fosslight Scanner is ready to use.');
-  } else {
-    mainWindow.webContents.send('recv-log', setVenv);
+  try {
+    // Will take a long time (about 3 min) when sthe first install the venv and fs.
+    subWindow.show();
+    await systemExecuter.setUpVenv();
+    subWindow.close();
+    mainWindow.show();
+  } catch (error) {
+    alert(error);
   }
-  clearInterval(progressInterval); // stop printing '.'
 
   // IPC communication between main and renderers
   ipcMain.on('send-command', async (_, { command }) => {
@@ -149,7 +172,7 @@ app.whenReady().then(async () => {
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
   });
 });
 
