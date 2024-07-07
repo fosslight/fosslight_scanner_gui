@@ -32,18 +32,30 @@ class SystemExecuter {
     return SystemExecuter.instance;
   }
 
-  public checkVenv(): boolean {
-    if (!fs.existsSync(this.venvPath)) return false;
-    if (!fs.existsSync(this.pythonPath)) return false;
-    if (!fs.existsSync(this.activatePath)) return false;
+  public async setUpVenv(): Promise<boolean> {
+    const isVenvReady = this.checkVenv();
 
-    return true;
+    // Will take a long time (about 3 min) when the first install the venv and fs.
+    const result = await this.executeSetVenv(!isVenvReady);
+    if (result === 'success') {
+      return true;
+    } else {
+      throw new Error(result);
+    }
   }
 
-  public async executeSetVenv(arg: string | undefined): Promise<string> {
+  public checkVenv(): boolean {
+    return (
+      fs.existsSync(this.venvPath) &&
+      fs.existsSync(this.pythonPath) &&
+      fs.existsSync(this.activatePath)
+    );
+  }
+
+  private async executeSetVenv(shouldCreateVenv: boolean): Promise<string> {
     const execPromise = util.promisify(exec);
     try {
-      if (arg) {
+      if (shouldCreateVenv) {
         const { stderr: venvError } = await execPromise('python -m venv ' + this.venvPath);
         if (venvError) return venvError;
       }
