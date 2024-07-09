@@ -76,11 +76,11 @@ app.whenReady().then(async () => {
   }, 1000); // print '.' every 1ms while setting
 
   // Will take a long time (about 3 min) when the first install the venv and fs.
-  const setVenv: string = await systemExecuter.executeSetVenv(arg);
-  if (setVenv === 'success') {
+  const setVenvResult: string = await systemExecuter.executeSetVenv(arg);
+  if (setVenvResult === 'success') {
     mainWindow.webContents.send('recv-log', 'Fosslight Scanner is ready to use.');
   } else {
-    mainWindow.webContents.send('recv-log', setVenv);
+    mainWindow.webContents.send('recv-log', setVenvResult);
   }
   clearInterval(progressInterval); // stop printing '.'
 
