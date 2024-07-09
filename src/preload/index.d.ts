@@ -1,4 +1,4 @@
-import { electronAPI } from '@electron-toolkit/preload';
+export {};
 
 declare global {
   interface Window {
@@ -9,6 +9,8 @@ declare global {
       onLog: (handler: (_: unknown, log: any) => void) => void;
       offLog: (handler: (_: unknown, log: any) => void) => void;
       forceQuit: () => void;
+      onAppReady: (handler: () => void) => void;
+      offAppReady: (handler: () => void) => void;
     };
     nativeApi: {
       minimizeApp: () => void;
