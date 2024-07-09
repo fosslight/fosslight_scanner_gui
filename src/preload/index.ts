@@ -25,6 +25,14 @@ const api = {
   // Function to force quit the scan
   forceQuit: (): void => {
     ipcRenderer.send('force-quit');
+  },
+  // Function to add a listener for app ready
+  onAppReady: (handler: () => void): void => {
+    ipcRenderer.on('app-ready', handler);
+  },
+  // Function to remove the listener for app ready
+  offAppReady: (handler: () => void): void => {
+    ipcRenderer.off('app-ready', handler);
   }
 };
 

@@ -13,12 +13,9 @@ function createMainWindow(): void {
   const display = screen.getPrimaryDisplay();
 
   mainWindow = new BrowserWindow({
-    x: display.bounds.x,
-    y: display.bounds.y,
-    width: display.bounds.width,
-    height: display.bounds.height,
-    minWidth: 800,
-    minHeight: 600,
+    center: true,
+    width: display.bounds.width - 200,
+    height: display.bounds.height - 200,
     show: false,
     frame: false,
     autoHideMenuBar: true,
@@ -51,10 +48,12 @@ function createMainWindow(): void {
 function createSubWindow(): void {
   subWindow = new BrowserWindow({
     width: 300,
-    height: 300,
+    height: 360,
     show: false,
     frame: false,
     autoHideMenuBar: true,
+    resizable: false,
+    backgroundColor: '#2D2D2D',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
@@ -102,6 +101,7 @@ app.whenReady().then(async () => {
     subWindow.show();
     await systemExecuter.setUpVenv();
     subWindow.close();
+    mainWindow.webContents.send('app-ready');
     mainWindow.show();
   } catch (error) {
     alert(error);
@@ -129,7 +129,6 @@ app.whenReady().then(async () => {
   });
 
   ipcMain.on('minimizeApp', () => {
-    console.log('minimizeApp');
     mainWindow.minimize();
   });
 
