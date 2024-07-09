@@ -113,5 +113,17 @@ module.exports = {
         300: '0px 2px 4px -2px rgba(29, 52, 97, 0.06), 0px 2px 8px -2px rgba(29, 52, 97, 0.10);'
       }
     }
-  }
+  },
+  plugins: [
+    ({ addUtilities }) => {
+      addUtilities({
+        '.draggable': {
+          '-webkit-app-region': 'drag'
+        },
+        '.undraggable': {
+          '-webkit-app-region': 'no-drag'
+        }
+      });
+    }
+  ]
 };
