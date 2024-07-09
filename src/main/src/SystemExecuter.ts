@@ -70,15 +70,26 @@ class SystemExecuter {
       );
       if (installError) return installError;
 
-      /* TODO: This 'always update' takes long time. Need to check the version first.
-      const { stderr: updateError } = await execPromise(
-        this.pythonPath + ' -m pip install fosslight_scanner --upgrade --force-reinstall'
+      const checkVersionScriptPath = path.join(
+        this.appPath,
+        'resources',
+        'scripts/check_fs_version.py'
       );
-      if (updateError) {
-        console.error('Update fosslight sccanner failed: ' + updateError);
-        return false;
+      const { stdout: versionResult, stderr: versionError } = await execPromise(
+        this.pythonPath + ' ' + checkVersionScriptPath
+      );
+      if (versionError) {
+        // pkg_resources related stderr is ignorable warning
+        if (!versionError.includes('pkg_resources')) return versionError;
       }
-      */
+      // TODO: use the below boolean variable to show update dialog
+      const canUpdate: boolean = versionResult.includes('Newer version is available');
+      if (canUpdate) {
+        const { stderr: updateError } = await execPromise(
+          this.pythonPath + ' -m pip install fosslight_scanner --upgrade --force-reinstall'
+        );
+        if (updateError) return updateError;
+      }
 
       return 'success';
     } catch (error) {
