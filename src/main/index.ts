@@ -19,7 +19,6 @@ function createMainWindow(): void {
     show: false,
     frame: false,
     autoHideMenuBar: true,
-    ...(process.platform === 'linux' ? {} : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
@@ -104,7 +103,7 @@ app.whenReady().then(async () => {
     mainWindow.webContents.send('app-ready');
     mainWindow.show();
   } catch (error) {
-    alert(error);
+    console.error(error);
   }
 
   // IPC communication between main and renderers
