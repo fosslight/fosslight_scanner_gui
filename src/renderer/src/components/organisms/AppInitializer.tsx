@@ -4,7 +4,7 @@ import { FossLogo } from '../atoms/SVGIcons';
 
 const AppInitializer: FC = () => {
   return (
-    <div className="draggable fixed h-full w-full">
+    <div className="fixed h-full w-full draggable">
       <div className="flex h-full w-full flex-col items-center justify-center gap-5">
         <FossLogo width={40} height={40} />
         <Text type="p400-m" color="white">
