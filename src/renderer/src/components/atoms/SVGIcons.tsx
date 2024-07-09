@@ -1,5 +1,10 @@
 import React, { FC } from 'react';
 
+interface IIconProps {
+  width?: number;
+  height?: number;
+}
+
 export const AppIcon: React.FC = (props) => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path
@@ -88,8 +93,14 @@ export const FileDeleteIcon: React.FC = (props) => (
   </svg>
 );
 
-export const FossLogo: React.FC = (props) => (
-  <svg width="24" height="24" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+export const FossLogo: FC<IIconProps> = ({ width = 24, height = 24 }) => (
+  <svg
+    width={width}
+    height={height}
+    viewBox="0 0 16 16"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
     <g id="fosslogo">
       <path
         id="Vector_2"
