@@ -26,7 +26,7 @@ const CompareTemplate: FC = () => {
   return (
     <div className="flex flex-wrap items-start justify-start gap-16">
       <SourceSelector
-        label="Comparison Subject"
+        label="Comparison Target"
         required
         options={[{ type: 'file', value: 'local', label: 'Local file', placeholder: '~/' }]}
         placeholder={
@@ -43,7 +43,7 @@ const CompareTemplate: FC = () => {
       />
       <div className="flex flex-col justify-start gap-10">
         <TextInput
-          label="Storage path for comparison results"
+          label="Output path for comparison results"
           required
           options={[
             { type: 'dir', label: 'Local directory', value: 'local-dir', placeholder: '~/' }
@@ -59,7 +59,7 @@ const CompareTemplate: FC = () => {
               type: 'text',
               label: 'File name',
               value: 'filename',
-              placeholder: 'Enter the desired file name.'
+              placeholder: 'Enter the output file name.'
             }
           ]}
           suffix={

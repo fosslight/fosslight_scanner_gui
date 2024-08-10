@@ -51,7 +51,7 @@ const ButtonBar: FC<IButtonBarProps> = ({ onForceQuitClick }) => {
             Force Quit
           </Button>
           <Button type="tertiary" onClick={handleOpenStoragePathClick}>
-            Open Storage Path
+            Open Output Path
           </Button>
         </>
       )}

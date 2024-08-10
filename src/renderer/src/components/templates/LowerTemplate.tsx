@@ -76,13 +76,13 @@ const LowerTemplate: FC = () => {
         modalRef={successfulModal.modalRef}
         title={`${mode === 'analyze' ? 'Analysis' : 'Comparison'} Successfully completed!`}
         icon={<ExclamationIcon />}
-        content={`If you want to view the ${mode === 'analyze' ? 'analysis' : 'comparison'} results, please open the storage path to check.`}
+        content={`If you want to view the ${mode === 'analyze' ? 'analysis' : 'comparison'} results, please open the output path to check.`}
         buttons={[
           <Button key="close" type="tertiary" onClick={successfulModal.closeModal}>
             Go Back to Start
           </Button>,
           <Button key="open-storage" type="primary" onClick={handleOpenStoragePathClick}>
-            Open Storage Path
+            Open Output Path
           </Button>
         ]}
       />

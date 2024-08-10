@@ -39,7 +39,7 @@ const AnalyzeTemplate: FC = () => {
   return (
     <div className="flex justify-between gap-6">
       <SourceSelector
-        label="Analysis subject"
+        label="Analysis Target"
         required
         options={[
           { type: 'text', value: 'github', label: 'GitHub repo', placeholder: 'https://github/' }, // Change this option to 'Link' later
@@ -85,7 +85,7 @@ const AnalyzeTemplate: FC = () => {
           onChange={handleScannerTypeChange}
         />
         <TextInput
-          label="Storage path for analysis results"
+          label="Output path for analysis results"
           required
           options={[{ type: 'dir', label: 'Local directory', value: 'local', placeholder: '~/' }]}
           value={analyzeCommandConfig.outputPath}
@@ -100,7 +100,7 @@ const AnalyzeTemplate: FC = () => {
               type: 'text',
               label: 'File name',
               value: 'filename',
-              placeholder: 'Enter the desired file name.'
+              placeholder: 'Enter the output file name.'
             }
           ]}
           showInput={analyzeCommandConfig?.subjects && analyzeCommandConfig.subjects.length <= 1}
