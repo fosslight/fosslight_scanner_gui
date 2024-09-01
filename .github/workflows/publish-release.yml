@@ -14,12 +14,11 @@ jobs:
           - os: ubuntu-latest
             TARGET: ubuntu
             CMD_BUILD: >
-                yarn install &&
+                yarn &&
                 yarn build &&
-                TAG=${{ github.event.release.tag_name }} &&
-                mv dist/linux-unpacked/fosslight_gui fosslight-gui-${TAG/v/}-setup.deb
-            OUT_FILE_NAME: fosslight-gui-${TAG/v/}-setup.deb
-            ASSET_MIME: application/octet-stream
+                mv dist/linux-unpacked/fosslight_gui fosslight-gui-setup
+            OUT_FILE_NAME: fosslight-gui-setup
+            ASSET_MIME: application/x-executable
     steps:
     - uses: actions/checkout@v3
     - name: Set up Node.js
