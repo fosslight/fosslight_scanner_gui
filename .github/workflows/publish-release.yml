@@ -14,23 +14,23 @@ jobs:
             CMD_BUILD: >
                 yarn install &&
                 yarn build &&
-                mv dist/linux-unpacked/fosslight_gui fosslight_gui_ubuntu
-            OUT_FILE_NAME: fosslight_gui_ubuntu
+                mv dist/linux-unpacked/fosslight_gui fosslight_bin_ubuntu
+            OUT_FILE_NAME: fosslight_bin_ubuntu
             ASSET_MIME: application/octet-stream
           - os: macos-latest
             TARGET: macos
             CMD_BUILD: >
                 yarn install &&
                 yarn build &&
-                mv dist/mac/fosslight_gui fosslight_gui_macos
-            OUT_FILE_NAME: fosslight_gui_macos
+                mv dist/mac/fosslight_gui fosslight_bin_macos
+            OUT_FILE_NAME: fosslight_bin_macos
             ASSET_MIME: application/x-mach-binary
     steps:
     - uses: actions/checkout@v3
     - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '16' # 또는 필요한 Node.js 버전으로 변경
+        node-version: '18'
     - name: Install dependencies
       run: |
         yarn install
