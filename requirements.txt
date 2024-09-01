@@ -1,0 +1,12 @@
+binaryornot
+numpy
+pandas
+parmap
+psycopg2-binary
+python-dateutil
+py-tlsh
+pytz
+XlsxWriter
+PyYAML
+fosslight_util~=1.4.47
+dependency-check
