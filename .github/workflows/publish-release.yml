@@ -16,8 +16,9 @@ jobs:
             CMD_BUILD: >
                 yarn install &&
                 yarn build &&
-                mv dist/linux-unpacked/fosslight_gui fosslight-gui-${{ github.event.release.tag_name | replace('v', '') }}-setup.deb
-            OUT_FILE_NAME: fosslight-gui-${{ github.event.release.tag_name | replace('v', '') }}-setup.deb
+                TAG=${{ github.event.release.tag_name }} &&
+                mv dist/linux-unpacked/fosslight_gui fosslight-gui-${TAG/v/}-setup.deb
+            OUT_FILE_NAME: fosslight-gui-${TAG/v/}-setup.deb
             ASSET_MIME: application/octet-stream
     steps:
     - uses: actions/checkout@v3
