@@ -17,14 +17,6 @@ jobs:
                 mv dist/linux-unpacked/fosslight_gui fosslight_bin_ubuntu
             OUT_FILE_NAME: fosslight_bin_ubuntu
             ASSET_MIME: application/octet-stream
-          - os: macos-latest
-            TARGET: macos
-            CMD_BUILD: >
-                yarn install &&
-                yarn build &&
-                mv dist/mac/fosslight_gui fosslight_bin_macos
-            OUT_FILE_NAME: fosslight_bin_macos
-            ASSET_MIME: application/x-mach-binary
     steps:
     - uses: actions/checkout@v3
     - name: Set up Node.js
