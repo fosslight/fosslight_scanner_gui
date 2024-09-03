@@ -17,7 +17,7 @@
     "build": "npm run typecheck && electron-vite build && electron-builder --dir",
     "postinstall": "electron-builder install-app-deps",
     "release:win": "npm run typecheck && electron-vite build && electron-builder --win --config electron-builder.yml",
-    "release:mac": "npm run typecheck && electron-vite build && electron-builder --mac --config electron-builder.yml --dir",
+    "release:mac": "npm run typecheck && electron-vite build && electron-builder --mac --config electron-builder.yml",
     "release:linux-rpm-tar": "npm run typecheck && electron-vite build && electron-builder --linux rpm tar.gz --x64 --armv7l --arm64",
     "release:linux-deb-snap": "npm run typecheck && electron-vite build && electron-builder --linux --config electron-builder.yml"
   },

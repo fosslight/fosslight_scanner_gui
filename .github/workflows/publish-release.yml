@@ -14,9 +14,6 @@ jobs:
               - os: ubuntu-latest
                 TARGET: ubuntu
                 ASSET_MIME: application/gzip
-              - os: macos-latest
-                TARGET: macos
-                ASSET_MIME: application/zip
         steps:
         - uses: actions/checkout@v3
         - name: Get the version
@@ -33,20 +30,13 @@ jobs:
           run: |
             yarn
             yarn build
-        - name: Package for Ubuntu
-          if: matrix.TARGET == 'ubuntu'
-          run: |
             tar -czf fosslight-gui-${{ matrix.TARGET }}-setup-${{ env.VERSION }}.tar.gz -C dist/linux-unpacked .
-        - name: Package for MacOS
-          if: matrix.TARGET == 'macos'
-          run: |
-            mv dist/fosslight_gui-*.zip fosslight-gui-${{ matrix.TARGET }}-setup-${{ env.VERSION }}.zip
         - name: Upload Release Asset
           uses: actions/upload-release-asset@v1.0.1
           env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           with:
             upload_url: ${{ github.event.release.upload_url }}
-            asset_path: ./fosslight-gui-${{ matrix.TARGET }}-setup-${{ env.VERSION }}.${{ matrix.TARGET == 'ubuntu' && 'tar.gz' || 'zip' }}
-            asset_name: fosslight-gui-${{ matrix.TARGET }}-setup-${{ env.VERSION }}.${{ matrix.TARGET == 'ubuntu' && 'tar.gz' || 'zip' }}
+            asset_path: ./fosslight-gui-${{ matrix.TARGET }}-setup-${{ env.VERSION }}.tar.gz
+            asset_name: fosslight-gui-${{ matrix.TARGET }}-setup-${{ env.VERSION }}.tar.gz
             asset_content_type: ${{ matrix.ASSET_MIME }}
