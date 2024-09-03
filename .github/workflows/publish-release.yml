@@ -1,57 +1,79 @@
 name: Release fosslight_scanner_gui
+
 on:
   release:
     types: [published]
 
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 jobs:
-  build:
-    name: Build and Release
+  release:
+    name: Build and Release ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        include:
-          - os: ubuntu-latest
-            TARGET: linux
-            CMD_BUILD: yarn && yarn build
-            CMD_PACKAGE: yarn electron-builder --linux
-            ASSET_PATH: "./dist/*.deb"
-            ASSET_NAME: fosslight-gui-linux-${{ github.ref_name }}.deb
-            ASSET_MIME: application/vnd.debian.binary-package
-          - os: macos-latest
-            TARGET: mac
-            CMD_BUILD: yarn && yarn build
-            CMD_PACKAGE: yarn electron-builder --mac
-            ASSET_PATH: "./dist/*.zip"
-            ASSET_NAME: fosslight-gui-mac-${{ github.ref_name }}.zip
-            ASSET_MIME: application/zip
-          - os: windows-latest
-            TARGET: win
-            CMD_BUILD: yarn && yarn build
-            CMD_PACKAGE: yarn electron-builder --win
-            ASSET_PATH: "./dist/*.exe"
-            ASSET_NAME: fosslight-gui-win-${{ github.ref_name }}.exe
-            ASSET_MIME: application/x-msdownload
-
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    
     steps:
-    - uses: actions/checkout@v3
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-    - name: Install dependencies
-      run: yarn install
-    - name: Build application
-      run: ${{ matrix.CMD_BUILD }}
-    - name: Package application
-      run: ${{ matrix.CMD_PACKAGE }}
-    - name: List build output
-      run: ls -R dist
-    - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ${{ matrix.ASSET_PATH }}
-        asset_name: ${{ matrix.ASSET_NAME }}
-        asset_content_type: ${{ matrix.ASSET_MIME }}
+      - name: Check out Git repository
+        uses: actions/checkout@v3
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: |
+          yarn install
+
+      - name: Install Snapcraft (Ubuntu only)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo snap install snapcraft --classic
+          echo "/snap/bin" >> $GITHUB_PATH
+
+      - name: Build Electron app
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          yarn build
+        
+      - name: Build artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+            yarn electron-builder --linux deb appimage
+          elif [ "${{ matrix.os }}" = "macos-latest" ]; then
+            yarn electron-builder --mac dmg zip
+          else
+            yarn electron-builder --win nsis zip
+          fi
+        shell: bash
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.os }}-artifacts
+          path: |
+            dist/*.exe
+            dist/*.dmg
+            dist/*.deb
+            dist/*.AppImage
+            dist/*.zip
+          if-no-files-found: ignore
+
+      - name: Release artifacts
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: |
+            dist/*.exe
+            dist/*.dmg
+            dist/*.deb
+            dist/*.AppImage
+            dist/*.zip
+        if: startsWith(github.ref, 'refs/tags/')
