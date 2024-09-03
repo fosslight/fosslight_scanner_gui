@@ -40,7 +40,7 @@ jobs:
         - name: Package for MacOS
           if: matrix.TARGET == 'macos'
           run: |
-            cd dist/mac && zip -r ../../fosslight-gui-${{ matrix.TARGET }}-setup-${{ env.VERSION }}.zip fosslight_gui.app
+            mv dist/fosslight_gui-*.zip fosslight-gui-${{ matrix.TARGET }}-setup-${{ env.VERSION }}.zip
         - name: Upload Release Asset
           uses: actions/upload-release-asset@v1.0.1
           env:
