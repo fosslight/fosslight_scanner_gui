@@ -31,6 +31,11 @@ nsis:
   allowToChangeInstallationDirectory: true
 mac:
   target:
+    - target: dir
+      arch:
+        - x64
+        - arm64
+        - universal
     - target: zip
       arch:
         - x64
