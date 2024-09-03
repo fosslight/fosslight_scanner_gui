@@ -13,17 +13,12 @@ jobs:
             include:
               - os: ubuntu-latest
                 TARGET: ubuntu
-                CMD_BUILD: >
-                    yarn &&
-                    yarn build &&
-                    tar -czf fosslight-gui-ubuntu-setup-${{ steps.get_version.outputs.VERSION }}.tar.gz -C dist/linux-unpacked .
-                OUT_FILE_NAME: fosslight-gui-ubuntu-setup-${{ steps.get_version.outputs.VERSION }}.tar.gz
                 ASSET_MIME: application/gzip
         steps:
         - uses: actions/checkout@v3
         - name: Get the version
           id: get_version
-          run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
         - name: Set up Node.js
           uses: actions/setup-node@v3
           with:
@@ -32,14 +27,16 @@ jobs:
           run: |
             yarn install
         - name: Build with yarn for ${{ matrix.TARGET }}
-          run: ${{ matrix.CMD_BUILD }}
+          run: |
+            yarn
+            yarn build
+            tar -czf fosslight-gui-${{ matrix.TARGET }}-setup-${{ env.VERSION }}.tar.gz -C dist/linux-unpacked .
         - name: Upload Release Asset
-          id: upload-release-asset
           uses: actions/upload-release-asset@v1.0.1
           env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           with:
             upload_url: ${{ github.event.release.upload_url }}
-            asset_path: ./${{ matrix.OUT_FILE_NAME }}
-            asset_name: ${{ matrix.OUT_FILE_NAME }}
+            asset_path: ./fosslight-gui-${{ matrix.TARGET }}-setup-${{ env.VERSION }}.tar.gz
+            asset_name: fosslight-gui-${{ matrix.TARGET }}-setup-${{ env.VERSION }}.tar.gz
             asset_content_type: ${{ matrix.ASSET_MIME }}
