@@ -5,38 +5,45 @@ on:
     types: [published]
 
 jobs:
-    build:
-        name: Build packages
-        runs-on: ${{ matrix.os }}
-        strategy:
-          matrix:
-            include:
-              - os: ubuntu-latest
-                TARGET: ubuntu
-                ASSET_MIME: application/gzip
-        steps:
-        - uses: actions/checkout@v3
-        - name: Get the version
-          id: get_version
-          run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
-        - name: Set up Node.js
-          uses: actions/setup-node@v3
-          with:
-            node-version: '18'
-        - name: Install dependencies
-          run: |
-            yarn install
-        - name: Build with yarn for ${{ matrix.TARGET }}
-          run: |
-            yarn
-            yarn build
-            tar -czf fosslight-gui-${{ matrix.TARGET }}-setup-${{ env.VERSION }}.tar.gz -C dist/linux-unpacked .
-        - name: Upload Release Asset
-          uses: actions/upload-release-asset@v1.0.1
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          with:
-            upload_url: ${{ github.event.release.upload_url }}
-            asset_path: ./fosslight-gui-${{ matrix.TARGET }}-setup-${{ env.VERSION }}.tar.gz
-            asset_name: fosslight-gui-${{ matrix.TARGET }}-setup-${{ env.VERSION }}.tar.gz
-            asset_content_type: ${{ matrix.ASSET_MIME }}
+  build:
+    name: Build packages
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            TARGET: ubuntu
+            ASSET_MIME: application/gzip
+          - os: macos-latest
+            TARGET: macos
+            ASSET_MIME: application/zip
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Get the version
+      id: get_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+    - name: Install dependencies
+      run: yarn install
+    - name: Build for ${{ matrix.TARGET }}
+      run: |
+        if [ "${{ matrix.TARGET }}" == "ubuntu" ]; then
+          yarn build
+          tar -czf fosslight-gui-${{ matrix.TARGET }}-setup-${{ env.VERSION }}.tar.gz -C dist/linux-unpacked .
+        elif [ "${{ matrix.TARGET }}" == "macos" ]; then
+          yarn build:mac
+          ditto -c -k --sequesterRsrc --keepParent "dist/mac/fosslight_gui.app" fosslight-gui-${{ matrix.TARGET }}-setup-${{ env.VERSION }}.zip
+        fi
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./fosslight-gui-${{ matrix.TARGET }}-setup-${{ env.VERSION }}.${{ matrix.TARGET == 'ubuntu' && 'tar.gz' || 'zip' }}
+        asset_name: fosslight-gui-${{ matrix.TARGET }}-setup-${{ env.VERSION }}.${{ matrix.TARGET == 'ubuntu' && 'tar.gz' || 'zip' }}
+        asset_content_type: ${{ matrix.ASSET_MIME }}
