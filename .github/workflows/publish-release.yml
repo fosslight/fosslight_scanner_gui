@@ -25,8 +25,7 @@ jobs:
           node-version: 18
 
       - name: Install dependencies
-        run: |
-          yarn install
+        run: yarn install
 
       - name: Install Snapcraft (Ubuntu only)
         if: matrix.os == 'ubuntu-latest'
@@ -34,23 +33,25 @@ jobs:
           sudo snap install snapcraft --classic
           echo "/snap/bin" >> $GITHUB_PATH
 
+      - name: Extract version number
+        id: extract_version
+        run: echo "VERSION=$(echo ${GITHUB_REF#refs/tags/} | sed 's/^v//')" >> $GITHUB_ENV
+
       - name: Build Electron app
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          yarn build
+        run: yarn build
         
       - name: Build artifacts
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
-            yarn electron-builder --linux deb appimage
+            yarn electron-builder --linux deb appimage --config.extraMetadata.version=${{ env.VERSION }}
           elif [ "${{ matrix.os }}" = "macos-latest" ]; then
-            yarn electron-builder --mac dmg zip
+            yarn electron-builder --mac dmg zip --config.extraMetadata.version=${{ env.VERSION }}
           else
-            yarn electron-builder --win nsis zip
-          fi
+            yarn electron-builder --win nsis zip --config.extraMetadata.version=${{ env.VERSION }}
         shell: bash
 
       - name: Upload artifacts
@@ -58,11 +59,11 @@ jobs:
         with:
           name: ${{ matrix.os }}-artifacts
           path: |
-            dist/*.exe
-            dist/*.dmg
-            dist/*.deb
-            dist/*.AppImage
-            dist/*.zip
+            dist/*${{ env.VERSION }}*.exe
+            dist/*${{ env.VERSION }}*.dmg
+            dist/*${{ env.VERSION }}*.deb
+            dist/*${{ env.VERSION }}*.AppImage
+            dist/*${{ env.VERSION }}*.zip
           if-no-files-found: ignore
 
       - name: Release artifacts
@@ -71,9 +72,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           files: |
-            dist/*.exe
-            dist/*.dmg
-            dist/*.deb
-            dist/*.AppImage
-            dist/*.zip
+            dist/*${{ env.VERSION }}*.exe
+            dist/*${{ env.VERSION }}*.dmg
+            dist/*${{ env.VERSION }}*.deb
+            dist/*${{ env.VERSION }}*.AppImage
+            dist/*${{ env.VERSION }}*.zip
         if: startsWith(github.ref, 'refs/tags/')
