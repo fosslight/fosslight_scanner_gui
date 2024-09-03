@@ -1,9 +1,7 @@
 name: Release fosslight_scanner_gui
-
 on:
   release:
     types: [published]
-
 jobs:
     build:
         name: Build packages
@@ -16,11 +14,21 @@ jobs:
                 CMD_BUILD: >
                     yarn &&
                     yarn build &&
-                    tar -czf fosslight-gui-ubuntu-setup.tar.gz -C dist/linux-unpacked .
-                OUT_FILE_NAME: fosslight-gui-ubuntu-setup.tar.gz
+                    tar -czf fosslight-gui-ubuntu-setup-${VERSION}.tar.gz -C dist/linux-unpacked .
+                OUT_FILE_NAME: fosslight-gui-ubuntu-setup-${VERSION}.tar.gz
+                ASSET_MIME: application/gzip
+              - os: macos-latest
+                TARGET: macos
+                CMD_BUILD: >
+                    yarn &&
+                    yarn build &&
+                    tar -czf fosslight-gui-macos-setup-${VERSION}.tar.gz -C dist/mac/*.app .
+                OUT_FILE_NAME: fosslight-gui-macos-setup-${VERSION}.tar.gz
                 ASSET_MIME: application/gzip
         steps:
         - uses: actions/checkout@v3
+        - name: Set version
+          run: echo "VERSION=$(echo ${{ github.ref }} | sed 's/^refs\/tags\/v//')" >> $GITHUB_ENV
         - name: Set up Node.js
           uses: actions/setup-node@v3
           with:
@@ -31,8 +39,7 @@ jobs:
         - name: Build with yarn for ${{ matrix.TARGET }}
           run: ${{ matrix.CMD_BUILD }}
         - name: Upload Release Asset
-          id: upload-release-asset
-          uses: actions/upload-release-asset@v1.0.1
+          uses: actions/upload-release-asset@v1
           env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           with:
