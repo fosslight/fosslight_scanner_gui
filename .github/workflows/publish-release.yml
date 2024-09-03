@@ -2,48 +2,56 @@ name: Release fosslight_scanner_gui
 on:
   release:
     types: [published]
+
 jobs:
-    build:
-        name: Build packages
-        runs-on: ${{ matrix.os }}
-        strategy:
-          matrix:
-            include:
-              - os: ubuntu-latest
-                TARGET: ubuntu
-                CMD_BUILD: >
-                    yarn &&
-                    yarn build &&
-                    tar -czf fosslight-gui-ubuntu-setup-${VERSION}.tar.gz -C dist/linux-unpacked .
-                OUT_FILE_NAME: fosslight-gui-ubuntu-setup-${VERSION}.tar.gz
-                ASSET_MIME: application/gzip
-              - os: macos-latest
-                TARGET: macos
-                CMD_BUILD: >
-                    yarn &&
-                    yarn build &&
-                    tar -czf fosslight-gui-macos-setup-${VERSION}.tar.gz -C dist/mac/*.app .
-                OUT_FILE_NAME: fosslight-gui-macos-setup-${VERSION}.tar.gz
-                ASSET_MIME: application/gzip
-        steps:
-        - uses: actions/checkout@v3
-        - name: Set version
-          run: echo "VERSION=$(echo ${{ github.ref }} | sed 's/^refs\/tags\/v//')" >> $GITHUB_ENV
-        - name: Set up Node.js
-          uses: actions/setup-node@v3
-          with:
-            node-version: '18'
-        - name: Install dependencies
-          run: |
-            yarn install
-        - name: Build with yarn for ${{ matrix.TARGET }}
-          run: ${{ matrix.CMD_BUILD }}
-        - name: Upload Release Asset
-          uses: actions/upload-release-asset@v1
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          with:
-            upload_url: ${{ github.event.release.upload_url }}
-            asset_path: ./${{ matrix.OUT_FILE_NAME }}
-            asset_name: ${{ matrix.OUT_FILE_NAME }}
-            asset_content_type: ${{ matrix.ASSET_MIME }}
+  build:
+    name: Build and Release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            TARGET: linux
+            CMD_BUILD: yarn && yarn build
+            CMD_PACKAGE: yarn electron-builder --linux
+            ASSET_PATH: "./dist/*.deb"
+            ASSET_NAME: fosslight-gui-linux-${{ github.ref_name }}.deb
+            ASSET_MIME: application/vnd.debian.binary-package
+          - os: macos-latest
+            TARGET: mac
+            CMD_BUILD: yarn && yarn build
+            CMD_PACKAGE: yarn electron-builder --mac
+            ASSET_PATH: "./dist/*.zip"
+            ASSET_NAME: fosslight-gui-mac-${{ github.ref_name }}.zip
+            ASSET_MIME: application/zip
+          - os: windows-latest
+            TARGET: win
+            CMD_BUILD: yarn && yarn build
+            CMD_PACKAGE: yarn electron-builder --win
+            ASSET_PATH: "./dist/*.exe"
+            ASSET_NAME: fosslight-gui-win-${{ github.ref_name }}.exe
+            ASSET_MIME: application/x-msdownload
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+    - name: Install dependencies
+      run: yarn install
+    - name: Build application
+      run: ${{ matrix.CMD_BUILD }}
+    - name: Package application
+      run: ${{ matrix.CMD_PACKAGE }}
+    - name: List build output
+      run: ls -R dist
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ${{ matrix.ASSET_PATH }}
+        asset_name: ${{ matrix.ASSET_NAME }}
+        asset_content_type: ${{ matrix.ASSET_MIME }}
