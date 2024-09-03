@@ -50,9 +50,15 @@ linux:
         - armv7l
         - arm64
     - target: snap
+    - target: tar.gz
+      arch:
+        - x64
+        - armv7l
+        - arm64
   maintainer: https://github.com/fosslight/fosslight_gui
   synopsis: FOSSLight Scanner GUI Application
   category: Utility
+  artifactName: ${name}-${version}-${arch}.${ext}
 snap:
   base: core20
   publish:
