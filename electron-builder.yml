@@ -68,7 +68,7 @@ npmRebuild: false
 publish:
   provider: github
   protocol: https
-  owner: soonhong99
+  owner: fosslight
   repo: fosslight_scanner_gui
   releaseType: draft
   publishAutoUpdate: true
