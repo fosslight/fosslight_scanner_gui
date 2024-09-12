@@ -19,6 +19,15 @@ jobs:
                     tar -czf fosslight-gui-ubuntu-setup.tar.gz -C dist/linux-unpacked .
                 OUT_FILE_NAME: fosslight-gui-ubuntu-setup.tar.gz
                 ASSET_MIME: application/gzip
+              - os: windows-latest
+                TARGET: windows
+                CMD_BUILD: >
+                  yarn &&
+                  yarn build &&
+                  tar -czf fosslight-gui-windows-setup.tar.gz -C dist .
+                OUT_FILE_NAME: fosslight-gui-windows-setup.tar.gz
+                ASSET_MIME: application/gzip
+              
         steps:
         - uses: actions/checkout@v3
         - name: Set up Node.js
