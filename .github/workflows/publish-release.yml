@@ -24,9 +24,10 @@ jobs:
                 CMD_BUILD: >
                   yarn &&
                   yarn build &&
-                  tar -czf fosslight-gui-windows-setup.tar.gz -C dist .
-                OUT_FILE_NAME: fosslight-gui-windows-setup.tar.gz
-                ASSET_MIME: application/gzip
+                  move dist/your_executable.exe fosslight-gui-windows.exe
+                OUT_FILE_NAME: fosslight-gui-windows.exe
+                ASSET_MIME: application/octet-stream
+              
               
         steps:
         - uses: actions/checkout@v3
