@@ -24,9 +24,9 @@ jobs:
                 CMD_BUILD: >
                   yarn &&
                   yarn build &&
-                  move dist/your_executable.exe fosslight-gui-windows.exe
-                OUT_FILE_NAME: fosslight-gui-windows.exe
-                ASSET_MIME: application/octet-stream
+                  powershell Compress-Archive -Path dist\* -DestinationPath fosslight-gui-windows-setup.zip
+                OUT_FILE_NAME: fosslight-gui-windows-setup.zip
+                ASSET_MIME: application/zip
               
               
         steps:
