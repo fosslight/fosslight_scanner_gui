@@ -17,35 +17,57 @@ jobs:
           - os: macos-latest
             TARGET: macos
             ASSET_MIME: application/zip
+          - os: windows-latest
+            TARGET: windows
+            ASSET_MIME: application/vnd.microsoft.portable-executable
     steps:
     - uses: actions/checkout@v3
     - name: Get the version
       id: get_version
       run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+      shell: bash
     - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
         node-version: '18'
     - name: Install dependencies
       run: yarn install
+    - name: Clean previous build
+      run: npm run clean
     - name: Build with yarn for ${{ matrix.TARGET }}
       env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
       run: |
         if [ "${{ matrix.TARGET }}" == "ubuntu" ]; then
           yarn build
-          tar -czf fosslight-gui-${{ matrix.TARGET }}-setup-${{ env.VERSION }}.tar.gz -C dist/linux-unpacked .
+          sleep 5
+          tar -czf fosslight-gui-${{ matrix.TARGET }}-setup-${{ env.VERSION }}-temp.tar.gz -C dist/linux-unpacked .
+          mv fosslight-gui-${{ matrix.TARGET }}-setup-${{ env.VERSION }}-temp.tar.gz fosslight-gui-${{ matrix.TARGET }}-setup-${{ env.VERSION }}.tar.gz
         elif [ "${{ matrix.TARGET }}" == "macos" ]; then
           yarn build:mac
-          ditto -c -k --sequesterRsrc --keepParent "dist/mac/fosslight_gui.app" fosslight-gui-${{ matrix.TARGET }}-setup-${{ env.VERSION }}.zip
+          sleep 5
+          ditto -c -k --sequesterRsrc --keepParent "dist/mac/fosslight_gui.app" fosslight-gui-${{ matrix.TARGET }}-setup-${{ env.VERSION }}-temp.zip
+          mv fosslight-gui-${{ matrix.TARGET }}-setup-${{ env.VERSION }}-temp.zip fosslight-gui-${{ matrix.TARGET }}-setup-${{ env.VERSION }}.zip
+          echo "current location..."
+          pwd
+        elif [ "${{ matrix.TARGET }}" == "windows" ]; then
+          yarn build:win
+          sleep 5
+          7z a -tzip ./fosslight-gui-${{ matrix.TARGET }}-setup-${{ env.VERSION }}-temp.zip ./dist/win-unpacked/*
+          mv ./fosslight-gui-${{ matrix.TARGET }}-setup-${{ env.VERSION }}-temp.zip ./fosslight-gui-${{ matrix.TARGET }}-setup-${{ env.VERSION }}.zip
+          echo "Listing dist directory..."
+          ls ./dist
+          echo "current location..."
+          pwd
         fi
+      shell: bash
     - name: Upload Release Asset
       id: upload-release-asset
       uses: actions/upload-release-asset@v1.0.1
       env:
-        GITHUB_TOKEN: ${{ secrets.TOKEN }}    
+        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}    
       with:
         upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ./fosslight-gui-${{ matrix.TARGET }}-setup-${{ env.VERSION }}.${{ matrix.TARGET == 'ubuntu' && 'tar.gz' || 'zip' }}
-        asset_name: fosslight-gui-${{ matrix.TARGET }}-setup-${{ env.VERSION }}.${{ matrix.TARGET == 'ubuntu' && 'tar.gz' || 'zip' }}
+        asset_path: ./fosslight-gui-${{ matrix.TARGET }}-setup-${{ env.VERSION }}.${{ matrix.TARGET == 'ubuntu' && 'tar.gz' || matrix.TARGET == 'macos' && 'zip' || 'zip' }}
+        asset_name: fosslight-gui-${{ matrix.TARGET }}-setup-${{ env.VERSION }}.${{ matrix.TARGET == 'ubuntu' && 'tar.gz' || matrix.TARGET == 'macos' && 'zip' || 'zip' }}
         asset_content_type: ${{ matrix.ASSET_MIME }}
