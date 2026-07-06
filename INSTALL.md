@@ -9,13 +9,13 @@ Windows에서 오픈소스 분석(소스 코드 / 의존성 / 바이너리)을 �
 
 | 파일 | 크기 | 용도 |
 |---|---|---|
-| `fosslight-scanner-gui-0.2.1-setup.exe` | 약 259MB | 설치 프로그램 (분석 엔진 포함) |
+| `fosslight-scanner-gui-0.2.2-setup.exe` | 약 259MB | 설치 프로그램 (분석 엔진 포함) |
 
 - 지원 환경: Windows 10 / 11 (64비트)
 
 ## 2. 설치 방법
 
-1. `fosslight-scanner-gui-0.2.1-setup.exe`를 더블 클릭합니다.
+1. `fosslight-scanner-gui-0.2.2-setup.exe`를 더블 클릭합니다.
 2. 파란색 **"Windows의 PC 보호"(SmartScreen)** 경고가 나타나면:
    - **추가 정보** 클릭 → **실행** 클릭
    - (코드 서명이 없는 프로그램에 표시되는 일반적인 경고입니다)
