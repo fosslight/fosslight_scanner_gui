@@ -1,0 +1,2 @@
+fosslight-scanner==2.1.25
+pyinstaller==6.21.0

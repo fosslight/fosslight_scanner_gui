@@ -1,0 +1,19 @@
+node_modules
+dist
+out
+.DS_Store
+.eslintcache
+*.log*
+
+# python backend
+__pycache__/
+python-backend/.venv/
+python-backend/build/
+python-backend/dist/
+python-backend/*_out/
+python-backend/recon_*/
+.fosslight_temp_*/
+fosslight_log*/
+
+# test fixture artifacts
+test-fixtures/sample-project/node_modules/
