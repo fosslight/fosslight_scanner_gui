@@ -9,6 +9,7 @@
 | [03. Python 백엔드](03-backend.md) | 래퍼 구조, NDJSON 프로토콜 명세, gui_result.json 스키마, fosslight 함정 목록 |
 | [04. 프론트엔드 (Electron/React)](04-frontend.md) | main/preload/renderer 구조, IPC 채널, 페이지/스토어/유틸 상세 |
 | [05. 빌드와 릴리스](05-build-and-release.md) | 개발 환경 구성, PyInstaller/electron-builder 빌드, 릴리스 절차 |
+| [06. 배포물 구성과 설치 용량](06-distribution-contents.md) | 인스톨러 포함 항목, 설치 시 생성되는 것, 1GB 용량의 내역과 설계 배경 |
 
 ## 빠른 시작
 
