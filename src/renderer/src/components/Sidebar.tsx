@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useAppStore } from '../store/appStore'
 
-const GITHUB_ISSUES_URL = 'https://github.com/fosslight/fosslight_scanner/issues'
+const GITHUB_ISSUES_URL = 'https://github.com/fosslight/fosslight_scanner_gui/issues'
 
 interface NavItem {
   to: string
@@ -50,10 +50,50 @@ export default function Sidebar(): React.JSX.Element {
   const report = useAppStore((s) => s.report)
   const scanStatus = useAppStore((s) => s.scanStatus)
   const [version, setVersion] = useState('')
+  const [scannerVersions, setScannerVersions] = useState<Record<string, string | null> | null>(null)
+
+  const reportScannerVersions = useMemo(() => {
+    if (!report) return null
+    const toolInfoValues = Object.entries(report.toolInfo)
+      .filter(([k]) => k !== 'Comment')
+      .map(([, v]) => String(v))
+
+    const findVersion = (tokens: string[]): string | null => {
+      for (const value of toolInfoValues) {
+        for (const token of tokens) {
+          const match = value.match(new RegExp(`${token}\\s*v?([0-9]+(?:\\.[0-9]+){1,3})`, 'i'))
+          if (match?.[1]) return match[1]
+        }
+      }
+      return null
+    }
+
+    return {
+      fosslight_scanner: findVersion(['fosslight_scanner', 'fosslight scanner']),
+      fosslight_source: findVersion(['fosslight_source', 'fosslight source']),
+      fosslight_dependency: findVersion(['fosslight_dependency', 'fosslight dependency']),
+      fosslight_binary: findVersion(['fosslight_binary', 'fosslight binary'])
+    }
+  }, [report])
 
   useEffect(() => {
     void window.api.getAppVersion().then(setVersion)
+    void window.api.getScannerVersions().then(setScannerVersions)
   }, [])
+
+  const formatVersion = (v: string | null | undefined): string => {
+    if (!v) return '-'
+    return v.startsWith('v') ? v : `v${v}`
+  }
+
+  const effectiveScannerVersions = {
+    fosslight_scanner: reportScannerVersions?.fosslight_scanner ?? scannerVersions?.fosslight_scanner,
+    fosslight_source: reportScannerVersions?.fosslight_source ?? scannerVersions?.fosslight_source,
+    fosslight_dependency:
+      reportScannerVersions?.fosslight_dependency ?? scannerVersions?.fosslight_dependency,
+    fosslight_binary: reportScannerVersions?.fosslight_binary ?? scannerVersions?.fosslight_binary
+  }
+
   const counts = {
     source: report?.items.source.length ?? 0,
     dependency: report?.items.dependency.length ?? 0,
@@ -70,7 +110,7 @@ export default function Sidebar(): React.JSX.Element {
       <nav className="flex-1">
         <SectionTitle>메뉴</SectionTitle>
         <NavEntry to="/" label="Overview" />
-        <NavEntry to="/scan" label="스캔 실행" />
+        <NavEntry to="/scan" label="New Scan" />
 
         <SectionTitle>Scan Results</SectionTitle>
         <NavEntry to="/results/source" label="Source" count={counts.source} />
@@ -79,7 +119,11 @@ export default function Sidebar(): React.JSX.Element {
 
         <SectionTitle>Risk</SectionTitle>
         <NavEntry to="/risk/license" label="License" />
-        <NavEntry to="/risk/vulnerability" label="Vulnerability" />
+        {/*
+          Vulnerability 기능은 현재 미완성 상태로 메뉴에서 숨깁니다.
+          추후 재활성화 시 아래 NavEntry를 복구하세요.
+          <NavEntry to="/risk/vulnerability" label="Vulnerability" />
+        */}
       </nav>
 
       {scanStatus === 'running' && (
@@ -90,7 +134,32 @@ export default function Sidebar(): React.JSX.Element {
       )}
 
       <div className="flex items-center justify-between border-t border-gray-700/60 px-3 pt-3">
-        <span className="text-xs text-gray-500">{version && `v${version}`}</span>
+        <div className="group relative">
+          <span className="cursor-default text-xs text-gray-500">{version && `v${version}`}</span>
+          <div
+            className="pointer-events-none absolute bottom-5 left-0 z-50 min-w-max rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100"
+          >
+            <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+              버전 정보
+            </div>
+            <table className="text-xs">
+              <tbody>
+                {[
+                  ['FOSSLight Scanner GUI', version],
+                  ['FOSSLight Scanner', effectiveScannerVersions.fosslight_scanner],
+                  ['FOSSLight Source Scanner', effectiveScannerVersions.fosslight_source],
+                  ['FOSSLight Dependency Scanner', effectiveScannerVersions.fosslight_dependency],
+                  ['FOSSLight Binary Scanner', effectiveScannerVersions.fosslight_binary]
+                ].map(([label, ver]) => (
+                  <tr key={label}>
+                    <td className="pr-4 text-gray-400">{label}</td>
+                    <td className="text-gray-200">{formatVersion(ver)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
         <button
           onClick={() => void window.api.openExternal(GITHUB_ISSUES_URL)}
           title="FOSSLight GitHub — 이슈 리포팅"

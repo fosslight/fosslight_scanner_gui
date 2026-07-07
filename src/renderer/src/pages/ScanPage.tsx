@@ -1,7 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { List, type RowComponentProps, useListCallbackRef } from 'react-window'
 import PageHeader from '../components/PageHeader'
 import { useAppStore } from '../store/appStore'
 import type { ScanMode, ScanTargetType } from '@shared/types'
+
+const LOG_ROW_HEIGHT = 24
 
 const PHASES = [
   { key: 'installing', label: '도구 설치' },
@@ -11,15 +14,31 @@ const PHASES = [
 ]
 
 const MODE_LABEL: Record<ScanMode, string> = {
-  source: '소스 코드',
-  dependency: '의존성',
-  binary: '바이너리'
+  source: 'Source Code',
+  dependency: 'Dependency',
+  binary: 'Binary'
 }
 
 const TARGET_TYPE_LABEL: Record<ScanTargetType, string> = {
   folder: '폴더',
   archive: '압축파일',
   url: 'URL'
+}
+
+interface LogRowProps {
+  lines: string[]
+}
+
+function LogRow({ index, style, lines }: RowComponentProps<LogRowProps>): React.JSX.Element {
+  const line = lines[index]
+  return (
+    <div
+      style={style}
+      className={`overflow-hidden whitespace-nowrap ${line.startsWith('[ERROR]') ? 'text-red-400' : ''}`}
+    >
+      {line}
+    </div>
+  )
 }
 
 function PhaseStepper({ current }: { current: string }): React.JSX.Element {
@@ -50,20 +69,24 @@ function PhaseStepper({ current }: { current: string }): React.JSX.Element {
 }
 
 function LogConsole({ lines }: { lines: string[] }): React.JSX.Element {
-  const ref = useRef<HTMLDivElement>(null)
+  const [listApi, listRef] = useListCallbackRef()
+
   useEffect(() => {
-    ref.current?.scrollTo({ top: ref.current.scrollHeight })
-  }, [lines])
+    if (lines.length > 0) {
+      listApi?.scrollToRow({ index: lines.length - 1, align: 'end' })
+    }
+  }, [lines, listApi])
+
   return (
-    <div
-      ref={ref}
-      className="h-64 overflow-y-auto rounded-lg bg-gray-900 p-3 font-mono text-xs leading-relaxed text-gray-300"
-    >
-      {lines.map((l, i) => (
-        <div key={i} className={l.startsWith('[ERROR]') ? 'text-red-400' : ''}>
-          {l}
-        </div>
-      ))}
+    <div className="min-h-0 flex-1 rounded-lg bg-gray-900 p-3 font-mono text-xs leading-tight text-gray-300">
+      <List
+        listRef={listRef}
+        rowComponent={LogRow}
+        rowCount={lines.length}
+        rowHeight={LOG_ROW_HEIGHT}
+        rowProps={{ lines }}
+        style={{ height: '100%' }}
+      />
     </div>
   )
 }
@@ -159,9 +182,9 @@ export default function ScanPage(): React.JSX.Element {
   }
 
   return (
-    <div className="p-8">
+    <div className="flex h-full min-h-0 flex-col p-8">
       <PageHeader
-        title="스캔 실행"
+        title="New Scan"
         description="분석할 폴더를 선택하고 FOSSLight Scanner 분석을 실행합니다."
       />
 
@@ -175,7 +198,7 @@ export default function ScanPage(): React.JSX.Element {
       ))}
 
       {!running && (
-        <div className="max-w-2xl space-y-5 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="w-full space-y-5 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">분석 대상 *</label>
             <div className="mb-2 inline-flex rounded-lg border border-gray-300 p-0.5">
@@ -330,7 +353,7 @@ export default function ScanPage(): React.JSX.Element {
       )}
 
       {running && (
-        <div className="max-w-3xl space-y-4 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="flex min-h-0 w-full flex-1 flex-col gap-4 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <PhaseStepper current={scanPhase} />
             <button

@@ -1,6 +1,6 @@
 {
   "name": "fosslight-scanner-gui",
-  "version": "0.2.2",
+  "version": "0.2.4",
   "description": "FOSSLight Scanner Windows GUI",
   "main": "./out/main/index.js",
   "author": "FOSSLight",
@@ -17,6 +17,7 @@
     "postinstall": "electron-builder install-app-deps",
     "build:backend": "powershell -ExecutionPolicy Bypass -File scripts/build-backend.ps1",
     "build:unpack": "npm run build && electron-builder --dir",
+    "release:win": "npm version patch --no-git-tag-version && npm run dist",
     "dist": "npm run build:backend && npm run build && electron-builder --win",
     "dist:app-only": "npm run build && electron-builder --win"
   },
@@ -25,6 +26,7 @@
     "@electron-toolkit/utils": "^4.0.0",
     "@tanstack/react-table": "^8.21.3",
     "react-router-dom": "^7.18.1",
+    "react-window": "^2.2.7",
     "recharts": "^3.9.2",
     "zustand": "^5.0.14"
   },

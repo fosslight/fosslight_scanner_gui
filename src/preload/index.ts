@@ -7,6 +7,8 @@ const api = {
   cancelScan: (): Promise<{ ok: boolean }> => ipcRenderer.invoke('scan:cancel'),
   isScanRunning: (): Promise<boolean> => ipcRenderer.invoke('scan:isRunning'),
   getAppVersion: (): Promise<string> => ipcRenderer.invoke('app:version'),
+  getScannerVersions: (): Promise<Record<string, string | null>> =>
+    ipcRenderer.invoke('app:scannerVersions'),
   onScanEvent: (cb: (e: ScanEvent) => void): (() => void) => {
     const listener = (_event: Electron.IpcRendererEvent, e: ScanEvent): void => cb(e)
     ipcRenderer.on('scan:event', listener)
@@ -18,6 +20,7 @@ const api = {
   selectDirectory: (): Promise<string | null> => ipcRenderer.invoke('dialog:selectDir'),
   selectArchive: (): Promise<string | null> => ipcRenderer.invoke('dialog:selectArchive'),
   openExternal: (url: string): Promise<void> => ipcRenderer.invoke('shell:openExternal', url),
+  openPath: (path: string): Promise<string> => ipcRenderer.invoke('shell:openPath', path),
   showInFolder: (path: string): Promise<void> => ipcRenderer.invoke('shell:showInFolder', path)
 }
 

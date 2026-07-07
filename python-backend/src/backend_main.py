@@ -144,7 +144,47 @@ def check_package_managers(target_path, mode_list):
             })
 
 
+def _emit_versions():
+    """--versions 플래그 처리: FOSSLight 패키지 버전을 JSON으로 출력 후 종료"""
+    import importlib.metadata
+
+    packages = [
+        ("fosslight_scanner", ["fosslight_scanner", "fosslight-scanner"]),
+        (
+            "fosslight_source",
+            ["fosslight_source", "fosslight-source-scanner", "fosslight_source_scanner"],
+        ),
+        (
+            "fosslight_dependency",
+            [
+                "fosslight_dependency",
+                "fosslight-dependency-scanner",
+                "fosslight_dependency_scanner",
+            ],
+        ),
+        (
+            "fosslight_binary",
+            ["fosslight_binary", "fosslight-binary-scanner", "fosslight_binary_scanner"],
+        ),
+    ]
+    versions = {}
+    for key, dist_names in packages:
+        ver = None
+        for dist in dist_names:
+            try:
+                ver = importlib.metadata.version(dist)
+                break
+            except importlib.metadata.PackageNotFoundError:
+                continue
+        versions[key] = ver
+    emit({"type": "versions", "versions": versions})
+
+
 def main():
+    if "--versions" in sys.argv:
+        _emit_versions()
+        return
+
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--path")  # 폴더 또는 압축파일 (압축은 run_main이 자동 해제)
@@ -204,7 +244,7 @@ def main():
             [args.path or ""],
             [],
             args.output,
-            ["excel", "yaml"],
+            ["excel"],
             args.url or "",
             "",
             hide_progressbar=True,
@@ -224,10 +264,7 @@ def main():
         if ok is False and not reports_exist:
             raise RuntimeError("스캔이 실패했습니다. 분석 대상 경로/URL을 확인해주세요.")
 
-        from normalize_report import normalize_report
-
-        result_path = normalize_report(args.output, analyze_target, mode_list)
-        emit({"type": "result", "resultFile": result_path})
+        emit({"type": "result", "resultFile": None})
         sys.exit(0)
     except SystemExit:
         raise

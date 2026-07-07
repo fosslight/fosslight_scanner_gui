@@ -28,7 +28,10 @@ const CATEGORY_COLOR: Record<LicenseCategory, string> = {
 
 export default function OverviewPage(): React.JSX.Element {
   const report = useAppStore((s) => s.report)
+  const outputDir = useAppStore((s) => s.form.outputDir)
   const navigate = useNavigate()
+  const TOP_LICENSE_MIN_CHART_HEIGHT = 260
+  const TOP_LICENSE_ROW_HEIGHT = 30
 
   const stats = useMemo(() => {
     if (!report) return null
@@ -64,25 +67,69 @@ export default function OverviewPage(): React.JSX.Element {
       })
     ).length
 
-    // 보안취약점: NVD 조회 가능한(OSS 이름이 검출된) 항목 요약
-    const vuln = { total: 0, source: 0, dependency: 0, binary: 0 }
-    for (const scanner of ['source', 'dependency', 'binary'] as const) {
-      const n = report.items[scanner].filter((i) => !i.exclude && i.name).length
-      vuln[scanner] = n
-      vuln.total += n
-    }
+    // 보안취약점(Vulnerability) 기능은 현재 미완성 상태로 비활성화합니다.
+    // 추후 재활성화 시 아래 통계 계산 블록을 복구하세요.
+    // const vuln = { total: 0, source: 0, dependency: 0, binary: 0 }
+    // for (const scanner of ['source', 'dependency', 'binary'] as const) {
+    //   const n = report.items[scanner].filter((i) => !i.exclude && i.name).length
+    //   vuln[scanner] = n
+    //   vuln.total += n
+    // }
 
-    return { uniqueLicenses: licenseCount.size, topLicenses, categoryData, highRisk, vuln }
+    return { uniqueLicenses: licenseCount.size, topLicenses, categoryData, highRisk }
   }, [report])
 
   if (!report || !stats) return <EmptyState />
+
+  const topLicenseChartHeight = Math.max(
+    TOP_LICENSE_MIN_CHART_HEIGHT,
+    stats.topLicenses.length * TOP_LICENSE_ROW_HEIGHT
+  )
+
+  const openResultFolder = async (): Promise<void> => {
+    if (!outputDir) {
+      window.alert('저장 경로가 없습니다. New Scan에서 저장 경로를 먼저 설정해 주세요.')
+      return
+    }
+    const error = await window.api.openPath(outputDir)
+    if (error) {
+      window.alert(`경로를 열 수 없습니다: ${error}`)
+    }
+  }
+
+  function FolderIcon(): React.JSX.Element {
+    return (
+      <svg
+        viewBox="0 0 24 24"
+        width="16"
+        height="16"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+      </svg>
+    )
+  }
 
   return (
     <div className="p-8">
       <PageHeader
         title="Overview"
         description={`분석 경로: ${report.analyzedPath} · ${report.scanDate.replace('T', ' ')}`}
-      />
+      >
+        <button
+          onClick={() => void openResultFolder()}
+          className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={!outputDir}
+          title={outputDir || 'New Scan에서 저장 경로를 설정해 주세요'}
+        >
+          <FolderIcon />
+          Result file
+        </button>
+      </PageHeader>
 
       <h2 className="mb-3 text-lg font-semibold text-gray-800">Open Source 검출</h2>
       <div className="grid grid-cols-3 gap-4">
@@ -152,43 +199,53 @@ export default function OverviewPage(): React.JSX.Element {
           {stats.topLicenses.length === 0 ? (
             <div className="py-16 text-center text-sm text-gray-400">데이터 없음</div>
           ) : (
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={stats.topLicenses} layout="vertical" margin={{ left: 30 }}>
+            <ResponsiveContainer width="100%" height={topLicenseChartHeight}>
+              <BarChart
+                data={stats.topLicenses}
+                layout="vertical"
+                margin={{ top: 8, right: 8, bottom: 8, left: 30 }}
+                barCategoryGap="24%"
+              >
                 <XAxis type="number" allowDecimals={false} fontSize={11} />
-                <YAxis type="category" dataKey="name" width={110} fontSize={11} />
+                <YAxis type="category" dataKey="name" width={130} fontSize={11} tickMargin={6} />
                 <Tooltip />
-                <Bar dataKey="count" fill="#4f46e5" radius={[0, 4, 4, 0]} barSize={16} />
+                <Bar dataKey="count" fill="#4f46e5" radius={[0, 4, 4, 0]} barSize={14} />
               </BarChart>
             </ResponsiveContainer>
           )}
         </div>
       </div>
 
-      <h2 className="mt-8 mb-3 text-lg font-semibold text-gray-800">보안취약점 (Vulnerability)</h2>
-      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-        {stats.vuln.total === 0 ? (
-          <div className="text-sm text-gray-500">
-            취약점 조회 가능한 항목이 없습니다 (OSS 이름이 검출된 항목만 조회 대상입니다).
-          </div>
-        ) : (
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-sm text-gray-500">NVD 취약점 조회 대상 OSS</div>
-              <div className="mt-1 text-3xl font-bold text-gray-900">{stats.vuln.total}건</div>
-              <div className="mt-1 text-xs text-gray-400">
-                Source {stats.vuln.source} · Dependency {stats.vuln.dependency} · Binary{' '}
-                {stats.vuln.binary} — 취약점 상세는 항목별 NVD 링크에서 확인하세요
-              </div>
+      {/*
+        Vulnerability 기능은 현재 미완성 상태로 Overview 노출을 숨깁니다.
+        추후 재활성화 시 아래 섹션을 복구하세요.
+
+        <h2 className="mt-8 mb-3 text-lg font-semibold text-gray-800">보안취약점 (Vulnerability)</h2>
+        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          {stats.vuln.total === 0 ? (
+            <div className="text-sm text-gray-500">
+              취약점 조회 가능한 항목이 없습니다 (OSS 이름이 검출된 항목만 조회 대상입니다).
             </div>
-            <button
-              onClick={() => navigate('/risk/vulnerability')}
-              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-accent hover:bg-accent-soft"
-            >
-              Vulnerability 페이지 열기 →
-            </button>
-          </div>
-        )}
-      </div>
+          ) : (
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm text-gray-500">NVD 취약점 조회 대상 OSS</div>
+                <div className="mt-1 text-3xl font-bold text-gray-900">{stats.vuln.total}건</div>
+                <div className="mt-1 text-xs text-gray-400">
+                  Source {stats.vuln.source} · Dependency {stats.vuln.dependency} · Binary{' '}
+                  {stats.vuln.binary} — 취약점 상세는 항목별 NVD 링크에서 확인하세요
+                </div>
+              </div>
+              <button
+                onClick={() => navigate('/risk/vulnerability')}
+                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-accent hover:bg-accent-soft"
+              >
+                Vulnerability 페이지 열기 →
+              </button>
+            </div>
+          )}
+        </div>
+      */}
 
       <div className="mt-6 rounded-xl border border-gray-200 bg-white p-5 text-xs text-gray-500 shadow-sm">
         <div className="mb-1 font-semibold text-gray-600">스캐너 정보</div>

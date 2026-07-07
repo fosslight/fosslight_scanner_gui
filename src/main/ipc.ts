@@ -1,6 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
+import { execFile } from 'child_process'
 import { basename, join } from 'path'
-import { startScan, cancelScan, isScanRunning } from './scanRunner'
+import { startScan, cancelScan, isScanRunning, backendCommand } from './scanRunner'
 import { checkMissingTools, installTools, cancelInstall, getFreshPath } from './depInstaller'
 import { addRecentScan, getRecentScans, loadReport } from './reportStore'
 import type { ScanConfig, ScanEvent } from '../shared/types'
@@ -71,6 +72,29 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('scan:isRunning', () => scanSessionActive || isScanRunning())
 
   ipcMain.handle('app:version', () => app.getVersion())
+
+  ipcMain.handle('app:scannerVersions', async () => {
+    const { cmd, args } = backendCommand(['--versions'])
+    return new Promise<Record<string, string | null>>((resolve) => {
+      execFile(cmd, args, { encoding: 'utf8', windowsHide: true }, (_err, stdout) => {
+        const lines = (stdout as string).split(/\r?\n/)
+        for (const line of lines) {
+          const text = line.trim()
+          if (!text) continue
+          try {
+            const parsed = JSON.parse(text)
+            if (parsed?.type === 'versions' && parsed.versions && typeof parsed.versions === 'object') {
+              resolve(parsed.versions as Record<string, string | null>)
+              return
+            }
+          } catch {
+            // ignore non-JSON lines and continue parsing
+          }
+        }
+        resolve({})
+      })
+    })
+  })
 
   ipcMain.handle('report:load', (_event, resultFile?: string) => loadReport(resultFile))
 

@@ -5,7 +5,7 @@ import OverviewPage from './pages/OverviewPage'
 import ScanPage from './pages/ScanPage'
 import ResultsPage from './pages/ResultsPage'
 import LicenseRiskPage from './pages/LicenseRiskPage'
-import VulnerabilityPage from './pages/VulnerabilityPage'
+// import VulnerabilityPage from './pages/VulnerabilityPage'
 import { useAppStore } from './store/appStore'
 
 export default function App(): React.JSX.Element {
@@ -31,7 +31,11 @@ export default function App(): React.JSX.Element {
           <Route path="/scan" element={<ScanPage />} />
           <Route path="/results/:scanner" element={<ResultsPage />} />
           <Route path="/risk/license" element={<LicenseRiskPage />} />
-          <Route path="/risk/vulnerability" element={<VulnerabilityPage />} />
+          {/*
+            Vulnerability 기능은 현재 미완성 상태로 사용자 노출을 숨깁니다.
+            추후 재활성화 시 아래 Route를 복구하세요.
+            <Route path="/risk/vulnerability" element={<VulnerabilityPage />} />
+          */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

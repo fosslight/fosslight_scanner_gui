@@ -2,12 +2,12 @@ import { spawn, execFile, ChildProcess } from 'child_process'
 import { createInterface } from 'readline'
 import { app } from 'electron'
 import { join } from 'path'
-import { appendFileSync, mkdirSync } from 'fs'
+import { createWriteStream, mkdirSync, WriteStream } from 'fs'
 import type { ScanConfig, ScanEvent } from '../shared/types'
 
 let currentChild: ChildProcess | null = null
 
-function backendCommand(args: string[]): { cmd: string; args: string[] } {
+export function backendCommand(args: string[]): { cmd: string; args: string[] } {
   if (app.isPackaged) {
     return {
       cmd: join(process.resourcesPath, 'backend', 'fosslight-backend.exe'),
@@ -55,6 +55,13 @@ export function startScan(
   const env = pathEnv ? { ...process.env, PATH: pathEnv, Path: pathEnv } : process.env
   const child = spawn(cmd, args, { windowsHide: true, env })
   currentChild = child
+  let stderrLogStream: WriteStream | null = null
+
+  try {
+    stderrLogStream = createWriteStream(scanLogPath(), { flags: 'a' })
+  } catch {
+    stderrLogStream = null
+  }
 
   createInterface({ input: child.stdout }).on('line', (line) => {
     try {
@@ -65,21 +72,33 @@ export function startScan(
   })
 
   child.stderr.on('data', (d: Buffer) => {
+    // 동기 파일 쓰기는 메인 프로세스를 잠그므로 스트림으로 비동기 기록한다.
     try {
-      appendFileSync(scanLogPath(), d.toString())
+      stderrLogStream?.write(d)
     } catch {
       // 로그 기록 실패는 스캔에 영향 없음
     }
   })
 
+  const closeLogStream = (): void => {
+    try {
+      stderrLogStream?.end()
+    } catch {
+      // no-op
+    }
+    stderrLogStream = null
+  }
+
   child.on('error', (err) => {
     currentChild = null
+    closeLogStream()
     onEvent({ type: 'error', message: `백엔드 실행 실패: ${err.message}` })
     onEvent({ type: 'done', exitCode: -1 })
   })
 
   child.on('close', (code) => {
     currentChild = null
+    closeLogStream()
     onEvent({ type: 'done', exitCode: code ?? -1 })
   })
 
