@@ -24,19 +24,17 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
-      # 태그(v0.2.4)에서 버전 숫자(0.2.4)를 추출해 package.json에 반영
+      # 태그(v0.2.5)에서 버전을 추출해 package.json/package-lock.json을 함께 동기화
       - name: Bump version from tag
         shell: pwsh
         run: |
           $tag = "${{ github.ref_name }}"
           $version = $tag.TrimStart('v')
-          $pkg = Get-Content package.json -Raw | ConvertFrom-Json
-          $pkg.version = $version
-          $pkg | ConvertTo-Json -Depth 10 | Set-Content package.json -Encoding UTF8
-          Write-Host "package.json version set to $version"
+          npm version $version --no-git-tag-version --allow-same-version
+          Write-Host "package.json/package-lock.json version set to $version"
 
       - name: Install Node dependencies
         run: npm ci
