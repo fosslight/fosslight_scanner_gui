@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release-win:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # 태그(v0.2.4)에서 버전 숫자(0.2.4)를 추출해 package.json에 반영
+      - name: Bump version from tag
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $version = $tag.TrimStart('v')
+          $pkg = Get-Content package.json -Raw | ConvertFrom-Json
+          $pkg.version = $version
+          $pkg | ConvertTo-Json -Depth 10 | Set-Content package.json -Encoding UTF8
+          Write-Host "package.json version set to $version"
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Build Python backend
+        shell: pwsh
+        run: |
+          Set-Location python-backend
+          python -m venv .venv
+          .\.venv\Scripts\python -m pip install --upgrade pip --quiet
+          .\.venv\Scripts\python -m pip install -r requirements.txt --quiet
+          .\.venv\Scripts\python -m PyInstaller fosslight_backend.spec --noconfirm --clean
+
+      - name: Build Electron app and package installer
+        run: npm run build && npx electron-builder --win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload setup executable to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.exe
+          fail_on_unmatched_files: true
