@@ -1,14 +1,21 @@
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import { execFile } from 'child_process'
 import { basename, join } from 'path'
-import { startScan, cancelScan, isScanRunning, backendCommand } from './scanRunner'
+import {
+  startScan,
+  cancelScan,
+  isScanRunning,
+  backendCommand
+} from './scanRunner'
 import { checkMissingTools, installTools, cancelInstall, getFreshPath } from './depInstaller'
 import { addRecentScan, getRecentScans, loadReport } from './reportStore'
-import type { ScanConfig, ScanEvent } from '../shared/types'
+import type { GitRefValidationResult, ScanConfig, ScanEvent } from '../shared/types'
 
 // 도구 설치 단계까지 포함한 스캔 세션 상태 (동시 실행 방지)
 let scanSessionActive = false
 let sessionCancelled = false
+const LOG_BATCH_INTERVAL_MS = 100
+const LOG_BATCH_MAX_SIZE = 50
 
 export function registerIpcHandlers(): void {
   ipcMain.handle('scan:start', async (event, cfg: ScanConfig) => {
@@ -18,8 +25,48 @@ export function registerIpcHandlers(): void {
     scanSessionActive = true
     sessionCancelled = false
 
+    let pendingLogs: Array<{ level: string; message: string }> = []
+    let logFlushTimer: NodeJS.Timeout | null = null
+
+    const sendToRenderer = (nextEvent: ScanEvent): void => {
+      if (!win.isDestroyed()) win.webContents.send('scan:event', nextEvent)
+    }
+
+    const clearLogFlushTimer = (): void => {
+      if (!logFlushTimer) return
+      clearTimeout(logFlushTimer)
+      logFlushTimer = null
+    }
+
+    const flushPendingLogs = (): void => {
+      clearLogFlushTimer()
+      if (pendingLogs.length === 0) return
+      sendToRenderer({ type: 'log-batch', entries: pendingLogs })
+      pendingLogs = []
+    }
+
+    const scheduleLogFlush = (): void => {
+      if (logFlushTimer) return
+      logFlushTimer = setTimeout(() => {
+        logFlushTimer = null
+        flushPendingLogs()
+      }, LOG_BATCH_INTERVAL_MS)
+    }
+
     const send = (e: ScanEvent): void => {
-      if (e.type === 'result') {
+      if (e.type === 'log') {
+        pendingLogs.push({ level: e.level, message: e.message })
+        if (pendingLogs.length >= LOG_BATCH_MAX_SIZE) {
+          flushPendingLogs()
+        } else {
+          scheduleLogFlush()
+        }
+        return
+      }
+
+      flushPendingLogs()
+
+      if (e.type === 'result' && e.resultFile) {
         addRecentScan({
           date: new Date().toISOString(),
           analyzedPath: cfg.target,
@@ -27,7 +74,7 @@ export function registerIpcHandlers(): void {
         })
       }
       if (e.type === 'done') scanSessionActive = false
-      if (!win.isDestroyed()) win.webContents.send('scan:event', e)
+      sendToRenderer(e)
     }
 
     let pathEnv = await getFreshPath()
@@ -92,6 +139,46 @@ export function registerIpcHandlers(): void {
           }
         }
         resolve({})
+      })
+    })
+  })
+
+  ipcMain.handle('app:validateGitRef', async (_event, url: string, ref: string) => {
+    const { cmd, args } = backendCommand(['--validate-git-ref', '--url', url, '--ref', ref])
+    return new Promise<GitRefValidationResult>((resolve) => {
+      execFile(cmd, args, { encoding: 'utf8', windowsHide: true }, (_err, stdout) => {
+        const fallback: GitRefValidationResult = {
+          valid: false,
+          isGitUrl: true,
+          refType: null,
+          resolvedRef: null,
+          message: '브랜치/태그 검증에 실패했습니다.',
+          suggestions: []
+        }
+        const lines = (stdout as string).split(/\r?\n/)
+        for (const line of lines) {
+          const text = line.trim()
+          if (!text) continue
+          try {
+            const parsed = JSON.parse(text)
+            if (parsed?.type === 'gitRefValidation') {
+              resolve({
+                valid: Boolean(parsed.valid),
+                isGitUrl: Boolean(parsed.isGitUrl),
+                refType: parsed.refType === 'branch' || parsed.refType === 'tag' ? parsed.refType : null,
+                resolvedRef: typeof parsed.resolvedRef === 'string' ? parsed.resolvedRef : null,
+                message: typeof parsed.message === 'string' ? parsed.message : fallback.message,
+                suggestions: Array.isArray(parsed.suggestions)
+                  ? parsed.suggestions.filter((s: unknown) => typeof s === 'string')
+                  : []
+              })
+              return
+            }
+          } catch {
+            // ignore non-JSON lines and continue parsing
+          }
+        }
+        resolve(fallback)
       })
     })
   })

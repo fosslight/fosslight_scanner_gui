@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { List, type RowComponentProps, useListCallbackRef } from 'react-window'
 import PageHeader from '../components/PageHeader'
 import { useAppStore } from '../store/appStore'
-import type { ScanMode, ScanTargetType } from '@shared/types'
+import type { GitRefValidationResult, GuiResult, ScanMode, ScanTargetType } from '@shared/types'
 
 const LOG_ROW_HEIGHT = 24
 
@@ -23,6 +23,16 @@ const TARGET_TYPE_LABEL: Record<ScanTargetType, string> = {
   folder: '폴더',
   archive: '압축파일',
   url: 'URL'
+}
+
+const ARCHIVE_EXTENSIONS = ['.tar.bz2', '.tar.gz', '.tar.xz', '.tgz', '.tar', '.zip', '.jar', '.bz2', '.whl', '.src.rpm', '.rpm']
+
+function isGitRepoUrl(url: string): boolean {
+  const trimmed = url.trim()
+  if (!trimmed) return false
+  if (!/^(https?:\/\/|git@|git:\/\/|ssh:\/\/)/i.test(trimmed)) return false
+  const lower = trimmed.toLowerCase().split('?')[0]
+  return !ARCHIVE_EXTENSIONS.some((ext) => lower.endsWith(ext))
 }
 
 interface LogRowProps {
@@ -91,6 +101,50 @@ function LogConsole({ lines }: { lines: string[] }): React.JSX.Element {
   )
 }
 
+function DotSpinner(): React.JSX.Element {
+  return (
+    <span className="relative mr-1.5 inline-flex h-3.5 w-3.5 animate-spin">
+      <span className="absolute left-1/2 top-0 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-gray-500" />
+      <span className="absolute left-0 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-gray-400" />
+      <span className="absolute bottom-0 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-gray-300" />
+      <span className="absolute right-0 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-gray-400" />
+    </span>
+  )
+}
+
+function FieldLabel({
+  title,
+  required = false
+}: {
+  title: string
+  required?: boolean
+}): React.JSX.Element {
+  return (
+    <div className="mb-2 flex items-center gap-2">
+      <span className="text-sm font-semibold text-gray-800">{title}</span>
+      {required && (
+        <span className="rounded-md bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-700">
+          필수
+        </span>
+      )}
+    </div>
+  )
+}
+
+function createEmptyReport(target: string, modes: ScanMode[]): GuiResult {
+  return {
+    scanDate: new Date().toISOString().slice(0, 19),
+    analyzedPath: target,
+    modes: modes.length === 3 ? ['all'] : modes,
+    toolInfo: {},
+    items: {
+      source: [],
+      dependency: [],
+      binary: []
+    }
+  }
+}
+
 export default function ScanPage(): React.JSX.Element {
   const {
     form,
@@ -100,23 +154,39 @@ export default function ScanPage(): React.JSX.Element {
     logLines,
     warnings,
     errorMessage,
+    report,
+    lastResultFile,
     startScan,
     markCancelled,
     setReport,
     setRecentScans
   } = useAppStore()
   const [excludeInput, setExcludeInput] = useState('')
+  const [gitRefValidation, setGitRefValidation] = useState<GitRefValidationResult | null>(null)
+  const [validatingGitRef, setValidatingGitRef] = useState(false)
   const running = scanStatus === 'running'
+  const gitUrlTarget = form.targetType === 'url' && isGitRepoUrl(form.target)
+  const hasGitRefInput = form.gitRef.trim() !== ''
+  const gitRefInvalid = gitUrlTarget && hasGitRefInput && gitRefValidation?.valid === false
+  const hasRefSuggestions = (gitRefValidation?.suggestions?.length ?? 0) > 0
 
   // 스캔 성공 시 결과 자동 로드
   useEffect(() => {
     if (scanStatus === 'success') {
-      void window.api.loadReport().then((r) => {
-        if (r) setReport(r)
-      })
+      if (report) {
+        void window.api.getRecentScans().then(setRecentScans)
+        return
+      }
+      if (lastResultFile) {
+        void window.api.loadReport(lastResultFile).then((r) => {
+          setReport(r)
+        })
+      } else {
+        setReport(createEmptyReport(form.target.trim(), form.modes))
+      }
       void window.api.getRecentScans().then(setRecentScans)
     }
-  }, [scanStatus, setReport, setRecentScans])
+  }, [scanStatus, report, lastResultFile, form.target, form.modes, setReport, setRecentScans])
 
   const toggleMode = (m: ScanMode): void => {
     const has = form.modes.includes(m)
@@ -142,7 +212,10 @@ export default function ScanPage(): React.JSX.Element {
   }
 
   const changeTargetType = (t: ScanTargetType): void => {
-    if (t !== form.targetType) setForm({ targetType: t, target: '' })
+    if (t !== form.targetType) {
+      setForm({ targetType: t, target: '', gitRef: '', gitRefType: null })
+      setGitRefValidation(null)
+    }
   }
 
   const targetValid =
@@ -158,14 +231,36 @@ export default function ScanPage(): React.JSX.Element {
 
   const onStart = async (): Promise<void> => {
     if (!targetValid || !form.outputDir) return
-    startScan()
-    const res = await window.api.startScan({
+
+    const nextCfg = {
       targetType: form.targetType,
       target: form.target.trim(),
       modes: form.modes,
       excludePaths: form.excludePaths,
-      outputDir: form.outputDir
-    })
+      outputDir: form.outputDir,
+      gitRef: undefined as string | undefined,
+      gitRefType: null as 'branch' | 'tag' | null
+    }
+
+    if (gitUrlTarget && hasGitRefInput) {
+      let validation = gitRefValidation
+      if (!validation || validation.resolvedRef !== form.gitRef.trim()) {
+        validation = await onBlurGitRef()
+      }
+
+      if (!validation?.valid) {
+        useAppStore.setState({
+          scanStatus: 'error',
+          errorMessage: '입력한 Branch/Tag가 유효하지 않습니다. 포커스 아웃 후 검증 상태를 확인해 주세요.'
+        })
+        return
+      }
+      nextCfg.gitRef = validation.resolvedRef ?? form.gitRef.trim()
+      nextCfg.gitRefType = validation.refType
+    }
+
+    startScan()
+    const res = await window.api.startScan(nextCfg)
     if (!res.ok) {
       useAppStore.setState({
         scanStatus: 'error',
@@ -181,11 +276,67 @@ export default function ScanPage(): React.JSX.Element {
     }
   }
 
+  const onBlurGitRef = async (): Promise<GitRefValidationResult | null> => {
+    const url = form.target.trim()
+    const ref = form.gitRef.trim()
+    if (!gitUrlTarget || !ref) {
+      setGitRefValidation(null)
+      return null
+    }
+    setValidatingGitRef(true)
+    try {
+      const result = await window.api.validateGitRef(url, ref)
+      setGitRefValidation(result)
+      setForm({ gitRefType: result.refType })
+      return result
+    } finally {
+      setValidatingGitRef(false)
+    }
+  }
+
+  useEffect(() => {
+    setGitRefValidation(null)
+    if (!gitUrlTarget) {
+      setForm({ gitRefType: null })
+    }
+  }, [form.target, form.targetType])
+
+  const renderGitRefBadge = (): React.JSX.Element | null => {
+    if (!gitUrlTarget || !hasGitRefInput) return null
+    if (validatingGitRef) {
+      return (
+        <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600">
+          <DotSpinner />
+          검증 중...
+        </span>
+      )
+    }
+    if (!gitRefValidation) {
+      return (
+        <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600">
+          포커스 아웃 시 검증
+        </span>
+      )
+    }
+    if (gitRefValidation.valid) {
+      return (
+        <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">
+          유효함 ({gitRefValidation.refType === 'tag' ? 'Tag' : 'Branch'}: {gitRefValidation.resolvedRef ?? form.gitRef.trim()})
+        </span>
+      )
+    }
+    return (
+      <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700">
+        유효하지 않음: {gitRefValidation.message}
+      </span>
+    )
+  }
+
   return (
     <div className="flex h-full min-h-0 flex-col p-8">
       <PageHeader
         title="New Scan"
-        description="분석할 폴더를 선택하고 FOSSLight Scanner 분석을 실행합니다."
+        description="FOSSLight Scanner를 통해 오픈 소스 분석을 실행합니다."
       />
 
       {warnings.map((w, i) => (
@@ -200,7 +351,7 @@ export default function ScanPage(): React.JSX.Element {
       {!running && (
         <div className="w-full space-y-5 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">분석 대상 *</label>
+            <FieldLabel title="분석 대상" required />
             <div className="mb-2 inline-flex rounded-lg border border-gray-300 p-0.5">
               {(Object.keys(TARGET_TYPE_LABEL) as ScanTargetType[]).map((t) => (
                 <button
@@ -220,13 +371,36 @@ export default function ScanPage(): React.JSX.Element {
               <>
                 <input
                   value={form.target}
-                  onChange={(e) => setForm({ target: e.target.value })}
+                  onChange={(e) => setForm({ target: e.target.value, gitRefType: null })}
                   placeholder="예: https://github.com/fosslight/fosslight_scanner 또는 압축파일 다운로드 URL"
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-accent"
                 />
                 <div className="mt-1 text-xs text-gray-400">
                   git 저장소 URL 분석은 시스템에 git이 설치되어 있어야 합니다.
                 </div>
+                {gitUrlTarget && (
+                  <div className="mt-3">
+                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                      Branch 또는 Tag (선택)
+                    </label>
+                    <input
+                      value={form.gitRef}
+                      onChange={(e) => {
+                        setForm({ gitRef: e.target.value, gitRefType: null })
+                        setGitRefValidation(null)
+                      }}
+                      onBlur={() => void onBlurGitRef()}
+                      placeholder="예: main 또는 v2.1.25"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-accent"
+                    />
+                    <div className="mt-2">{renderGitRefBadge()}</div>
+                    {gitRefValidation && !gitRefValidation.valid && hasRefSuggestions && (
+                      <div className="mt-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                        Warning: 유사한 Branch/Tag 후보 - {gitRefValidation.suggestions?.join(', ')}
+                      </div>
+                    )}
+                  </div>
+                )}
               </>
             ) : (
               <div className="flex gap-2">
@@ -251,7 +425,7 @@ export default function ScanPage(): React.JSX.Element {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">분석 유형</label>
+            <FieldLabel title="분석 유형" />
             <div className="flex gap-4">
               {(Object.keys(MODE_LABEL) as ScanMode[]).map((m) => (
                 <label key={m} className="flex items-center gap-2 text-sm text-gray-700">
@@ -268,7 +442,7 @@ export default function ScanPage(): React.JSX.Element {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">제외 경로</label>
+            <FieldLabel title="제외 경로" />
             <div className="flex gap-2">
               <input
                 value={excludeInput}
@@ -307,9 +481,7 @@ export default function ScanPage(): React.JSX.Element {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              리포트 저장 위치 *
-            </label>
+            <FieldLabel title="리포트 저장 위치" required />
             <div className="flex gap-2">
               <input
                 value={form.outputDir}
@@ -331,11 +503,6 @@ export default function ScanPage(): React.JSX.Element {
               {errorMessage}
             </div>
           )}
-          {scanStatus === 'success' && (
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-700">
-              ✅ 스캔이 완료되었습니다. Overview에서 결과를 확인하세요.
-            </div>
-          )}
           {scanStatus === 'cancelled' && (
             <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-600">
               스캔이 취소되었습니다.
@@ -344,7 +511,7 @@ export default function ScanPage(): React.JSX.Element {
 
           <button
             onClick={() => void onStart()}
-            disabled={!targetValid || !form.outputDir}
+            disabled={!targetValid || !form.outputDir || validatingGitRef || gitRefInvalid}
             className="w-full rounded-lg bg-accent py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           >
             스캔 시작

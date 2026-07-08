@@ -1,5 +1,11 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { GuiResult, RecentScan, ScanConfig, ScanEvent } from '../shared/types'
+import type {
+  GitRefValidationResult,
+  GuiResult,
+  RecentScan,
+  ScanConfig,
+  ScanEvent
+} from '../shared/types'
 
 const api = {
   startScan: (cfg: ScanConfig): Promise<{ ok: boolean; message?: string }> =>
@@ -9,6 +15,8 @@ const api = {
   getAppVersion: (): Promise<string> => ipcRenderer.invoke('app:version'),
   getScannerVersions: (): Promise<Record<string, string | null>> =>
     ipcRenderer.invoke('app:scannerVersions'),
+  validateGitRef: (url: string, ref: string): Promise<GitRefValidationResult> =>
+    ipcRenderer.invoke('app:validateGitRef', url, ref),
   onScanEvent: (cb: (e: ScanEvent) => void): (() => void) => {
     const listener = (_event: Electron.IpcRendererEvent, e: ScanEvent): void => cb(e)
     ipcRenderer.on('scan:event', listener)

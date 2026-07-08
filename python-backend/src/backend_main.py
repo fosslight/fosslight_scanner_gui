@@ -2,16 +2,20 @@
 # Electron이 spawn하여 실행. stdout으로 NDJSON 이벤트를 내보내고,
 # 스캔 완료 후 정규화된 gui_result.json을 출력 디렉토리에 기록한다.
 import argparse
+import difflib
 import glob
+import ipaddress
 import json
 import logging
 import multiprocessing
 import os
+import re
 import shutil
 import stat
 import sys
 import time
 import traceback
+import urllib.parse
 
 # NDJSON 채널 확보: 이후의 모든 print/로거 stdout 출력은 stderr로 보내고,
 # 이벤트는 원본 stdout으로만 내보낸다. (fosslight 임포트 전에 수행해야
@@ -122,6 +126,18 @@ def check_git_available(url):
             "message": "git이 설치되어 있지 않아 git 저장소 URL 분석이 실패할 수 있습니다. "
                        "(압축파일 다운로드 URL은 git 없이 동작합니다)",
         })
+    
+    # SSRF 위험 검증 (메인 스캔 경로)
+    if not is_archive_url:
+        hostname = _extract_hostname_from_git_url(url)
+        is_risky, risk_reason = _is_ssrf_risk_host(hostname)
+        if is_risky:
+            emit({
+                "type": "log",
+                "level": "WARNING",
+                "message": f"보안 경고: Git URL의 호스트가 내부 네트워크 주소({risk_reason})입니다. "
+                           "신뢰할 수 있는 URL인지 확인해주세요.",
+            })
 
 
 def check_package_managers(target_path, mode_list):
@@ -180,9 +196,254 @@ def _emit_versions():
     emit({"type": "versions", "versions": versions})
 
 
+def _looks_like_git_repo_url(url):
+    from fosslight_util.download import compression_extension
+
+    if not url:
+        return False
+    lowered = url.lower().split("?")[0]
+    if any(lowered.endswith(ext) for ext in compression_extension):
+        return False
+    return url.startswith(("http://", "https://", "git@", "git://", "ssh://"))
+
+
+def _extract_hostname_from_git_url(git_url):
+    """Git URL에서 hostname을 추출합니다.
+    지원 형식: https://..., http://..., git://, ssh://, git@...
+    """
+    git_url = (git_url or "").strip()
+    
+    # ssh:// 형식: ssh://git@github.com/...
+    if git_url.startswith("ssh://"):
+        parsed = urllib.parse.urlparse(git_url)
+        return parsed.hostname
+    
+    # https://, http://, git:// 형식
+    if git_url.startswith(("https://", "http://", "git://")):
+        parsed = urllib.parse.urlparse(git_url)
+        return parsed.hostname
+    
+    # git@github.com:user/repo.git 형식
+    if git_url.startswith("git@"):
+        # git@github.com:... → github.com 추출
+        host_part = git_url[4:].split(":")[0].split("/")[0]
+        return host_part if host_part else None
+    
+    return None
+
+
+def _is_ssrf_risk_host(hostname):
+    """호스트가 SSRF 위험 대상인지 검증합니다.
+    사설 IP, loopback, link-local, localhost 등을 감지합니다.
+    
+    Returns: (is_risky, reason) - (bool, str or None)
+    """
+    if not hostname:
+        return False, None
+    
+    hostname_lower = hostname.lower()
+    
+    # localhost 도메인명 체크
+    if hostname_lower in ("localhost", "localhost.localdomain"):
+        return True, "localhost"
+    
+    try:
+        # IP 주소인지 확인하고 위험 범위 체크
+        ip = ipaddress.ip_address(hostname)
+        
+        if ip.is_loopback:
+            return True, "loopback address"
+        if ip.is_private:
+            return True, "private network"
+        if ip.is_link_local:
+            return True, "link-local address"
+        if ip.is_multicast:
+            return True, "multicast address"
+        if ip.is_reserved:
+            return True, "reserved address"
+    except ValueError:
+        # 정규 도메인명인 경우 - 추가 검증 불필요 (DNS를 통한 공격은 제어 불가)
+        pass
+    
+    return False, None
+
+
+_SEMVER_LIKE = re.compile(r"^\d+(?:\.\d+){1,3}(?:[-+._A-Za-z0-9]*)?$", re.IGNORECASE)
+
+
+def _canonical_ref_name(ref_name):
+    value = (ref_name or "").strip()
+    for prefix in ("refs/tags/", "refs/remotes/origin/", "refs/heads/"):
+        if value.startswith(prefix):
+            return value[len(prefix):]
+    return value
+
+
+def _strip_v_prefix(value):
+    return re.sub(r"^v\.?\s*", "", value.strip(), flags=re.IGNORECASE)
+
+
+def _is_user_ref_equivalent(user_input_ref, candidate_ref):
+    user_ref = _canonical_ref_name(user_input_ref)
+    remote_ref = _canonical_ref_name(candidate_ref)
+    if not user_ref or not remote_ref:
+        return False
+    if user_ref.lower() == remote_ref.lower():
+        return True
+
+    # semver 태그는 v 접두어 유무를 동일하게 취급 (예: 2.1.0 == v2.1.0)
+    user_no_v = _strip_v_prefix(user_ref)
+    remote_no_v = _strip_v_prefix(remote_ref)
+    if user_no_v.lower() != remote_no_v.lower():
+        return False
+    return bool(_SEMVER_LIKE.match(user_no_v) and _SEMVER_LIKE.match(remote_no_v))
+
+
+def _emit_git_ref_validation(url, ref):
+    from fosslight_util.download import get_ref_to_checkout, get_remote_refs
+
+    ref = (ref or "").strip()
+    if not ref:
+        emit(
+            {
+                "type": "gitRefValidation",
+                "valid": False,
+                "isGitUrl": True,
+                "refType": None,
+                "resolvedRef": None,
+                "message": "브랜치/태그 값을 입력해주세요.",
+            }
+        )
+        return
+
+    if not _looks_like_git_repo_url(url):
+        emit(
+            {
+                "type": "gitRefValidation",
+                "valid": False,
+                "isGitUrl": False,
+                "refType": None,
+                "resolvedRef": None,
+                "message": "압축파일 URL이거나 git 저장소 URL 형식이 아닙니다.",
+            }
+        )
+        return
+
+    if shutil.which("git") is None:
+        emit(
+            {
+                "type": "gitRefValidation",
+                "valid": False,
+                "isGitUrl": True,
+                "refType": None,
+                "resolvedRef": None,
+                "message": "git이 설치되어 있지 않아 브랜치/태그를 검증할 수 없습니다.",
+            }
+        )
+        return
+
+    # SSRF 위험 검증
+    hostname = _extract_hostname_from_git_url(url)
+    is_risky, risk_reason = _is_ssrf_risk_host(hostname)
+    if is_risky:
+        emit({
+            "type": "log",
+            "level": "WARNING",
+            "message": f"보안 경고: Git URL의 호스트가 내부 네트워크 주소({risk_reason})입니다. "
+                       "신뢰할 수 있는 URL인지 확인해주세요.",
+        })
+
+    refs = get_remote_refs(url)
+    tag_set = set(refs.get("tags", []))
+    branch_set = set(refs.get("branches", []))
+    all_refs = sorted(tag_set | branch_set)
+    full_ref_list = []
+    for branch in sorted(branch_set):
+        full_ref_list.append(branch)
+        full_ref_list.append(f"refs/remotes/origin/{branch}")
+    for tag in sorted(tag_set):
+        full_ref_list.append(tag)
+        full_ref_list.append(f"refs/tags/{tag}")
+    full_ref_set = set(full_ref_list)
+
+    resolved_full_ref = get_ref_to_checkout(ref, full_ref_list)
+    if resolved_full_ref not in full_ref_set:
+        resolved_full_ref = ""
+
+    resolved_ref = None
+    ref_type = None
+    if resolved_full_ref:
+        if resolved_full_ref.startswith("refs/tags/"):
+            candidate = resolved_full_ref[len("refs/tags/"):]
+            if candidate in tag_set and _is_user_ref_equivalent(ref, candidate):
+                resolved_ref = candidate
+                ref_type = "tag"
+        elif resolved_full_ref.startswith("refs/remotes/origin/"):
+            candidate = resolved_full_ref[len("refs/remotes/origin/"):]
+            if candidate in branch_set and _is_user_ref_equivalent(ref, candidate):
+                resolved_ref = candidate
+                ref_type = "branch"
+        elif resolved_full_ref in tag_set:
+            if _is_user_ref_equivalent(ref, resolved_full_ref):
+                resolved_ref = resolved_full_ref
+                ref_type = "tag"
+        elif resolved_full_ref in branch_set:
+            if _is_user_ref_equivalent(ref, resolved_full_ref):
+                resolved_ref = resolved_full_ref
+                ref_type = "branch"
+
+    if resolved_ref:
+        emit(
+            {
+                "type": "gitRefValidation",
+                "valid": True,
+                "isGitUrl": True,
+                "refType": ref_type,
+                "resolvedRef": resolved_ref,
+                "message": "유효한 브랜치/태그입니다.",
+                "suggestions": [],
+            }
+        )
+        return
+
+    similar = difflib.get_close_matches(ref, all_refs, n=5, cutoff=0.5)
+    if not similar:
+        lower_ref = ref.lower()
+        similar = [
+            candidate
+            for candidate in all_refs
+            if lower_ref in candidate.lower() or candidate.lower().startswith(lower_ref)
+        ][:5]
+
+    warn_msg = "원격 저장소에서 해당 브랜치/태그를 찾지 못했습니다."
+    if similar:
+        warn_msg += " 유사한 Branch/Tag를 확인해 주세요."
+
+    emit(
+        {
+            "type": "gitRefValidation",
+            "valid": False,
+            "isGitUrl": True,
+            "refType": None,
+            "resolvedRef": None,
+            "message": warn_msg,
+            "suggestions": similar,
+        }
+    )
+
+
 def main():
     if "--versions" in sys.argv:
         _emit_versions()
+        return
+
+    if "--validate-git-ref" in sys.argv:
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--validate-git-ref", action="store_true", help=argparse.SUPPRESS)
+        parser.add_argument("--url", required=True)
+        parser.add_argument("--ref", required=True)
+        args = parser.parse_args()
+        _emit_git_ref_validation(args.url, args.ref)
         return
 
     parser = argparse.ArgumentParser()
@@ -192,6 +453,7 @@ def main():
     parser.add_argument("--modes", required=True)  # "all" 또는 "source,dependency" 형식
     parser.add_argument("--exclude", default="")   # ; 구분
     parser.add_argument("--output", required=True)
+    parser.add_argument("--result-file", default=None)  # gui_result.json 저장 경로 (기본: --output 폴더)
     parser.add_argument("--debug-source", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
 
@@ -264,7 +526,10 @@ def main():
         if ok is False and not reports_exist:
             raise RuntimeError("스캔이 실패했습니다. 분석 대상 경로/URL을 확인해주세요.")
 
-        emit({"type": "result", "resultFile": None})
+        from normalize_report import normalize_report
+
+        result_file, report = normalize_report(args.output, analyze_target, mode_list, result_file=args.result_file)
+        emit({"type": "result", "resultFile": result_file, "report": report})
         sys.exit(0)
     except SystemExit:
         raise

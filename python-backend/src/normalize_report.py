@@ -64,7 +64,7 @@ def _parse_sheet(ws):
     return items
 
 
-def normalize_report(output_dir, analyzed_path, mode_list):
+def build_normalized_report(output_dir, analyzed_path, mode_list):
     tool_info = {}
     items = {"source": [], "binary": [], "dependency": []}
 
@@ -82,14 +82,18 @@ def normalize_report(output_dir, analyzed_path, mode_list):
                         tool_info[str(row[0])] = str(row[1])
         wb.close()
 
-    result = {
+    return {
         "scanDate": datetime.now().isoformat(timespec="seconds"),
         "analyzedPath": analyzed_path,
         "modes": mode_list,
         "toolInfo": tool_info,
         "items": items,
     }
-    result_path = os.path.join(output_dir, "gui_result.json")
+
+
+def normalize_report(output_dir, analyzed_path, mode_list, result_file=None):
+    result = build_normalized_report(output_dir, analyzed_path, mode_list)
+    result_path = result_file or os.path.join(output_dir, "gui_result.json")
     with open(result_path, "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=2)
-    return result_path
+    return result_path, result

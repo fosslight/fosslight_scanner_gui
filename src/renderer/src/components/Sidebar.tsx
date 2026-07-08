@@ -8,9 +8,10 @@ interface NavItem {
   to: string
   label: string
   count?: number
+  isNew?: boolean
 }
 
-function NavEntry({ to, label, count }: NavItem): React.JSX.Element {
+function NavEntry({ to, label, count, isNew }: NavItem): React.JSX.Element {
   return (
     <NavLink
       to={to}
@@ -22,7 +23,14 @@ function NavEntry({ to, label, count }: NavItem): React.JSX.Element {
         }`
       }
     >
-      <span>{label}</span>
+      <span className="flex items-center gap-2">
+        <span>{label}</span>
+        {isNew && (
+          <span className="rounded-full bg-emerald-500 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+            New
+          </span>
+        )}
+      </span>
       {count !== undefined && count > 0 && (
         <span className="rounded-full bg-gray-700 px-2 py-0.5 text-xs text-gray-300">{count}</span>
       )}
@@ -49,6 +57,7 @@ function GithubIcon(): React.JSX.Element {
 export default function Sidebar(): React.JSX.Element {
   const report = useAppStore((s) => s.report)
   const scanStatus = useAppStore((s) => s.scanStatus)
+  const overviewHasNew = useAppStore((s) => s.overviewHasNew)
   const [version, setVersion] = useState('')
   const [scannerVersions, setScannerVersions] = useState<Record<string, string | null> | null>(null)
 
@@ -109,7 +118,7 @@ export default function Sidebar(): React.JSX.Element {
 
       <nav className="flex-1">
         <SectionTitle>메뉴</SectionTitle>
-        <NavEntry to="/" label="Overview" />
+        <NavEntry to="/" label="Overview" isNew={overviewHasNew} />
         <NavEntry to="/scan" label="New Scan" />
 
         <SectionTitle>Scan Results</SectionTitle>
@@ -117,7 +126,7 @@ export default function Sidebar(): React.JSX.Element {
         <NavEntry to="/results/dependency" label="Dependency" count={counts.dependency} />
         <NavEntry to="/results/binary" label="Binary" count={counts.binary} />
 
-        <SectionTitle>Risk</SectionTitle>
+        <SectionTitle>Compliance</SectionTitle>
         <NavEntry to="/risk/license" label="License" />
         {/*
           Vulnerability 기능은 현재 미완성 상태로 메뉴에서 숨깁니다.

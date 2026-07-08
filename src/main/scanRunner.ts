@@ -1,11 +1,20 @@
 import { spawn, execFile, ChildProcess } from 'child_process'
 import { createInterface } from 'readline'
 import { app } from 'electron'
-import { join } from 'path'
+import { dirname, join } from 'path'
 import { createWriteStream, mkdirSync, WriteStream } from 'fs'
 import type { ScanConfig, ScanEvent } from '../shared/types'
 
 let currentChild: ChildProcess | null = null
+
+export function getInstalledAppDir(): string {
+  // 패키징 환경에서는 실행 파일 위치를 설치 폴더로 간주한다.
+  return app.isPackaged ? dirname(process.execPath) : app.getAppPath()
+}
+
+export function getInstalledGuiResultPath(): string {
+  return join(getInstalledAppDir(), 'gui_result.json')
+}
 
 export function backendCommand(args: string[]): { cmd: string; args: string[] } {
   if (app.isPackaged) {
@@ -41,15 +50,22 @@ export function startScan(
 
   const modes = cfg.modes.length === 3 ? 'all' : cfg.modes.join(',')
   const targetArg = cfg.targetType === 'url' ? '--url' : '--path'
+  let target = cfg.target
+  if (cfg.targetType === 'url' && cfg.gitRef?.trim()) {
+    const refType = cfg.gitRefType === 'tag' ? 'tag' : 'branch'
+    target = `${target};${refType}=${cfg.gitRef.trim()}`
+  }
   const { cmd, args } = backendCommand([
     targetArg,
-    cfg.target,
+    target,
     '--modes',
     modes,
     '--exclude',
     cfg.excludePaths.join(';'),
     '--output',
-    cfg.outputDir
+    cfg.outputDir,
+    '--result-file',
+    getInstalledGuiResultPath()
   ])
 
   const env = pathEnv ? { ...process.env, PATH: pathEnv, Path: pathEnv } : process.env
