@@ -6,6 +6,50 @@ from PyInstaller.utils.hooks import collect_all, copy_metadata
 
 datas, binaries, hiddenimports = [], [], []
 
+
+def _norm_path(path):
+    return (path or "").replace("\\", "/").lower()
+
+
+def _dedupe(seq):
+    seen = set()
+    result = []
+    for item in seq:
+        if item in seen:
+            continue
+        seen.add(item)
+        result.append(item)
+    return result
+
+
+def _is_excluded_data(data_tuple):
+    src, dst = data_tuple
+    src_path = _norm_path(src)
+    dst_path = _norm_path(dst)
+
+    # 설치 용량을 크게 차지하는 사전 생성 라이선스 인덱스는 번들에서 제외하고
+    # 런타임에 사용자 캐시로 1회 생성한다.
+    if "licensedcode/data/cache/license_index/index_cache" in src_path:
+        return True
+    if "licensedcode/data/cache/license_index/index_cache" in dst_path:
+        return True
+
+    noisy_markers = (
+        "/tests/",
+        "/test/",
+        "/testing/",
+        "/__pycache__/",
+    )
+    if any(marker in src_path for marker in noisy_markers):
+        return True
+
+    return src_path.endswith((".pyc", ".pyo"))
+
+
+def _is_excluded_hiddenimport(module_name):
+    lowered = (module_name or "").lower()
+    return ".tests" in lowered or lowered.endswith(".test")
+
 # 대용량 데이터 트리 / 동적 임포트를 쓰는 패키지 전체 수집
 COLLECT_PACKAGES = [
     "fosslight_scanner",
@@ -83,6 +127,10 @@ for dist in METADATA_DISTS:
         datas += copy_metadata(dist)
     except Exception:
         pass
+
+datas = [d for d in _dedupe(datas) if not _is_excluded_data(d)]
+binaries = _dedupe(binaries)
+hiddenimports = [h for h in _dedupe(hiddenimports) if not _is_excluded_hiddenimport(h)]
 
 a = Analysis(
     ["src\\backend_main.py"],

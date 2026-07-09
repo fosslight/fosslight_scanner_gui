@@ -43,6 +43,61 @@ MANIFEST_TOOLS = {
 }
 
 
+def configure_scancode_cache_env():
+    """ScanCode 캐시를 설치 경로가 아닌 사용자 쓰기 가능한 경로로 고정한다.
+    번들에 사전 생성된 license_index를 포함하지 않을 때도 첫 실행에서 캐시를
+    생성할 수 있어야 하므로, 환경변수를 여기서 명시적으로 설정한다."""
+    scancode_cache = os.environ.get("SCANCODE_CACHE")
+    if not scancode_cache:
+        base = os.environ.get("LOCALAPPDATA")
+        if not base:
+            base = os.path.join(os.path.expanduser("~"), ".cache")
+        scancode_cache = os.path.join(base, "FOSSLightScanner", "scancode")
+        os.environ["SCANCODE_CACHE"] = scancode_cache
+
+    licensedcode_cache = os.environ.get("SCANCODE_LICENSE_INDEX_CACHE")
+    if not licensedcode_cache:
+        licensedcode_cache = os.path.join(scancode_cache, "licensedcode")
+        os.environ["SCANCODE_LICENSE_INDEX_CACHE"] = licensedcode_cache
+
+    packagedcode_cache = os.environ.get("SCANCODE_PACKAGE_INDEX_CACHE")
+    if not packagedcode_cache:
+        packagedcode_cache = os.path.join(scancode_cache, "packagedcode")
+        os.environ["SCANCODE_PACKAGE_INDEX_CACHE"] = packagedcode_cache
+
+    for path in (scancode_cache, licensedcode_cache, packagedcode_cache):
+        os.makedirs(path, exist_ok=True)
+
+
+def warmup_license_index_cache():
+    """라이선스 인덱스 캐시가 없으면 최초 1회 생성한다."""
+    licensedcode_cache = os.environ.get("SCANCODE_LICENSE_INDEX_CACHE", "")
+    cache_file = os.path.join(licensedcode_cache, "license_index", "index_cache")
+    if os.path.exists(cache_file) and os.path.getsize(cache_file) > 0:
+        return
+
+    emit({
+        "type": "log",
+        "level": "INFO",
+        "message": "초기 실행 준비: 라이선스 인덱스 캐시를 생성합니다. (1회)"
+    })
+    started = time.time()
+
+    try:
+        from licensedcode.cache import get_cache
+
+        get_cache()
+    except Exception as ex:
+        raise RuntimeError("라이선스 인덱스 캐시 생성에 실패했습니다.") from ex
+
+    elapsed = int(time.time() - started)
+    emit({
+        "type": "log",
+        "level": "INFO",
+        "message": f"라이선스 인덱스 캐시 생성 완료 ({elapsed}초)"
+    })
+
+
 def emit(obj):
     REAL_STDOUT.write(json.dumps(obj, ensure_ascii=False) + "\n")
     REAL_STDOUT.flush()
@@ -474,6 +529,8 @@ def main():
     mode_list = ["all"] if args.modes == "all" else args.modes.split(",")
     exclude_list = [e for e in args.exclude.split(";") if e]
 
+    configure_scancode_cache_env()
+
     os.makedirs(args.output, exist_ok=True)
     # fosslight가 .fosslight_temp_* 를 cwd에 생성하므로 쓰기 가능한 위치로 이동
     # (패키징된 앱의 리소스 폴더는 Program Files라 쓰기 불가)
@@ -490,6 +547,7 @@ def main():
 
     try:
         emit({"type": "phase", "phase": "starting", "modes": mode_list})
+        warmup_license_index_cache()
         if args.url:
             check_git_available(args.url)
         else:
