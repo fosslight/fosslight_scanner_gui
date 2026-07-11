@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useAppStore } from '../store/appStore'
 
@@ -61,30 +61,6 @@ export default function Sidebar(): React.JSX.Element {
   const [version, setVersion] = useState('')
   const [scannerVersions, setScannerVersions] = useState<Record<string, string | null> | null>(null)
 
-  const reportScannerVersions = useMemo(() => {
-    if (!report) return null
-    const toolInfoValues = Object.entries(report.toolInfo)
-      .filter(([k]) => k !== 'Comment')
-      .map(([, v]) => String(v))
-
-    const findVersion = (tokens: string[]): string | null => {
-      for (const value of toolInfoValues) {
-        for (const token of tokens) {
-          const match = value.match(new RegExp(`${token}\\s*v?([0-9]+(?:\\.[0-9]+){1,3})`, 'i'))
-          if (match?.[1]) return match[1]
-        }
-      }
-      return null
-    }
-
-    return {
-      fosslight_scanner: findVersion(['fosslight_scanner', 'fosslight scanner']),
-      fosslight_source: findVersion(['fosslight_source', 'fosslight source']),
-      fosslight_dependency: findVersion(['fosslight_dependency', 'fosslight dependency']),
-      fosslight_binary: findVersion(['fosslight_binary', 'fosslight binary'])
-    }
-  }, [report])
-
   useEffect(() => {
     void window.api.getAppVersion().then(setVersion)
     void window.api.getScannerVersions().then(setScannerVersions)
@@ -93,14 +69,6 @@ export default function Sidebar(): React.JSX.Element {
   const formatVersion = (v: string | null | undefined): string => {
     if (!v) return '-'
     return v.startsWith('v') ? v : `v${v}`
-  }
-
-  const effectiveScannerVersions = {
-    fosslight_scanner: reportScannerVersions?.fosslight_scanner ?? scannerVersions?.fosslight_scanner,
-    fosslight_source: reportScannerVersions?.fosslight_source ?? scannerVersions?.fosslight_source,
-    fosslight_dependency:
-      reportScannerVersions?.fosslight_dependency ?? scannerVersions?.fosslight_dependency,
-    fosslight_binary: reportScannerVersions?.fosslight_binary ?? scannerVersions?.fosslight_binary
   }
 
   const counts = {
@@ -155,10 +123,10 @@ export default function Sidebar(): React.JSX.Element {
               <tbody>
                 {[
                   ['FOSSLight Scanner GUI', version],
-                  ['FOSSLight Scanner', effectiveScannerVersions.fosslight_scanner],
-                  ['FOSSLight Source Scanner', effectiveScannerVersions.fosslight_source],
-                  ['FOSSLight Dependency Scanner', effectiveScannerVersions.fosslight_dependency],
-                  ['FOSSLight Binary Scanner', effectiveScannerVersions.fosslight_binary]
+                  ['FOSSLight Scanner', scannerVersions?.fosslight_scanner],
+                  ['FOSSLight Source Scanner', scannerVersions?.fosslight_source],
+                  ['FOSSLight Dependency Scanner', scannerVersions?.fosslight_dependency],
+                  ['FOSSLight Binary Scanner', scannerVersions?.fosslight_binary]
                 ].map(([label, ver]) => (
                   <tr key={label}>
                     <td className="pr-4 text-gray-400">{label}</td>
