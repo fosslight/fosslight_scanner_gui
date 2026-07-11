@@ -17,7 +17,7 @@ function createWindow(): BrowserWindow {
     ...((process.platform === 'linux' || process.platform === 'win32') ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+      sandbox: true
     }
   })
 
@@ -26,8 +26,17 @@ function createWindow(): BrowserWindow {
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url)
+    if (details.url.startsWith('http://') || details.url.startsWith('https://')) {
+      shell.openExternal(details.url)
+    }
     return { action: 'deny' }
+  })
+
+  // 렌더러는 SPA(history API)만 사용 — 외부 페이지로의 실제 네비게이션은 차단
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    const devUrl = process.env['ELECTRON_RENDERER_URL']
+    if (is.dev && devUrl && url.startsWith(devUrl)) return
+    event.preventDefault()
   })
 
   // HMR for renderer base on electron-vite cli.

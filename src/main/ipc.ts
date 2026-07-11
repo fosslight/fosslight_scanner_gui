@@ -1,5 +1,6 @@
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import { execFile } from 'child_process'
+import { statSync } from 'fs'
 import { basename, join } from 'path'
 import {
   startScan,
@@ -217,7 +218,15 @@ export function registerIpcHandlers(): void {
     }
   })
 
-  ipcMain.handle('shell:openPath', (_event, path: string) => shell.openPath(path))
+  ipcMain.handle('shell:openPath', async (_event, path: string) => {
+    // 실행 파일 실행 방지: 폴더 열기(탐색기)만 허용
+    try {
+      if (!statSync(path).isDirectory()) return '폴더만 열 수 있습니다'
+    } catch {
+      return '경로를 찾을 수 없습니다'
+    }
+    return shell.openPath(path)
+  })
 
   ipcMain.handle('shell:showInFolder', (_event, path: string) => {
     shell.showItemInFolder(path)
