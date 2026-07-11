@@ -1,19 +1,15 @@
 import { spawn, execFile, ChildProcess } from 'child_process'
 import { createInterface } from 'readline'
 import { app } from 'electron'
-import { dirname, join } from 'path'
+import { join } from 'path'
 import { createWriteStream, mkdirSync, WriteStream } from 'fs'
 import type { ScanConfig, ScanEvent } from '../shared/types'
 
 let currentChild: ChildProcess | null = null
 
-export function getInstalledAppDir(): string {
-  // 패키징 환경에서는 실행 파일 위치를 설치 폴더로 간주한다.
-  return app.isPackaged ? dirname(process.execPath) : app.getAppPath()
-}
-
-export function getInstalledGuiResultPath(): string {
-  return join(getInstalledAppDir(), 'gui_result.json')
+export function getGuiResultPath(): string {
+  // 설치 폴더는 per-machine 설치 시 쓰기 불가일 수 있어 userData에 저장한다.
+  return join(app.getPath('userData'), 'gui_result.json')
 }
 
 export function backendCommand(args: string[]): { cmd: string; args: string[] } {
@@ -31,10 +27,24 @@ export function backendCommand(args: string[]): { cmd: string; args: string[] } 
   }
 }
 
-function scanLogPath(): string {
-  const dir = join(app.getPath('userData'), 'logs')
-  mkdirSync(dir, { recursive: true })
-  return join(dir, 'scan.log')
+function scanLogPath(outputDir: string): string {
+  // 스캔 결과와 함께 배포/공유할 수 있도록 출력 폴더에 스캔별 로그를 남긴다
+  const d = new Date()
+  const pad = (n: number): string => String(n).padStart(2, '0')
+  const ts =
+    `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}` +
+    `_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`
+  mkdirSync(outputDir, { recursive: true })
+  return join(outputDir, `fosslight_gui_${ts}.log`)
+}
+
+function logTimestamp(): string {
+  const d = new Date()
+  const pad = (n: number): string => String(n).padStart(2, '0')
+  return (
+    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ` +
+    `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+  )
 }
 
 export function isScanRunning(): boolean {
@@ -65,56 +75,80 @@ export function startScan(
     '--output',
     cfg.outputDir,
     '--result-file',
-    getInstalledGuiResultPath()
+    getGuiResultPath()
   ])
 
   const env = pathEnv ? { ...process.env, PATH: pathEnv, Path: pathEnv } : process.env
   const child = spawn(cmd, args, { windowsHide: true, env })
   currentChild = child
-  let stderrLogStream: WriteStream | null = null
+  let scanLogStream: WriteStream | null = null
 
   try {
-    stderrLogStream = createWriteStream(scanLogPath(), { flags: 'a' })
+    scanLogStream = createWriteStream(scanLogPath(cfg.outputDir), { flags: 'a' })
+    scanLogStream.write(
+      `FOSSLight Scanner GUI v${app.getVersion()} 스캔 로그\n` +
+        `대상: ${cfg.target}\n모드: ${cfg.modes.join(', ')}\n출력: ${cfg.outputDir}\n---\n`
+    )
   } catch {
-    stderrLogStream = null
+    scanLogStream = null
+  }
+
+  const writeLog = (text: string): void => {
+    // 동기 파일 쓰기는 메인 프로세스를 잠그므로 스트림으로 비동기 기록한다.
+    try {
+      scanLogStream?.write(text)
+    } catch {
+      // 로그 기록 실패는 스캔에 영향 없음
+    }
+  }
+
+  const logEvent = (e: ScanEvent): void => {
+    if (e.type === 'log') {
+      writeLog(`${logTimestamp()} [${e.level}] ${e.message}\n`)
+    } else if (e.type === 'phase') {
+      writeLog(`${logTimestamp()} == ${e.phase} ==\n`)
+    } else if (e.type === 'error') {
+      writeLog(`${logTimestamp()} [ERROR] ${e.message}\n${e.traceback ?? ''}\n`)
+    } else if (e.type === 'result') {
+      writeLog(`${logTimestamp()} [RESULT] ${e.resultFile ?? '(없음)'}\n`)
+    }
   }
 
   createInterface({ input: child.stdout }).on('line', (line) => {
     try {
-      onEvent(JSON.parse(line) as ScanEvent)
+      const e = JSON.parse(line) as ScanEvent
+      logEvent(e)
+      onEvent(e)
     } catch {
       // NDJSON이 아닌 잡음(써드파티 print 등)은 무시
     }
   })
 
   child.stderr.on('data', (d: Buffer) => {
-    // 동기 파일 쓰기는 메인 프로세스를 잠그므로 스트림으로 비동기 기록한다.
-    try {
-      stderrLogStream?.write(d)
-    } catch {
-      // 로그 기록 실패는 스캔에 영향 없음
-    }
+    writeLog(d.toString())
   })
 
-  const closeLogStream = (): void => {
+  const closeLogStream = (exitCode: number): void => {
     try {
-      stderrLogStream?.end()
+      scanLogStream?.write(`${logTimestamp()} == 종료 (exit=${exitCode}) ==\n`)
+      scanLogStream?.end()
     } catch {
       // no-op
     }
-    stderrLogStream = null
+    scanLogStream = null
   }
 
   child.on('error', (err) => {
     currentChild = null
-    closeLogStream()
+    writeLog(`${logTimestamp()} [ERROR] 백엔드 실행 실패: ${err.message}\n`)
+    closeLogStream(-1)
     onEvent({ type: 'error', message: `백엔드 실행 실패: ${err.message}` })
     onEvent({ type: 'done', exitCode: -1 })
   })
 
   child.on('close', (code) => {
     currentChild = null
-    closeLogStream()
+    closeLogStream(code ?? -1)
     onEvent({ type: 'done', exitCode: code ?? -1 })
   })
 
