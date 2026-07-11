@@ -1,6 +1,6 @@
 {
   "name": "fosslight-scanner-gui",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "FOSSLight Scanner Windows GUI",
   "main": "./out/main/index.js",
   "author": "FOSSLight",
