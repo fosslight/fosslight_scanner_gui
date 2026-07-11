@@ -17,6 +17,10 @@ extraResources:
     to: backend
 win:
   executableName: fosslight-scanner-gui
+publish:
+  provider: github
+  owner: fosslight
+  repo: fosslight_scanner_gui
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}

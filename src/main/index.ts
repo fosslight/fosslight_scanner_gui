@@ -3,8 +3,9 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/fosslight_logo.png?asset'
 import { registerIpcHandlers } from './ipc'
+import { initAutoUpdater } from './updater'
 
-function createWindow(): void {
+function createWindow(): BrowserWindow {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
     width: 1280,
@@ -36,6 +37,8 @@ function createWindow(): void {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
+
+  return mainWindow
 }
 
 // This method will be called when Electron has finished
@@ -54,7 +57,8 @@ app.whenReady().then(() => {
 
   registerIpcHandlers()
 
-  createWindow()
+  const mainWindow = createWindow()
+  initAutoUpdater(mainWindow)
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the

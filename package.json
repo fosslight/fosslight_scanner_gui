@@ -25,6 +25,7 @@
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
     "@tanstack/react-table": "^8.21.3",
+    "electron-updater": "^6.8.9",
     "react-router-dom": "^7.18.1",
     "react-window": "^2.2.7",
     "recharts": "^3.9.2",

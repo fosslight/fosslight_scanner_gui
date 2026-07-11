@@ -49,12 +49,15 @@ jobs:
           .\.venv\Scripts\python -m PyInstaller fosslight_backend.spec --noconfirm --clean
 
       - name: Build Electron app and package installer
-        run: npm run build && npx electron-builder --win
+        run: npm run build && npx electron-builder --win --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload setup executable to Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*.exe
+          files: |
+            dist/*.exe
+            dist/*.blockmap
+            dist/latest.yml
           fail_on_unmatched_files: true
