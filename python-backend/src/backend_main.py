@@ -215,6 +215,31 @@ def check_package_managers(target_path, mode_list):
             })
 
 
+def check_long_paths_enabled(mode_list):
+    """Windows 긴 경로(260자 제한 해제) 미지원 시 pypi 의존성 분석이
+    실패할 수 있어 경고 이벤트 발생 (예: scancode의 긴 라이선스 룰 파일명)"""
+    if not any(m in ("all", "dependency") for m in mode_list):
+        return
+    if sys.platform != "win32":
+        return
+    try:
+        import winreg
+
+        with winreg.OpenKey(
+            winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\CurrentControlSet\Control\FileSystem"
+        ) as key:
+            value, _ = winreg.QueryValueEx(key, "LongPathsEnabled")
+    except OSError:
+        value = 0
+    if not value:
+        emit({
+            "type": "log",
+            "level": "WARNING",
+            "message": "Windows 긴 경로 지원이 꺼져 있어 일부 Python 프로젝트의 "
+                       "의존성 분석이 실패할 수 있습니다.",
+        })
+
+
 def _emit_versions():
     """--versions 플래그 처리: FOSSLight 패키지 버전을 JSON으로 출력 후 종료"""
     import importlib.metadata
@@ -552,6 +577,7 @@ def main():
             check_git_available(args.url)
         else:
             check_package_managers(args.path, mode_list)
+        check_long_paths_enabled(mode_list)
 
         from fosslight_scanner.fosslight_scanner import run_main
 
