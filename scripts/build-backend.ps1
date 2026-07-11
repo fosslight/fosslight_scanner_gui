@@ -8,7 +8,7 @@ if (-not (Test-Path .venv)) {
     py -3.12 -m venv .venv
 }
 .\.venv\Scripts\python -m pip install --upgrade pip
-.\.venv\Scripts\python -m pip install -r requirements.txt
+.\.venv\Scripts\python -m pip install --upgrade --upgrade-strategy eager -r requirements.txt
 .\.venv\Scripts\python -m PyInstaller fosslight_backend.spec --noconfirm --clean
 
 Write-Host "빌드 완료: python-backend\dist\fosslight-backend"
