@@ -13,6 +13,7 @@ import re
 import shutil
 import stat
 import sys
+import threading
 import time
 import traceback
 import urllib.parse
@@ -213,6 +214,73 @@ def check_package_managers(target_path, mode_list):
                 "message": f"'{manifest}'이(가) 감지되었지만 '{tool}'이(가) 설치되어 있지 않아 "
                            f"해당 의존성 분석이 실패할 수 있습니다.",
             })
+
+
+def available_memory_gb():
+    """Windows 가용 물리 메모리(GB). 확인 실패 시 None."""
+    try:
+        import ctypes
+
+        class MEMORYSTATUSEX(ctypes.Structure):
+            _fields_ = [
+                ("dwLength", ctypes.c_ulong),
+                ("dwMemoryLoad", ctypes.c_ulong),
+                ("ullTotalPhys", ctypes.c_ulonglong),
+                ("ullAvailPhys", ctypes.c_ulonglong),
+                ("ullTotalPageFile", ctypes.c_ulonglong),
+                ("ullAvailPageFile", ctypes.c_ulonglong),
+                ("ullTotalVirtual", ctypes.c_ulonglong),
+                ("ullAvailVirtual", ctypes.c_ulonglong),
+                ("ullAvailExtendedVirtual", ctypes.c_ulonglong),
+            ]
+
+        status = MEMORYSTATUSEX()
+        status.dwLength = ctypes.sizeof(MEMORYSTATUSEX)
+        if not ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(status)):
+            return None
+        return status.ullAvailPhys / (1024 ** 3)
+    except Exception:
+        return None
+
+
+def safe_num_cores():
+    """scancode 병렬 워커 수를 가용 메모리에 맞춰 제한한다.
+    Windows는 spawn 방식이라 워커마다 라이선스 인덱스(약 1.5GB)를 각자
+    로드하므로, 기본값(CPU-1)을 그대로 쓰면 저사양 PC에서 스와핑으로
+    분석이 멈춘 것처럼 보이는 현상이 발생한다."""
+    max_by_cpu = max(1, multiprocessing.cpu_count() - 1)
+    avail_gb = available_memory_gb()
+    if avail_gb is None:
+        cores = min(max_by_cpu, 4)  # 메모리 확인 불가 시 보수적으로
+        detail = f"CPU {multiprocessing.cpu_count()}코어"
+    else:
+        cores = max(1, min(max_by_cpu, int(avail_gb // 1.5)))
+        detail = f"CPU {multiprocessing.cpu_count()}코어, 가용 메모리 {avail_gb:.1f}GB"
+    emit({
+        "type": "log",
+        "level": "INFO",
+        "message": f"병렬 분석 프로세스: {cores}개 ({detail})",
+    })
+    return cores
+
+
+def start_heartbeat(interval_sec=60):
+    """장시간 분석(scancode는 완료까지 로그가 없음) 중 진행 상태를 주기적으로
+    알려 멈춘 것으로 오인하지 않게 한다. 반환된 Event를 set하면 중단."""
+    stop = threading.Event()
+    started = time.time()
+
+    def beat():
+        while not stop.wait(interval_sec):
+            elapsed_min = int((time.time() - started) // 60)
+            emit({
+                "type": "log",
+                "level": "INFO",
+                "message": f"스캔 진행 중... (경과 {elapsed_min}분)",
+            })
+
+    threading.Thread(target=beat, daemon=True).start()
+    return stop
 
 
 def check_long_paths_enabled(mode_list):
@@ -583,19 +651,25 @@ def main():
 
         emit({"type": "phase", "phase": "scanning"})
         scan_started_at = time.time()
+        num_cores = safe_num_cores()
+        heartbeat_stop = start_heartbeat()
         # file_format 첫 항목은 반드시 excel이어야 함 (RECON.md 참고)
         # 압축파일 경로와 URL 다운로드는 run_main이 자체 처리한다
-        ok = run_main(
-            mode_list,
-            [args.path or ""],
-            [],
-            args.output,
-            ["excel"],
-            args.url or "",
-            "",
-            hide_progressbar=True,
-            path_to_exclude=exclude_list,
-        )
+        try:
+            ok = run_main(
+                mode_list,
+                [args.path or ""],
+                [],
+                args.output,
+                ["excel"],
+                args.url or "",
+                "",
+                hide_progressbar=True,
+                num_cores=num_cores,
+                path_to_exclude=exclude_list,
+            )
+        finally:
+            heartbeat_stop.set()
         emit({"type": "phase", "phase": "normalizing"})
         salvage_temp_reports(args.output, scan_started_at)
 
