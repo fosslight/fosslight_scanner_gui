@@ -1,9 +1,10 @@
 # FOSSLight Scanner GUI 설치 진단 스크립트 (electron-builder가 자동 포함)
-# 1) 설치 중 파일 처리 내역을 기본으로 펼쳐 진행 여부를 확인할 수 있게 한다.
-# 2) %LOCALAPPDATA%\fosslight-scanner-gui-install.log 에 설치 체크포인트를 기록한다.
-# 3) 긴 설치 경로 + 긴 경로 지원(LongPathsEnabled) 꺼짐 조합일 때 1회 경고한다.
+# 1) %LOCALAPPDATA%\fosslight-scanner-gui-install.log 에 설치 체크포인트를 기록한다.
+# 2) 긴 설치 경로 + 긴 경로 지원(LongPathsEnabled) 꺼짐 조합일 때 1회 경고한다.
 #    설치 자체는 경로 길이와 무관하게 동작하지만(셸 복사 엔진이 처리, 실측 검증),
 #    내부 최장 상대 경로가 약 170자라 260자 초과 시 앱 실행에 OS 지원이 필요할 수 있다.
+# * 설치 중 진행 표시(상태 텍스트의 압축 해제 %)는 scripts/patch-nsis-template.js가
+#   electron-builder 템플릿을 패치하여 제공한다.
 
 !include "LogicLib.nsh"
 !include "FileFunc.nsh"
@@ -11,11 +12,6 @@
 !define MAX_SAFE_INSTDIR_LEN 89
 
 Var /GLOBAL LongPathWarned
-
-!macro customHeader
-  ShowInstDetails show
-  ShowUninstDetails show
-!macroend
 
 Function WriteInstallLog
   Exch $R0
