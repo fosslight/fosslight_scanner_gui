@@ -18,6 +18,11 @@ import time
 import traceback
 import urllib.parse
 
+# git 미설치 PC에서 GitPython이 import 시점에 "Bad git executable"로 죽는 것을 방지.
+# quiet로 두면 실제 git 사용 시점(git URL 분석)에만 오류가 나므로,
+# git이 필요 없는 폴더/압축파일 분석은 정상 동작한다. (fosslight 임포트 전에 설정 필수)
+os.environ.setdefault("GIT_PYTHON_REFRESH", "quiet")
+
 # NDJSON 채널 확보: 이후의 모든 print/로거 stdout 출력은 stderr로 보내고,
 # 이벤트는 원본 stdout으로만 내보낸다. (fosslight 임포트 전에 수행해야
 # 로거 핸들러가 리다이렉트된 스트림에 바인딩됨)
