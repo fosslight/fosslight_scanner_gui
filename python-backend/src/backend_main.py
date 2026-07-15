@@ -131,6 +131,14 @@ class NdjsonLogHandler(logging.Handler):
                 emit({"type": "log", "level": "INFO",
                       "message": "fosslight의 임시 파일 정리가 지연되어 앱이 대신 정리합니다."})
                 return
+            # fosslight는 모든 URL에 git clone을 먼저 시도하므로, git 미설치 PC에서는
+            # 압축파일 URL도 "Git clone error: [WinError 2]"를 남긴다. 하지만 직접
+            # 다운로드로 폴백해 정상 진행되므로, 오해를 부르는 원문 대신 안내로 대체
+            if "Git clone error" in message and "WinError 2" in message:
+                emit({"type": "log", "level": "INFO",
+                      "message": "git이 없어 git clone을 건너뜁니다. "
+                                 "(압축파일 URL은 직접 다운로드로 진행됩니다)"})
+                return
             emit({"type": "log", "level": record.levelname, "message": message})
         except Exception:
             pass
@@ -219,6 +227,29 @@ def check_package_managers(target_path, mode_list):
                 "message": f"'{manifest}'이(가) 감지되었지만 '{tool}'이(가) 설치되어 있지 않아 "
                            f"해당 의존성 분석이 실패할 수 있습니다.",
             })
+
+
+def disable_download_watchdog():
+    """fosslight의 URL 다운로드 워치독(fosslight_util.download.Alarm)은 다운로드
+    시작 후 총 600초(SIGNAL_TIMEOUT)가 지나면 os._exit로 프로세스를 강제 종료한다.
+    데이터가 정상 수신 중이어도 총 경과 시간만으로 죽이므로, 대용량 저장소나 느린
+    회선에서 정상 다운로드가 'download timeout (600 sec)'로 실패한다. 게다가 Windows
+    에서는 다운로드 완료 후에도 스레드가 취소되지 않아 이후 분석 단계까지 위협한다.
+    워치독을 무력화한다 — 멈춘 연결은 requests의 read 타임아웃(무수신 시)과 사용자
+    취소로 계속 처리된다."""
+    try:
+        import fosslight_util.download as fl_download
+
+        class _NoopAlarm:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            def start(self):
+                pass
+
+        fl_download.Alarm = _NoopAlarm
+    except Exception:
+        pass
 
 
 def available_memory_gb():
@@ -605,6 +636,8 @@ def main():
     group.add_argument("--url")   # git clone / 다운로드 가능한 URL
     parser.add_argument("--modes", required=True)  # "all" 또는 "source,dependency" 형식
     parser.add_argument("--exclude", default="")   # ; 구분
+    parser.add_argument("--kb-url", default="")    # Source 분석 KB 서버 (선택)
+    parser.add_argument("--kb-token", default="")  # Source 분석 KB 토큰 (선택)
     parser.add_argument("--output", required=True)
     parser.add_argument("--result-file", default=None)  # gui_result.json 저장 경로 (기본: --output 폴더)
     parser.add_argument("--debug-source", action="store_true", help=argparse.SUPPRESS)
@@ -654,6 +687,8 @@ def main():
 
         from fosslight_scanner.fosslight_scanner import run_main
 
+        disable_download_watchdog()
+
         emit({"type": "phase", "phase": "scanning"})
         scan_started_at = time.time()
         num_cores = safe_num_cores()
@@ -671,6 +706,8 @@ def main():
                 "",
                 hide_progressbar=True,
                 num_cores=num_cores,
+                kb_url=args.kb_url,
+                kb_token=args.kb_token,
                 path_to_exclude=exclude_list,
             )
         finally:
