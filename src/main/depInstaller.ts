@@ -42,6 +42,19 @@ const MANIFEST_TOOLS: Record<string, ToolSpec> = {
 let installChild: ChildProcess | null = null
 let installCancelled = false
 
+/** Microsoft Store의 앱 실행 별칭(WindowsApps)을 PATH 맨 뒤로 밀어, 실제 설치된
+ * 도구가 stub보다 우선 해석되게 한다. Python을 설치하지 않은 Windows에는
+ * `WindowsApps\python.exe`(스토어로 리디렉트하는 가짜)가 PATH에 있어, 그대로 두면
+ * fosslight의 `python -m venv`가 이 stub으로 실행되어 실패한다. (winget 등 다른
+ * 별칭은 뒤로 밀리기만 하므로 계속 사용 가능) */
+function demoteWindowsAppsPath(pathEnv: string): string {
+  const segments = pathEnv.split(';')
+  const isWindowsApps = (p: string): boolean => /\\Microsoft\\WindowsApps\\?$/i.test(p.trim())
+  const real = segments.filter((p) => !isWindowsApps(p))
+  const apps = segments.filter((p) => isWindowsApps(p))
+  return [...real, ...apps].join(';')
+}
+
 /** 설치 직후 반영을 위해 레지스트리에서 최신 PATH를 읽는다 (프로세스 env는 갱신 안 됨) */
 export async function getFreshPath(): Promise<string> {
   try {
@@ -51,9 +64,9 @@ export async function getFreshPath(): Promise<string> {
       "[Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [Environment]::GetEnvironmentVariable('Path','User')"
     ])
     const fresh = stdout.trim()
-    return fresh || process.env.PATH || ''
+    return demoteWindowsAppsPath(fresh || process.env.PATH || '')
   } catch {
-    return process.env.PATH || ''
+    return demoteWindowsAppsPath(process.env.PATH || '')
   }
 }
 
@@ -61,6 +74,20 @@ async function toolExists(tool: string, pathEnv: string): Promise<boolean> {
   try {
     await execFileP('where.exe', [tool], { env: { ...process.env, PATH: pathEnv } })
     return true
+  } catch {
+    return false
+  }
+}
+
+/** `python`이 실제로 동작하는 인터프리터인지 확인한다. Microsoft Store stub은
+ * `where.exe python`에는 잡히지만 실행하면 실패하므로, where만으로는 설치 여부를
+ * 오판한다(→ 진짜 Python 설치를 건너뜀). 실제 실행으로 검증한다. */
+async function pythonUsable(pathEnv: string): Promise<boolean> {
+  try {
+    const { stdout } = await execFileP('python', ['-c', 'import sys; sys.stdout.write("ok")'], {
+      env: { ...process.env, PATH: pathEnv }
+    })
+    return stdout.includes('ok')
   } catch {
     return false
   }
@@ -89,7 +116,11 @@ export async function checkMissingTools(targetPath: string, pathEnv: string): Pr
 
   const missing: ToolSpec[] = []
   for (const spec of needed.values()) {
-    if (!(await toolExists(spec.tool, pathEnv))) missing.push(spec)
+    const present =
+      spec.tool === 'python'
+        ? await pythonUsable(pathEnv)
+        : await toolExists(spec.tool, pathEnv)
+    if (!present) missing.push(spec)
   }
   return missing
 }
