@@ -86,10 +86,10 @@ export default function Sidebar(): React.JSX.Element {
 
       <nav className="flex-1">
         <SectionTitle>메뉴</SectionTitle>
-        <NavEntry to="/" label="Overview" isNew={overviewHasNew} />
         <NavEntry to="/scan" label="New Scan" />
 
         <SectionTitle>Scan Results</SectionTitle>
+        <NavEntry to="/" label="Overview" isNew={overviewHasNew} />
         <NavEntry to="/results/source" label="Source" count={counts.source} />
         <NavEntry to="/results/dependency" label="Dependency" count={counts.dependency} />
         <NavEntry to="/results/binary" label="Binary" count={counts.binary} />
