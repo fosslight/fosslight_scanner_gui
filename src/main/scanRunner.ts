@@ -65,7 +65,7 @@ export function startScan(
     const refType = cfg.gitRefType === 'tag' ? 'tag' : 'branch'
     target = `${target};${refType}=${cfg.gitRef.trim()}`
   }
-  const { cmd, args } = backendCommand([
+  const backendArgs = [
     targetArg,
     target,
     '--modes',
@@ -76,7 +76,10 @@ export function startScan(
     cfg.outputDir,
     '--result-file',
     getGuiResultPath()
-  ])
+  ]
+  if (cfg.kbUrl?.trim()) backendArgs.push('--kb-url', cfg.kbUrl.trim())
+  if (cfg.kbToken?.trim()) backendArgs.push('--kb-token', cfg.kbToken.trim())
+  const { cmd, args } = backendCommand(backendArgs)
 
   const env = pathEnv ? { ...process.env, PATH: pathEnv, Path: pathEnv } : process.env
   const child = spawn(cmd, args, { windowsHide: true, env })

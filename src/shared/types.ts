@@ -13,6 +13,8 @@ export interface ScanConfig {
   modes: ScanMode[] // 3개 모두 선택 시 'all'로 실행
   excludePaths: string[]
   outputDir: string
+  kbUrl?: string // Source 분석 시 KB 서버 URL (선택)
+  kbToken?: string // Source 분석 시 KB 토큰 (선택)
 }
 
 // Python 래퍼가 stdout으로 내보내는 NDJSON 이벤트

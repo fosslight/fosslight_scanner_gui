@@ -238,6 +238,8 @@ export default function ScanPage(): React.JSX.Element {
       modes: form.modes,
       excludePaths: form.excludePaths,
       outputDir: form.outputDir,
+      kbUrl: form.modes.includes('source') ? form.kbUrl.trim() : '',
+      kbToken: form.modes.includes('source') ? form.kbToken.trim() : '',
       gitRef: undefined as string | undefined,
       gitRefType: null as 'branch' | 'tag' | null
     }
@@ -440,6 +442,37 @@ export default function ScanPage(): React.JSX.Element {
               ))}
             </div>
           </div>
+
+          {form.modes.includes('source') && (
+            <div>
+              <FieldLabel title="Source 분석 옵션" />
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-500">
+                    KB URL (선택)
+                  </label>
+                  <input
+                    value={form.kbUrl}
+                    onChange={(e) => setForm({ kbUrl: e.target.value })}
+                    placeholder="예: http://fosslight-kb.lge.com/"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-accent"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-500">
+                    KB Token (선택)
+                  </label>
+                  <input
+                    type="password"
+                    value={form.kbToken}
+                    onChange={(e) => setForm({ kbToken: e.target.value })}
+                    placeholder="KB 인증 토큰"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-accent"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           <div>
             <FieldLabel title="제외 경로" />

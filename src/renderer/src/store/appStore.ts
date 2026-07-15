@@ -43,6 +43,8 @@ interface AppState {
     modes: ScanMode[]
     excludePaths: string[]
     outputDir: string
+    kbUrl: string
+    kbToken: string
   }
   setForm: (patch: Partial<AppState['form']>) => void
   setReport: (report: GuiResult | null) => void
@@ -72,7 +74,9 @@ export const useAppStore = create<AppState>((set) => ({
     gitRefType: null,
     modes: ['source', 'dependency', 'binary'],
     excludePaths: [],
-    outputDir: ''
+    outputDir: '',
+    kbUrl: '',
+    kbToken: ''
   },
 
   setForm: (patch) => set((s) => ({ form: { ...s.form, ...patch } })),
