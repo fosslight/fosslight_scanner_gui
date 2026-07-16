@@ -14,7 +14,8 @@ import {
   installTools,
   cancelInstall,
   getFreshPath,
-  preferPython312
+  preferPython312,
+  ensureNodeOnPath
 } from './depInstaller'
 import { addRecentScan, getRecentScans, loadReport } from './reportStore'
 import type { GitRefValidationResult, ScanConfig, ScanEvent } from '../shared/types'
@@ -146,13 +147,23 @@ export function registerIpcHandlers(): void {
       }
     }
 
-    // pypi 의존성 분석용 venv가 Python 3.12로 만들어지도록 PATH 앞에 둔다.
-    // (최신 Python은 프로젝트가 핀한 패키지의 휠이 없어 소스 빌드로 실패하는 경우가 많음)
     if (cfg.modes.includes('dependency')) {
+      // pypi 의존성 분석용 venv가 Python 3.12로 만들어지도록 PATH 앞에 둔다.
+      // (최신 Python은 프로젝트가 핀한 패키지의 휠이 없어 소스 빌드로 실패하는 경우가 많음)
       const preferred = await preferPython312(pathEnv)
       if (preferred) {
         pathEnv = preferred
         send({ type: 'log', level: 'INFO', message: '의존성 분석에 Python 3.12를 사용합니다.' })
+      }
+      // Node.js가 설치는 됐지만 PATH에 없는 PC 보강 (winget은 이 경우 재설치를 거부한다)
+      const withNode = await ensureNodeOnPath(pathEnv)
+      if (withNode) {
+        pathEnv = withNode
+        send({
+          type: 'log',
+          level: 'INFO',
+          message: 'PATH에 없는 Node.js를 찾아 이번 분석에만 사용합니다.'
+        })
       }
     }
 

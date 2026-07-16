@@ -43,6 +43,11 @@ const MANIFEST_TOOLS: Record<string, ToolSpec> = {
 let installChild: ChildProcess | null = null
 let installCancelled = false
 
+// winget 종료 코드 (부호 없는 32비트). UPDATE_NOT_APPLICABLE은 "이미 설치되어 있어
+// 적용할 업데이트가 없음" — 설치는 안 됐지만 도구는 이미 있다는 뜻이므로 실패가 아니다.
+const WINGET_NO_UPGRADE = 0x8a15002b
+const WINGET_ALREADY_INSTALLED = 0x8a150061
+
 /** Microsoft Store의 앱 실행 별칭(WindowsApps)을 PATH 맨 뒤로 밀어, 실제 설치된
  * 도구가 stub보다 우선 해석되게 한다. Python을 설치하지 않은 Windows에는
  * `WindowsApps\python.exe`(스토어로 리디렉트하는 가짜)가 PATH에 있어, 그대로 두면
@@ -111,16 +116,44 @@ async function findPython312(): Promise<string | null> {
   return null
 }
 
+/** 주어진 폴더들을 PATH 맨 앞에 둔다 (중복 항목은 제거) */
+function prependToPath(pathEnv: string, dirs: string[]): string {
+  const isSame = (p: string, target: string): boolean =>
+    p.trim().replace(/\\+$/, '').toLowerCase() === target.toLowerCase()
+  const rest = pathEnv.split(';').filter((p) => !dirs.some((d) => isSame(p, d)))
+  return [...dirs, ...rest].join(';')
+}
+
 /** 의존성 분석 시 venv가 Python 3.12로 만들어지도록 PATH 맨 앞에 둔다.
  * 3.12가 없으면 PATH를 그대로 둔다(기존 동작 유지). */
 export async function preferPython312(pathEnv: string): Promise<string | null> {
   const dir = await findPython312()
   if (!dir) return null
-  const scripts = join(dir, 'Scripts')
-  const isSame = (p: string, target: string): boolean =>
-    p.trim().replace(/\\+$/, '').toLowerCase() === target.toLowerCase()
-  const rest = pathEnv.split(';').filter((p) => !isSame(p, dir) && !isSame(p, scripts))
-  return [dir, scripts, ...rest].join(';')
+  return prependToPath(pathEnv, [dir, join(dir, 'Scripts')])
+}
+
+/** PATH에 없더라도 설치된 Node.js 폴더를 찾는다.
+ * Node.js 설치 시 PATH 등록을 하지 않은 PC가 있는데, 이 경우 winget은 ARP 기록을 보고
+ * "이미 설치됨/최신"(UPDATE_NOT_APPLICABLE)이라며 재설치를 거부해 계속 npm을 못 찾게 된다. */
+function findNodeDir(): string | null {
+  const candidates = [
+    join(process.env.PROGRAMFILES ?? '', 'nodejs', 'node.exe'),
+    join(process.env['PROGRAMFILES(X86)'] ?? '', 'nodejs', 'node.exe'),
+    join(process.env.LOCALAPPDATA ?? '', 'Programs', 'nodejs', 'node.exe')
+  ]
+  for (const exe of candidates) {
+    if (exe && existsSync(exe)) return dirname(exe)
+  }
+  return null
+}
+
+/** node가 PATH에서 안 잡히는데 설치는 되어 있으면 그 폴더를 PATH에 보강한다.
+ * 보강했으면 새 PATH를, 필요 없거나 찾지 못하면 null을 돌려준다. */
+export async function ensureNodeOnPath(pathEnv: string): Promise<string | null> {
+  if (await toolExists('node', pathEnv)) return null // 이미 잡힘
+  const dir = findNodeDir()
+  if (!dir) return null // 실제로 미설치 — 자동 설치/안내에 맡긴다
+  return prependToPath(pathEnv, [dir])
 }
 
 async function wingetAvailable(pathEnv: string): Promise<boolean> {
@@ -224,10 +257,16 @@ export async function installTools(
 
     if (installCancelled) return { installed, cancelled: true }
 
-    // winget 성공(0) 또는 이미 설치됨(-1978335189 = 0x8A15002B)
-    if (exitCode === 0 || exitCode === -1978335189) {
+    // winget 종료 코드는 부호 없는 32비트로 전달되므로 그렇게 비교해야 한다
+    // (기존의 부호 있는 값 비교는 절대 일치하지 않아 정상 결과도 실패로 처리됐음)
+    const code = exitCode >>> 0
+    if (exitCode === 0 || code === WINGET_NO_UPGRADE || code === WINGET_ALREADY_INSTALLED) {
       installed += 1
-      onEvent({ type: 'log', level: 'INFO', message: `${spec.label} 설치 완료` })
+      onEvent({
+        type: 'log',
+        level: 'INFO',
+        message: exitCode === 0 ? `${spec.label} 설치 완료` : `${spec.label}은(는) 이미 설치되어 있습니다.`
+      })
     } else {
       onEvent({
         type: 'log',
