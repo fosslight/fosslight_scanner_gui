@@ -1,5 +1,6 @@
 import { execFile, spawn, ChildProcess } from 'child_process'
-import { readdirSync } from 'fs'
+import { existsSync, readdirSync } from 'fs'
+import { dirname, join } from 'path'
 import { promisify } from 'util'
 import type { ScanEvent } from '../shared/types'
 
@@ -79,18 +80,47 @@ async function toolExists(tool: string, pathEnv: string): Promise<boolean> {
   }
 }
 
-/** `python`이 실제로 동작하는 인터프리터인지 확인한다. Microsoft Store stub은
- * `where.exe python`에는 잡히지만 실행하면 실패하므로, where만으로는 설치 여부를
- * 오판한다(→ 진짜 Python 설치를 건너뜀). 실제 실행으로 검증한다. */
-async function pythonUsable(pathEnv: string): Promise<boolean> {
+/** 의존성 분석용 Python 3.12의 설치 폴더를 찾는다 (없으면 null).
+ * fosslight의 pypi 분석은 `python -m venv`로 PATH의 첫 Python을 쓰는데, 최신
+ * Python(3.13/3.14)은 프로젝트가 핀한 패키지의 미리 빌드된 휠이 없는 경우가 많아
+ * pip이 소스 빌드로 넘어가고(→ MSVC 컴파일러 필요) clean PC에서 실패한다.
+ * (예: lxml==5.3.0은 cp313까지만 휠 제공, cp314 없음)
+ * 휠 커버리지가 넓은 3.12를 쓰기 위해 그 위치를 찾는다.
+ * Microsoft Store stub은 3.12로 잡히지 않으므로 자연히 걸러진다. */
+async function findPython312(): Promise<string | null> {
+  // py 런처가 가장 확실 (Python 설치 시 기본 포함)
   try {
-    const { stdout } = await execFileP('python', ['-c', 'import sys; sys.stdout.write("ok")'], {
-      env: { ...process.env, PATH: pathEnv }
-    })
-    return stdout.includes('ok')
+    const { stdout } = await execFileP('py', [
+      '-3.12',
+      '-c',
+      'import sys; sys.stdout.write(sys.executable)'
+    ])
+    const exe = stdout.trim()
+    if (exe && existsSync(exe)) return dirname(exe)
   } catch {
-    return false
+    // py 런처가 없거나 3.12 미설치 — 아래 기본 경로로 확인
   }
+  const candidates = [
+    join(process.env.LOCALAPPDATA ?? '', 'Programs', 'Python', 'Python312', 'python.exe'),
+    join(process.env.PROGRAMFILES ?? '', 'Python312', 'python.exe'),
+    'C:\\Python312\\python.exe'
+  ]
+  for (const exe of candidates) {
+    if (exe && existsSync(exe)) return dirname(exe)
+  }
+  return null
+}
+
+/** 의존성 분석 시 venv가 Python 3.12로 만들어지도록 PATH 맨 앞에 둔다.
+ * 3.12가 없으면 PATH를 그대로 둔다(기존 동작 유지). */
+export async function preferPython312(pathEnv: string): Promise<string | null> {
+  const dir = await findPython312()
+  if (!dir) return null
+  const scripts = join(dir, 'Scripts')
+  const isSame = (p: string, target: string): boolean =>
+    p.trim().replace(/\\+$/, '').toLowerCase() === target.toLowerCase()
+  const rest = pathEnv.split(';').filter((p) => !isSame(p, dir) && !isSame(p, scripts))
+  return [dir, scripts, ...rest].join(';')
 }
 
 async function wingetAvailable(pathEnv: string): Promise<boolean> {
@@ -116,9 +146,10 @@ export async function checkMissingTools(targetPath: string, pathEnv: string): Pr
 
   const missing: ToolSpec[] = []
   for (const spec of needed.values()) {
+    // pypi 분석용 venv는 3.12로 만들어야 하므로(휠 커버리지), 다른 버전만 있어도 설치 대상
     const present =
       spec.tool === 'python'
-        ? await pythonUsable(pathEnv)
+        ? (await findPython312()) !== null
         : await toolExists(spec.tool, pathEnv)
     if (!present) missing.push(spec)
   }
