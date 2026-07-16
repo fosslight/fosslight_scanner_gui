@@ -1,12 +1,13 @@
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import { execFile } from 'child_process'
-import { statSync } from 'fs'
+import { rmSync, statSync } from 'fs'
 import { basename, join } from 'path'
 import {
   startScan,
   cancelScan,
   isScanRunning,
-  backendCommand
+  backendCommand,
+  prepareTarget
 } from './scanRunner'
 import {
   checkMissingTools,
@@ -80,16 +81,53 @@ export function registerIpcHandlers(): void {
           resultFile: e.resultFile
         })
       }
-      if (e.type === 'done') scanSessionActive = false
+      if (e.type === 'done') {
+        scanSessionActive = false
+        if (preparedDir) {
+          try {
+            rmSync(preparedDir, { recursive: true, force: true, maxRetries: 3 })
+          } catch {
+            // 임시 폴더 정리 실패는 결과에 영향 없음 (시스템 temp라 나중에 정리됨)
+          }
+          preparedDir = null
+        }
+      }
       sendToRenderer(e)
     }
 
     let pathEnv = await getFreshPath()
+    let scanCfg = cfg
+    let preparedDir: string | null = null
+
+    // URL/압축파일은 해제 전까지 manifest를 알 수 없다. 의존성 분석 시에는 먼저
+    // 내려받아 해제한 뒤(2단계), 그 폴더를 폴더 대상처럼 다뤄 도구를 설치한다.
+    if (cfg.targetType !== 'folder' && cfg.modes.includes('dependency')) {
+      send({ type: 'phase', phase: 'preparing' })
+      const dest = join(app.getPath('temp'), `fl-src-${Date.now()}`)
+      const prepared = await prepareTarget(cfg, dest, send, pathEnv)
+      if (sessionCancelled) {
+        send({ type: 'done', exitCode: -2 })
+        return { ok: true }
+      }
+      if (!prepared.ok) {
+        scanSessionActive = false
+        send({ type: 'error', message: prepared.message || '다운로드/해제에 실패했습니다.' })
+        send({ type: 'done', exitCode: -1 })
+        return { ok: true }
+      }
+      preparedDir = prepared.path
+      // 리포트에는 원래 URL/압축파일 경로가 남도록 analyzedPath로 전달
+      scanCfg = {
+        ...cfg,
+        targetType: 'folder',
+        target: prepared.path,
+        analyzedPath: cfg.target
+      }
+    }
 
     // 폴더 대상이면 의존성 분석에 필요한 도구를 확인하고 없으면 자동 설치
-    // (압축파일/URL은 해제 전까지 manifest를 알 수 없어 백엔드 경고로 안내)
-    if (cfg.targetType === 'folder' && cfg.modes.includes('dependency')) {
-      const missing = await checkMissingTools(cfg.target, pathEnv)
+    if (scanCfg.targetType === 'folder' && scanCfg.modes.includes('dependency')) {
+      const missing = await checkMissingTools(scanCfg.target, pathEnv)
       if (missing.length > 0 && !sessionCancelled) {
         send({ type: 'phase', phase: 'installing' })
         send({
@@ -118,7 +156,7 @@ export function registerIpcHandlers(): void {
       }
     }
 
-    const ok = startScan(cfg, send, pathEnv)
+    const ok = startScan(scanCfg, send, pathEnv)
     if (!ok) {
       scanSessionActive = false
       return { ok: false, message: '이미 스캔이 실행 중입니다' }

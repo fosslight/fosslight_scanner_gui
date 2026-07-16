@@ -616,9 +616,51 @@ def _emit_git_ref_validation(url, ref):
     )
 
 
+def _emit_prepare(url, path, dest):
+    """URL/압축파일을 내려받아 해제만 하고 그 경로를 알려준다 (분석은 하지 않음).
+    fosslight는 다운로드 직후 곧바로 분석에 들어가 중간에 도구를 설치할 수 없으므로,
+    앱이 이 단계로 소스를 먼저 확보한 뒤 manifest를 보고 필요한 도구(Node.js 등)를
+    설치하고 본 스캔을 돌린다."""
+    from fosslight_util.download import cli_download_and_extract, extract_compressed_file
+
+    disable_download_watchdog()
+
+    logger = logging.getLogger(FOSSLIGHT_LOGGER)
+    logger.setLevel(logging.INFO)
+    logger.addHandler(NdjsonLogHandler())
+
+    os.makedirs(dest, exist_ok=True)
+    try:
+        if url:
+            check_git_available(url)
+            success, msg, _oss_name, _oss_version, _link = cli_download_and_extract(
+                url, dest, os.path.join(dest, "download_log")
+            )
+        else:
+            # remove_after_extract=False: 사용자의 원본 압축파일을 지우면 안 됨
+            success = extract_compressed_file(path, dest, False, False)
+            msg = "" if success else "압축 해제에 실패했습니다."
+    except Exception as ex:
+        emit({"type": "prepared", "success": False, "path": dest,
+              "message": f"다운로드/해제 중 오류: {ex}"})
+        return
+
+    emit({"type": "prepared", "success": bool(success), "path": dest, "message": msg or ""})
+
+
 def main():
     if "--versions" in sys.argv:
         _emit_versions()
+        return
+
+    if "--prepare" in sys.argv:
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--prepare", action="store_true", help=argparse.SUPPRESS)
+        parser.add_argument("--url", default="")
+        parser.add_argument("--path", default="")
+        parser.add_argument("--dest", required=True)
+        args = parser.parse_args()
+        _emit_prepare(args.url, args.path, args.dest)
         return
 
     if "--validate-git-ref" in sys.argv:
@@ -640,6 +682,8 @@ def main():
     parser.add_argument("--kb-token", default="")  # Source 분석 KB 토큰 (선택)
     parser.add_argument("--output", required=True)
     parser.add_argument("--result-file", default=None)  # gui_result.json 저장 경로 (기본: --output 폴더)
+    # --prepare로 미리 받아둔 폴더를 스캔할 때, 리포트에는 원래 URL/압축파일을 표기
+    parser.add_argument("--analyzed-path", default="")
     parser.add_argument("--debug-source", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
 
@@ -674,7 +718,7 @@ def main():
     ndjson_handler = NdjsonLogHandler()
     logger.addHandler(ndjson_handler)
 
-    analyze_target = args.path or args.url
+    analyze_target = args.analyzed_path or args.path or args.url
 
     try:
         emit({"type": "phase", "phase": "starting", "modes": mode_list})

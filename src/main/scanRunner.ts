@@ -47,6 +47,59 @@ function logTimestamp(): string {
   )
 }
 
+/** URL/압축파일을 미리 내려받아 해제만 하고 그 폴더 경로를 돌려준다.
+ * fosslight는 다운로드 직후 바로 분석에 들어가 중간에 도구를 설치할 수 없으므로,
+ * 이 단계로 소스를 먼저 확보해 manifest를 보고 필요한 도구를 설치한 뒤 본 스캔을 돌린다. */
+export function prepareTarget(
+  cfg: ScanConfig,
+  dest: string,
+  onEvent: (e: ScanEvent) => void,
+  pathEnv?: string
+): Promise<{ ok: boolean; path: string; message: string }> {
+  const args = ['--prepare', '--dest', dest]
+  if (cfg.targetType === 'url') {
+    let target = cfg.target
+    if (cfg.gitRef?.trim()) {
+      const refType = cfg.gitRefType === 'tag' ? 'tag' : 'branch'
+      target = `${target};${refType}=${cfg.gitRef.trim()}`
+    }
+    args.push('--url', target)
+  } else {
+    args.push('--path', cfg.target)
+  }
+
+  const { cmd, args: spawnArgs } = backendCommand(args)
+  const env = pathEnv ? { ...process.env, PATH: pathEnv, Path: pathEnv } : process.env
+
+  return new Promise((resolve) => {
+    const child = spawn(cmd, spawnArgs, { windowsHide: true, env })
+    currentChild = child // 준비 단계도 취소 버튼으로 중단할 수 있게
+    let result: { ok: boolean; path: string; message: string } | null = null
+
+    createInterface({ input: child.stdout }).on('line', (line) => {
+      try {
+        const e = JSON.parse(line) as ScanEvent | { type: 'prepared'; success: boolean; path: string; message: string }
+        if (e.type === 'prepared') {
+          result = { ok: e.success, path: e.path, message: e.message }
+          return
+        }
+        onEvent(e as ScanEvent)
+      } catch {
+        // NDJSON이 아닌 잡음은 무시
+      }
+    })
+
+    child.on('error', (err) => {
+      currentChild = null
+      resolve({ ok: false, path: dest, message: `준비 단계 실행 실패: ${err.message}` })
+    })
+    child.on('close', () => {
+      currentChild = null
+      resolve(result ?? { ok: false, path: dest, message: '다운로드/해제에 실패했습니다.' })
+    })
+  })
+}
+
 export function isScanRunning(): boolean {
   return currentChild !== null
 }
@@ -79,6 +132,7 @@ export function startScan(
   ]
   if (cfg.kbUrl?.trim()) backendArgs.push('--kb-url', cfg.kbUrl.trim())
   if (cfg.kbToken?.trim()) backendArgs.push('--kb-token', cfg.kbToken.trim())
+  if (cfg.analyzedPath?.trim()) backendArgs.push('--analyzed-path', cfg.analyzedPath.trim())
   const { cmd, args } = backendCommand(backendArgs)
 
   const env = pathEnv ? { ...process.env, PATH: pathEnv, Path: pathEnv } : process.env

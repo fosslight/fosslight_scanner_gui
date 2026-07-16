@@ -7,6 +7,7 @@ import type { GitRefValidationResult, GuiResult, ScanMode, ScanTargetType } from
 const LOG_ROW_HEIGHT = 24
 
 const PHASES = [
+  { key: 'preparing', label: '다운로드' },
   { key: 'installing', label: '도구 설치' },
   { key: 'starting', label: '준비' },
   { key: 'scanning', label: '분석' },

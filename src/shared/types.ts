@@ -15,6 +15,8 @@ export interface ScanConfig {
   outputDir: string
   kbUrl?: string // Source 분석 시 KB 서버 URL (선택)
   kbToken?: string // Source 분석 시 KB 토큰 (선택)
+  // 미리 받아둔 폴더를 스캔할 때(URL/압축 2단계) 리포트에 표기할 원래 대상
+  analyzedPath?: string
 }
 
 // Python 래퍼가 stdout으로 내보내는 NDJSON 이벤트
