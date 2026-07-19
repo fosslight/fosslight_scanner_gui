@@ -357,21 +357,33 @@ def install_dep_venv_diagnostics():
         if is_dep_venv and getattr(result, "returncode", 0) not in (0, None):
             detail = (_decode_bytes(getattr(result, "stderr", None)) + "\n"
                       + _decode_bytes(getattr(result, "stdout", None))).strip()
-            try:
-                probe = _orig_run("where python & python --version",
-                                  shell=True, stdout=_sp.PIPE, stderr=_sp.STDOUT)
-                pyinfo = _decode_bytes(probe.stdout).strip()
-            except Exception:
-                pyinfo = "(python 확인 실패)"
-            hint = _dep_venv_hint((detail + " " + pyinfo).lower())
+
+            def _probe(probe_cmd):
+                try:
+                    p = _orig_run(probe_cmd, shell=True, stdout=_sp.PIPE, stderr=_sp.STDOUT, timeout=20)
+                    return _decode_bytes(p.stdout).strip() or "(출력 없음)"
+                except Exception as ex:  # noqa
+                    return f"(확인 실패: {ex})"
+
+            # clean PC 진단을 위해 환경을 한 번에 수집한다 (한 번의 테스트로 원인 확정)
+            where_python = _probe("where python")
+            python_ver = _probe("python --version")
+            py_list = _probe("py -0p")            # py 런처가 아는 모든 Python
+            winget_where = _probe("where winget")  # 자동 설치 가능 여부
+            found_312 = find_real_python312() or "(없음)"
+            hint = _dep_venv_hint((detail + " " + where_python + " " + python_ver + " " + py_list).lower())
             emit({
                 "type": "log",
                 "level": "ERROR",
                 "message": (
-                    "의존성(pypi) 가상환경 준비 실패 상세\n"
-                    f"- 사용된 python:\n{pyinfo or '(확인 실패)'}\n"
-                    f"- 실제 오류:\n{detail[-3000:] or '(출력 없음)'}"
-                    + (f"\n- 원인 추정: {hint}" if hint else "")
+                    "의존성(pypi) 가상환경 준비 실패 — 환경 진단\n"
+                    f"[where python]\n{where_python}\n"
+                    f"[python --version]\n{python_ver}\n"
+                    f"[py -0p (설치된 Python)]\n{py_list}\n"
+                    f"[번들/시스템 Python 3.12]\n{found_312}\n"
+                    f"[where winget]\n{winget_where}\n"
+                    f"[실제 오류]\n{detail[-2500:] or '(출력 없음)'}"
+                    + (f"\n[원인 추정] {hint}" if hint else "")
                 ),
             })
         return result
