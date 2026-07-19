@@ -140,11 +140,19 @@ export function startScan(
   currentChild = child
   let scanLogStream: WriteStream | null = null
 
+  // 로그 파일은 스캔 진행 화면의 "터미널창"(로그 콘솔)과 동일한 내용을 담는다.
+  // 콘솔에는 안 보이는 원시 stderr는 본문에 섞지 않고, 비정상 종료 시에만
+  // 진단용으로 말미에 첨부한다(크래시 원인 유실 방지).
+  const stderrChunks: string[] = []
+  let stderrBytes = 0
+  const STDERR_TAIL_LIMIT = 64 * 1024
+
   try {
     scanLogStream = createWriteStream(scanLogPath(cfg.outputDir), { flags: 'a' })
     scanLogStream.write(
       `FOSSLight Scanner GUI v${app.getVersion()} 스캔 로그\n` +
-        `대상: ${cfg.target}\n모드: ${cfg.modes.join(', ')}\n출력: ${cfg.outputDir}\n---\n`
+        `일시: ${logTimestamp()}\n대상: ${cfg.target}\n모드: ${cfg.modes.join(', ')}\n` +
+        `출력: ${cfg.outputDir}\n---\n`
     )
   } catch {
     scanLogStream = null
@@ -160,14 +168,15 @@ export function startScan(
   }
 
   const logEvent = (e: ScanEvent): void => {
+    // 앱 로그 콘솔(appStore)과 동일한 형식/내용으로 기록한다.
     if (e.type === 'log') {
-      writeLog(`${logTimestamp()} [${e.level}] ${e.message}\n`)
-    } else if (e.type === 'phase') {
-      writeLog(`${logTimestamp()} == ${e.phase} ==\n`)
+      writeLog(`[${e.level}] ${e.message}\n`)
+    } else if (e.type === 'log-batch') {
+      writeLog(e.entries.map((entry) => `[${entry.level}] ${entry.message}\n`).join(''))
     } else if (e.type === 'error') {
-      writeLog(`${logTimestamp()} [ERROR] ${e.message}\n${e.traceback ?? ''}\n`)
-    } else if (e.type === 'result') {
-      writeLog(`${logTimestamp()} [RESULT] ${e.resultFile ?? '(없음)'}\n`)
+      // 오류는 드물고 진단에 필요하므로 traceback도 함께 남긴다.
+      writeLog(`[ERROR] ${e.message}\n`)
+      if (e.traceback) writeLog(`${e.traceback}\n`)
     }
   }
 
@@ -182,12 +191,22 @@ export function startScan(
   })
 
   child.stderr.on('data', (d: Buffer) => {
-    writeLog(d.toString())
+    // 콘솔에 표시되지 않는 stderr는 버퍼에만 담아두고, 비정상 종료 시에만 기록한다.
+    if (stderrBytes < STDERR_TAIL_LIMIT) {
+      const text = d.toString()
+      stderrChunks.push(text)
+      stderrBytes += Buffer.byteLength(text)
+    }
   })
 
   const closeLogStream = (exitCode: number): void => {
     try {
-      scanLogStream?.write(`${logTimestamp()} == 종료 (exit=${exitCode}) ==\n`)
+      // 정상 종료(0)가 아니면, 콘솔에 안 나온 stderr를 진단용으로 첨부한다.
+      if (exitCode !== 0 && stderrChunks.length > 0) {
+        scanLogStream?.write(
+          `\n--- 추가 진단 정보 (stderr, 화면 미표시) ---\n${stderrChunks.join('')}\n`
+        )
+      }
       scanLogStream?.end()
     } catch {
       // no-op

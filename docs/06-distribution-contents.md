@@ -5,14 +5,24 @@
 `fosslight-scanner-gui-<버전>-setup.exe` (약 259MB, NSIS/LZMA 압축) 하나에
 아래가 전부 들어 있습니다. **최종 사용자는 다른 것을 설치할 필요가 없습니다.**
 
+> **259MB(인스톨러) vs 1,054MB(설치 후)가 헷갈릴 수 있는데, 다운로드가 아니라
+> 압축 때문입니다.** scancode 라이선스 DB를 포함한 모든 파일이 인스톨러 안에
+> 실제로 들어 있고, 설치는 "압축 해제 + 복사"만 수행합니다.
+> **설치 중 네트워크 다운로드는 전혀 없으며, 오프라인 PC에서도 설치 가능합니다.**
+> 라이선스 DB(440MB)는 대부분 텍스트(라이선스 원문·규칙·인덱스)라 압축률이 매우
+> 높아서, 전체 1,054MB가 259MB로 줄어듭니다.
+> 실측: 라이선스 DB만 일반 zip으로 압축해도 440MB → 116MB(3.8배)이며,
+> 인스톨러가 쓰는 LZMA는 이보다 더 높은 압축률을 냅니다 (전체 기준 4.1배).
+
 ```mermaid
-flowchart TD
-    subgraph SETUP["setup.exe (259MB 압축)"]
+flowchart LR
+    subgraph SETUP["setup.exe — 259MB (LZMA 압축 상태)"]
         A["Electron/Chromium 런타임<br/>(UI 셸)"]
-        B["app.asar<br/>(앱 코드: main/preload/renderer 번들)"]
-        C["resources/backend/<br/>PyInstaller 동결 Python 백엔드<br/>= Python 3.12 런타임 + fosslight-scanner 전체<br/>+ scancode-toolkit (라이선스 DB 포함)"]
-        D["아이콘·locale 등 부속 리소스"]
+        B["app.asar<br/>(앱 코드 번들)"]
+        C["동결 Python 백엔드<br/>Python 3.12 + fosslight-scanner<br/>+ scancode 라이선스 DB 440MB 포함"]
+        D["아이콘·locale 등"]
     end
+    SETUP -->|"설치 = 압축 해제 + 복사<br/>(네트워크 다운로드 없음)"| INST["설치 폴더 — 1,054MB (비압축)"]
 ```
 
 | 구성 요소 | 내용 | 원본(비압축) 크기 |
@@ -42,8 +52,12 @@ flowchart TD
 
 | 항목 | 위치 | 내용 |
 |---|---|---|
-| 앱 데이터 | `%APPDATA%\fosslight-scanner-gui\` | `recent-scans.json`(최근 스캔 10건), `logs\scan.log`(백엔드 stderr), Chromium 캐시 |
-| 스캔 리포트 | 사용자가 지정한 출력 폴더 | `fosslight_report_*.xlsx/.yaml`, `gui_result.json` |
+| 앱 데이터 | `%APPDATA%\fosslight-scanner-gui\` | `gui_result.json`(최근 결과), `recent-scans.json`(최근 스캔 10건), Chromium 캐시 |
+| 스캔 리포트 | 사용자가 지정한 출력 폴더 | `fosslight_report_*.xlsx/.yaml`, `gui_result.json`, **`fosslight_gui_*.log`** |
+
+> **스캔 로그(`fosslight_gui_<시각>.log`)**: 스캔 진행 화면의 로그 콘솔(터미널창)에
+> 표시된 내용과 **동일하게** 저장됩니다(`[레벨] 메시지` 형식). 비정상 종료 시에만
+> 화면에 안 나온 stderr가 진단용으로 파일 말미에 추가됩니다. 구현: `src/main/scanRunner.ts`.
 
 ### 런타임 조건부 설치 (의존성 분석 도구 자동 설치)
 
