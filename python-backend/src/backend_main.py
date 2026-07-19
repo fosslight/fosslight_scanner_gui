@@ -297,6 +297,12 @@ def find_real_python312():
     if _CACHED_PY312 is not None:
         return _CACHED_PY312 or None
     exe = ""
+    # 앱(Electron)이 확보해 전달한 Python 3.12를 최우선 사용한다.
+    # (clean PC: 시스템/winget에 3.12가 없을 때 앱이 내려받은 전용 인터프리터)
+    env_py = os.environ.get("FL_DEP_PYTHON")
+    if env_py and os.path.exists(env_py):
+        _CACHED_PY312 = env_py
+        return env_py
     try:
         import subprocess as _sp
         r = _sp.run(["py", "-3.12", "-c", "import sys; sys.stdout.write(sys.executable)"],

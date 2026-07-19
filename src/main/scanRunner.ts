@@ -1,7 +1,7 @@
 import { spawn, execFile, ChildProcess } from 'child_process'
 import { createInterface } from 'readline'
 import { app } from 'electron'
-import { join } from 'path'
+import { dirname, join } from 'path'
 import { createWriteStream, mkdirSync, WriteStream } from 'fs'
 import type { ScanConfig, ScanEvent } from '../shared/types'
 
@@ -107,7 +107,8 @@ export function isScanRunning(): boolean {
 export function startScan(
   cfg: ScanConfig,
   onEvent: (e: ScanEvent) => void,
-  pathEnv?: string // 도구 자동 설치 직후 갱신된 PATH 반영용
+  pathEnv?: string, // 도구 자동 설치 직후 갱신된 PATH 반영용
+  depPython?: string // pypi venv 생성에 쓸 Python 3.12 절대경로 (앱 전용 다운로드본 등)
 ): boolean {
   if (currentChild) return false
 
@@ -135,7 +136,18 @@ export function startScan(
   if (cfg.analyzedPath?.trim()) backendArgs.push('--analyzed-path', cfg.analyzedPath.trim())
   const { cmd, args } = backendCommand(backendArgs)
 
-  const env = pathEnv ? { ...process.env, PATH: pathEnv, Path: pathEnv } : process.env
+  const env: NodeJS.ProcessEnv = pathEnv
+    ? { ...process.env, PATH: pathEnv, Path: pathEnv }
+    : { ...process.env }
+  if (depPython) {
+    // 백엔드가 venv 생성 시 이 인터프리터를 최우선 사용하도록 전달하고,
+    // python/pip도 이 폴더로 잡히도록 PATH 앞에 둔다.
+    env.FL_DEP_PYTHON = depPython
+    const pyDir = dirname(depPython)
+    const withPy = [pyDir, join(pyDir, 'Scripts'), env.PATH ?? ''].filter(Boolean).join(';')
+    env.PATH = withPy
+    env.Path = withPy
+  }
   const child = spawn(cmd, args, { windowsHide: true, env })
   currentChild = child
   let scanLogStream: WriteStream | null = null
