@@ -252,6 +252,134 @@ def disable_download_watchdog():
         pass
 
 
+def _decode_bytes(b):
+    """subprocess 출력 바이트를 최대한 사람이 읽을 수 있게 디코딩한다."""
+    if not b:
+        return ""
+    if isinstance(b, str):
+        return b
+    for enc in ("utf-8", "cp949", "mbcs"):
+        try:
+            return b.decode(enc)
+        except Exception:
+            continue
+    return b.decode("utf-8", "replace")
+
+
+def _dep_venv_hint(detail_lower):
+    """venv/pip 실패 메시지에서 흔한 원인을 짚어 사용자에게 안내한다."""
+    d = detail_lower
+    if "windowsapps" in d or "was not found" in d or "microsoft store" in d:
+        return ("Python이 Microsoft Store 실행 별칭(stub)으로 실행됐습니다. "
+                "python.org 또는 winget의 정식 Python 3.12 설치가 필요합니다.")
+    if "no module named venv" in d or "ensurepip" in d or "no module named 'pip'" in d:
+        return "설치된 Python에 venv/pip 구성요소가 없습니다. 정식 Python 3.12 배포판 설치를 권장합니다."
+    if ("no matching distribution" in d or "could not find a version" in d
+            or "failed building wheel" in d or "microsoft visual c++" in d
+            or "error: metadata-generation-failed" in d):
+        return ("대상 프로젝트의 의존성 패키지 설치에 실패했습니다(휠 없음/빌드 도구 필요 등). "
+                "앱 문제가 아니라 프로젝트 의존성 자체 문제일 수 있습니다.")
+    if ("getaddrinfo" in d or "timed out" in d or "temporary failure" in d
+            or "proxy" in d or "ssl" in d or "connection" in d):
+        return "네트워크(프록시/방화벽/오프라인)로 의존성 다운로드에 실패했습니다."
+    return ""
+
+
+_CACHED_PY312 = None
+
+
+def find_real_python312():
+    """의존성 venv 생성에 쓸 정식 Python 3.12 절대경로를 찾는다(없으면 None).
+    최신 Python(3.13/3.14)은 프로젝트가 핀한 패키지의 미리 빌드된 휠이 없어 pip이
+    소스 빌드로 넘어가 clean PC에서 실패하므로, 휠 커버리지가 넓은 3.12를 강제한다.
+    Microsoft Store stub은 3.12로 잡히지 않아 자연히 걸러진다."""
+    global _CACHED_PY312
+    if _CACHED_PY312 is not None:
+        return _CACHED_PY312 or None
+    exe = ""
+    try:
+        import subprocess as _sp
+        r = _sp.run(["py", "-3.12", "-c", "import sys; sys.stdout.write(sys.executable)"],
+                    stdout=_sp.PIPE, stderr=_sp.PIPE, timeout=20)
+        cand = _decode_bytes(r.stdout).strip()
+        if cand and os.path.exists(cand):
+            exe = cand
+    except Exception:
+        pass
+    if not exe:
+        for c in (
+            os.path.join(os.environ.get("LOCALAPPDATA", ""), "Programs", "Python", "Python312", "python.exe"),
+            os.path.join(os.environ.get("PROGRAMFILES", ""), "Python312", "python.exe"),
+            "C:\\Python312\\python.exe",
+        ):
+            if c and os.path.exists(c):
+                exe = c
+                break
+    _CACHED_PY312 = exe
+    return exe or None
+
+
+def install_dep_venv_diagnostics():
+    """fosslight_dependency(pypi)는 'python -m venv ... & pip install ...'를 하나의
+    chained 명령으로 실행하고 stderr를 버린 채 'return code(N)'만 남긴다. 그래서
+    venv 생성 실패인지 의존성 설치 실패인지 원인을 알 수 없다. subprocess.run을 감싸:
+      1) venv 생성에 쓰는 python을 검증된 3.12 절대경로로 바꿔 PATH 순서/전파 문제를
+         회피하고(절대경로는 shadowing 불가),
+      2) 그래도 실패하면 실제 stderr와 사용된 python을 로그로 드러낸다.
+    (fosslight 내부는 건드리지 않으므로 버전 변화에 안전) """
+    try:
+        import subprocess as _sp
+    except Exception:
+        return
+    if getattr(_sp.run, "_fl_dep_wrapped", False):
+        return
+    _orig_run = _sp.run
+
+    def patched_run(*a, **kw):
+        cmd = a[0] if a else kw.get("args")
+        is_dep_venv = isinstance(cmd, str) and "venv_osc_dep_tmp" in cmd
+        if is_dep_venv:
+            # venv 생성 python을 3.12 절대경로로 교체 (체인 선두의 'python -m venv'만)
+            if cmd.lower().startswith("python -m venv"):
+                py312 = find_real_python312()
+                if py312:
+                    cmd = f'"{py312}" -m venv' + cmd[len("python -m venv"):]
+                    if a:
+                        a = (cmd,) + tuple(a[1:])
+                    else:
+                        kw["args"] = cmd
+                    emit({"type": "log", "level": "INFO",
+                          "message": f"의존성 분석 가상환경을 Python 3.12로 생성합니다: {py312}"})
+            # 원인 확인을 위해 출력을 캡처(=화면 미표시). fosslight는 stderr만 읽으므로 무해.
+            kw.setdefault("stdout", _sp.PIPE)
+            kw.setdefault("stderr", _sp.PIPE)
+        result = _orig_run(*a, **kw)
+        if is_dep_venv and getattr(result, "returncode", 0) not in (0, None):
+            detail = (_decode_bytes(getattr(result, "stderr", None)) + "\n"
+                      + _decode_bytes(getattr(result, "stdout", None))).strip()
+            try:
+                probe = _orig_run("where python & python --version",
+                                  shell=True, stdout=_sp.PIPE, stderr=_sp.STDOUT)
+                pyinfo = _decode_bytes(probe.stdout).strip()
+            except Exception:
+                pyinfo = "(python 확인 실패)"
+            hint = _dep_venv_hint((detail + " " + pyinfo).lower())
+            emit({
+                "type": "log",
+                "level": "ERROR",
+                "message": (
+                    "의존성(pypi) 가상환경 준비 실패 상세\n"
+                    f"- 사용된 python:\n{pyinfo or '(확인 실패)'}\n"
+                    f"- 실제 오류:\n{detail[-3000:] or '(출력 없음)'}"
+                    + (f"\n- 원인 추정: {hint}" if hint else "")
+                ),
+            })
+        return result
+
+    patched_run._fl_dep_wrapped = True
+    _sp.run = patched_run
+
+
 def available_memory_gb():
     """Windows 가용 물리 메모리(GB). 확인 실패 시 None."""
     try:
@@ -732,6 +860,7 @@ def main():
         from fosslight_scanner.fosslight_scanner import run_main
 
         disable_download_watchdog()
+        install_dep_venv_diagnostics()
 
         emit({"type": "phase", "phase": "scanning"})
         scan_started_at = time.time()
