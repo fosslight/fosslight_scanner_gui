@@ -142,14 +142,43 @@ export async function preferPython312(pathEnv: string): Promise<string | null> {
   return prependToPath(pathEnv, [dir, join(dir, 'Scripts')])
 }
 
-/** 대상 폴더에 pypi manifest가 있는지 (있을 때만 Python이 필요) */
-export function hasPypiManifest(targetPath: string): boolean {
-  try {
-    const entries = new Set(readdirSync(targetPath))
-    return PYPI_MANIFESTS.some((m) => entries.has(m))
-  } catch {
-    return false
+// manifest 재귀 탐색 시 건너뛸 폴더 (대용량/무관). node_modules는 하위에 package.json이
+// 수천 개라 반드시 제외.
+const SKIP_DIRS = new Set([
+  'node_modules', '.git', '.svn', '.hg', '.venv', 'venv', 'env', '__pycache__',
+  'dist', 'build', 'out', '.gradle', '.idea', '.vscode', '.tox', 'target'
+])
+const MANIFEST_NAMES = new Set<string>([...Object.keys(MANIFEST_TOOLS), ...PYPI_MANIFESTS])
+
+/** 대상 폴더 트리에서 manifest 파일명들을 재귀로 수집한다(깊이 제한, 대용량 폴더 제외).
+ * URL/압축 스캔은 프로젝트가 하위 폴더(예: repo-branch/)로 풀리므로, fosslight의
+ * 재귀 감지와 맞추려면 최상위만 봐선 안 된다. */
+function collectManifests(root: string, maxDepth = 6): Set<string> {
+  const found = new Set<string>()
+  const walk = (dir: string, depth: number): void => {
+    if (depth > maxDepth || found.size >= MANIFEST_NAMES.size) return
+    let ents: import('fs').Dirent[]
+    try {
+      ents = readdirSync(dir, { withFileTypes: true })
+    } catch {
+      return
+    }
+    for (const e of ents) {
+      if (e.isDirectory()) {
+        if (!SKIP_DIRS.has(e.name)) walk(join(dir, e.name), depth + 1)
+      } else if (MANIFEST_NAMES.has(e.name)) {
+        found.add(e.name)
+      }
+    }
   }
+  walk(root, 0)
+  return found
+}
+
+/** 대상 폴더 트리에 pypi manifest가 있는지 (있을 때만 Python이 필요) */
+export function hasPypiManifest(targetPath: string): boolean {
+  const found = collectManifests(targetPath)
+  return PYPI_MANIFESTS.some((m) => found.has(m))
 }
 
 function depPythonDir(): string {
@@ -309,12 +338,8 @@ async function wingetAvailable(pathEnv: string): Promise<boolean> {
 
 /** 대상 폴더의 manifest를 보고 미설치 도구 목록을 반환 */
 export async function checkMissingTools(targetPath: string, pathEnv: string): Promise<ToolSpec[]> {
-  let entries: Set<string>
-  try {
-    entries = new Set(readdirSync(targetPath))
-  } catch {
-    return []
-  }
+  // URL/압축 스캔은 프로젝트가 하위 폴더로 풀리므로 재귀로 manifest를 찾는다.
+  const entries = collectManifests(targetPath)
 
   const needed = new Map<string, ToolSpec>()
   for (const [manifest, spec] of Object.entries(MANIFEST_TOOLS)) {
