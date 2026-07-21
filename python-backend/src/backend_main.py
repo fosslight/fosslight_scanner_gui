@@ -252,6 +252,47 @@ def disable_download_watchdog():
         pass
 
 
+def install_gradlew_path_fix():
+    """fosslight_dependency는 Windows에서 gradle wrapper를 bare 이름('gradlew.bat')으로
+    subprocess(list, shell=False) 호출하는데, CreateProcess는 bare .bat 상대명을
+    해석하지 못해 모든 Windows PC에서 [WinError 2]로 실패한다(업스트림 버그).
+    _resolve_gradle_command를 감싸 절대경로를 반환하게 한다."""
+    try:
+        from fosslight_dependency import _package_manager as fl_pm
+    except Exception:
+        return
+    if getattr(fl_pm.PackageManager._resolve_gradle_command, "_fl_abs_wrapped", False):
+        return
+
+    def _to_abs(cmd):
+        try:
+            if cmd and not os.path.isabs(cmd):
+                cand = os.path.abspath(cmd.replace("./", "", 1))
+                if os.path.isfile(cand):
+                    return cand
+        except Exception:
+            pass
+        return cmd
+
+    _orig_resolve = fl_pm.PackageManager._resolve_gradle_command
+
+    def patched(self):
+        return _to_abs(_orig_resolve(self))
+
+    patched._fl_abs_wrapped = True
+    fl_pm.PackageManager._resolve_gradle_command = patched
+
+    # 모듈 함수 get_gradle_cmd()도 같은 bare 이름을 반환한다
+    # (collect_gradle_download_urls가 사용 — 여기서도 WinError 2 발생)
+    _orig_get = fl_pm.get_gradle_cmd
+
+    def patched_get():
+        cmd, mode = _orig_get()
+        return _to_abs(cmd), mode
+
+    fl_pm.get_gradle_cmd = patched_get
+
+
 def _decode_bytes(b):
     """subprocess 출력 바이트를 최대한 사람이 읽을 수 있게 디코딩한다."""
     if not b:
@@ -879,6 +920,7 @@ def main():
 
         disable_download_watchdog()
         install_dep_venv_diagnostics()
+        install_gradlew_path_fix()
 
         emit({"type": "phase", "phase": "scanning"})
         scan_started_at = time.time()

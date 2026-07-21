@@ -25,22 +25,21 @@ interface ToolSpec {
   needsJava?: boolean
 }
 
+// gradle: fosslight_dependency는 시스템 gradle을 쓰지 않고 프로젝트의 gradlew만
+// 실행하므로 Gradle 설치는 무의미하다. 실제로 필요한 것은 Java뿐이며(gradlew가
+// gradle 배포판을 자동 다운로드), Java는 winget이 아닌 ensureJavaForGradle()이
+// 담당한다(구버전 wrapper 호환을 위해 Java 11 — JDK 21은 gradle 6.x와 비호환).
 const JAVA_SPEC: ToolSpec = {
   tool: 'java',
-  label: 'JDK (Temurin 21)',
-  wingetId: 'EclipseAdoptium.Temurin.21.JDK'
+  label: 'Java (Temurin 11)',
+  wingetId: null // winget 미사용 — ensureJavaForGradle이 확보
 }
 
 const MANIFEST_TOOLS: Record<string, ToolSpec> = {
   'package.json': { tool: 'npm', label: 'Node.js (npm)', wingetId: 'OpenJS.NodeJS.LTS' },
   'pom.xml': { tool: 'mvn', label: 'Apache Maven', wingetId: 'Apache.Maven', needsJava: true },
-  'build.gradle': { tool: 'gradle', label: 'Gradle', wingetId: 'Gradle.Gradle', needsJava: true },
-  'build.gradle.kts': {
-    tool: 'gradle',
-    label: 'Gradle',
-    wingetId: 'Gradle.Gradle',
-    needsJava: true
-  },
+  'build.gradle': { ...JAVA_SPEC },
+  'build.gradle.kts': { ...JAVA_SPEC },
   'requirements.txt': { tool: 'python', label: 'Python', wingetId: 'Python.Python.3.12' },
   'setup.py': { tool: 'python', label: 'Python', wingetId: 'Python.Python.3.12' },
   Pipfile: { tool: 'python', label: 'Python', wingetId: 'Python.Python.3.12' },
@@ -49,6 +48,12 @@ const MANIFEST_TOOLS: Record<string, ToolSpec> = {
   Gemfile: { tool: 'gem', label: 'Ruby (gem)', wingetId: 'RubyInstallerTeam.RubyWithDevKit.3.3' },
   'pubspec.yaml': { tool: 'flutter', label: 'Flutter', wingetId: null }
 }
+
+// java가 필요한 manifest (gradle wrapper 실행 / maven)
+const JAVA_MANIFESTS = ['build.gradle', 'build.gradle.kts', 'pom.xml']
+// Temurin 11 JRE (gradle wrapper 5.x~8.x 호환 폭이 가장 넓음, 약 41MB)
+const TEMURIN11_URL =
+  'https://api.adoptium.net/v3/binary/latest/11/ga/windows/x64/jre/hotspot/normal/eclipse'
 
 let installChild: ChildProcess | null = null
 let installCancelled = false
@@ -308,6 +313,92 @@ export async function ensureDependencyPython(
   return downloadStandalonePython(onEvent)
 }
 
+/** 대상 폴더 트리에 java가 필요한 manifest(build.gradle/pom.xml)가 있는지 */
+export function hasJavaManifest(targetPath: string): boolean {
+  const found = collectManifests(targetPath)
+  return JAVA_MANIFESTS.some((m) => found.has(m))
+}
+
+function depJavaDir(): string {
+  return join(app.getPath('userData'), 'dep-java')
+}
+
+/** 내려받은 Temurin의 JAVA_HOME(최상위 jdk-* 폴더)을 찾는다 */
+function findDownloadedJavaHome(): string | null {
+  try {
+    for (const e of readdirSync(depJavaDir(), { withFileTypes: true })) {
+      if (e.isDirectory() && existsSync(join(depJavaDir(), e.name, 'bin', 'java.exe'))) {
+        return join(depJavaDir(), e.name)
+      }
+    }
+  } catch {
+    // 폴더 없음
+  }
+  return null
+}
+
+async function verifyJava(javaHome: string): Promise<boolean> {
+  try {
+    await execFileP(join(javaHome, 'bin', 'java.exe'), ['-version'])
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** gradle/maven 분석용 Java를 확보해 JAVA_HOME 경로를 돌려준다.
+ * 시스템에 java가 있으면 null(그대로 사용). 없으면 Temurin 11 JRE를 userData로
+ * 1회 다운로드/해제(약 41MB). fosslight는 시스템 gradle을 쓰지 않고 프로젝트의
+ * gradlew만 실행하므로 Gradle 설치는 불필요하고 Java만 있으면 된다. */
+export async function ensureJavaForGradle(
+  pathEnv: string,
+  onEvent: (e: ScanEvent) => void
+): Promise<string | null> {
+  if (await toolExists('java', pathEnv)) return null // 시스템 java 사용
+
+  const cached = findDownloadedJavaHome()
+  if (cached && (await verifyJava(cached))) return cached
+
+  const dir = depJavaDir()
+  try {
+    rmSync(dir, { recursive: true, force: true })
+  } catch {
+    // 이전 잔여물 정리 실패는 무시
+  }
+  mkdirSync(dir, { recursive: true })
+  const zip = join(dir, 'temurin11.zip')
+
+  onEvent({
+    type: 'log',
+    level: 'INFO',
+    message: 'Java가 없어 앱 전용 Java 11(Temurin JRE)을 내려받습니다 (최초 1회, 약 41MB)...'
+  })
+  try {
+    downloadAbort = new AbortController()
+    await downloadToFile(TEMURIN11_URL, zip, downloadAbort.signal)
+    const tarExe = join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'tar.exe')
+    await execFileP(tarExe, ['-xf', zip, '-C', dir], { windowsHide: true })
+    rmSync(zip, { force: true })
+  } catch (e) {
+    onEvent({
+      type: 'log',
+      level: 'WARNING',
+      message: `Java 다운로드/해제에 실패했습니다: ${(e as Error).message}`
+    })
+    return null
+  } finally {
+    downloadAbort = null
+  }
+
+  const home = findDownloadedJavaHome()
+  if (home && (await verifyJava(home))) {
+    onEvent({ type: 'log', level: 'INFO', message: '앱 전용 Java 11 준비 완료' })
+    return home
+  }
+  onEvent({ type: 'log', level: 'WARNING', message: '앱 전용 Java 준비에 실패했습니다.' })
+  return null
+}
+
 /** PATH에 없더라도 설치된 Node.js 폴더를 찾는다.
  * Node.js 설치 시 PATH 등록을 하지 않은 PC가 있는데, 이 경우 winget은 ARP 기록을 보고
  * "이미 설치됨/최신"(UPDATE_NOT_APPLICABLE)이라며 재설치를 거부해 계속 npm을 못 찾게 된다. */
@@ -351,6 +442,7 @@ export async function checkMissingTools(targetPath: string, pathEnv: string): Pr
 
   const missing: ToolSpec[] = []
   for (const spec of needed.values()) {
+    if (spec.tool === 'java') continue // java는 ensureJavaForGradle이 확보 (winget 미사용)
     // pypi 분석용 venv는 3.12로 만들어야 하므로(휠 커버리지), 다른 버전만 있어도 설치 대상
     const present =
       spec.tool === 'python'

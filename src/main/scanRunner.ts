@@ -108,7 +108,8 @@ export function startScan(
   cfg: ScanConfig,
   onEvent: (e: ScanEvent) => void,
   pathEnv?: string, // 도구 자동 설치 직후 갱신된 PATH 반영용
-  depPython?: string // pypi venv 생성에 쓸 Python 3.12 절대경로 (앱 전용 다운로드본 등)
+  depPython?: string, // pypi venv 생성에 쓸 Python 3.12 절대경로 (앱 전용 다운로드본 등)
+  depJava?: string // gradle/maven용 JAVA_HOME (앱 전용 다운로드본 등)
 ): boolean {
   if (currentChild) return false
 
@@ -147,6 +148,13 @@ export function startScan(
     const withPy = [pyDir, join(pyDir, 'Scripts'), env.PATH ?? ''].filter(Boolean).join(';')
     env.PATH = withPy
     env.Path = withPy
+  }
+  if (depJava) {
+    // gradlew.bat는 JAVA_HOME을 최우선 사용한다. PATH에도 bin을 앞세워 java가 잡히게 한다.
+    env.JAVA_HOME = depJava
+    const withJava = [join(depJava, 'bin'), env.PATH ?? ''].filter(Boolean).join(';')
+    env.PATH = withJava
+    env.Path = withJava
   }
   const child = spawn(cmd, args, { windowsHide: true, env })
   currentChild = child

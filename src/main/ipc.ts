@@ -17,7 +17,9 @@ import {
   preferPython312,
   ensureNodeOnPath,
   ensureDependencyPython,
-  hasPypiManifest
+  hasPypiManifest,
+  ensureJavaForGradle,
+  hasJavaManifest
 } from './depInstaller'
 import { addRecentScan, getRecentScans, loadReport } from './reportStore'
 import type { GitRefValidationResult, ScanConfig, ScanEvent } from '../shared/types'
@@ -150,6 +152,7 @@ export function registerIpcHandlers(): void {
     }
 
     let depPython: string | undefined
+    let depJava: string | undefined
     if (cfg.modes.includes('dependency')) {
       // pypi 의존성 분석용 venv가 Python 3.12로 만들어지도록 PATH 앞에 둔다.
       // (최신 Python은 프로젝트가 핀한 패키지의 휠이 없어 소스 빌드로 실패하는 경우가 많음)
@@ -179,9 +182,21 @@ export function registerIpcHandlers(): void {
           message: 'PATH에 없는 Node.js를 찾아 이번 분석에만 사용합니다.'
         })
       }
+      // gradle/maven 프로젝트인데 java가 없으면 앱 전용 Java 11을 확보한다
+      // (fosslight는 프로젝트의 gradlew를 실행하므로 Gradle 설치는 불필요, Java만 필요)
+      if (hasJavaManifest(scanCfg.target) && !sessionCancelled) {
+        depJava = (await ensureJavaForGradle(pathEnv, send)) ?? undefined
+        if (sessionCancelled) {
+          send({ type: 'done', exitCode: -2 })
+          return { ok: true }
+        }
+        if (depJava) {
+          send({ type: 'log', level: 'INFO', message: '앱 전용 Java 11로 gradle 분석을 실행합니다.' })
+        }
+      }
     }
 
-    const ok = startScan(scanCfg, send, pathEnv, depPython)
+    const ok = startScan(scanCfg, send, pathEnv, depPython, depJava)
     if (!ok) {
       scanSessionActive = false
       return { ok: false, message: '이미 스캔이 실행 중입니다' }
