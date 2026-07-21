@@ -23,6 +23,7 @@ interface ToolSpec {
   label: string
   wingetId: string | null // null이면 자동 설치 미지원 (수동 안내)
   needsJava?: boolean
+  manualHint?: string // 자동 설치 불가 시 보여줄 구체적 안내
 }
 
 // gradle: fosslight_dependency는 시스템 gradle을 쓰지 않고 프로젝트의 gradlew만
@@ -37,7 +38,9 @@ const JAVA_SPEC: ToolSpec = {
 
 const MANIFEST_TOOLS: Record<string, ToolSpec> = {
   'package.json': { tool: 'npm', label: 'Node.js (npm)', wingetId: 'OpenJS.NodeJS.LTS' },
-  'pom.xml': { tool: 'mvn', label: 'Apache Maven', wingetId: 'Apache.Maven', needsJava: true },
+  // maven: winget에 Apache Maven 공식 패키지가 없다. mvnw가 없으면 시스템 mvn이
+  // 필요하며, ensureMaven()이 없을 때 Apache Maven을 직접 내려받아 제공한다. Java도 필요.
+  'pom.xml': { tool: 'mvn', label: 'Apache Maven', wingetId: null, needsJava: true },
   'build.gradle': { ...JAVA_SPEC },
   'build.gradle.kts': { ...JAVA_SPEC },
   'requirements.txt': { tool: 'python', label: 'Python', wingetId: 'Python.Python.3.12' },
@@ -46,7 +49,17 @@ const MANIFEST_TOOLS: Record<string, ToolSpec> = {
   'go.mod': { tool: 'go', label: 'Go', wingetId: 'GoLang.Go' },
   'Cargo.toml': { tool: 'cargo', label: 'Rust (cargo)', wingetId: 'Rustlang.Rustup' },
   Gemfile: { tool: 'gem', label: 'Ruby (gem)', wingetId: 'RubyInstallerTeam.RubyWithDevKit.3.3' },
-  'pubspec.yaml': { tool: 'flutter', label: 'Flutter', wingetId: null }
+  // flutter: pub 분석은 `flutter pub get/deps` 실행이 필요한데, Flutter SDK는 1GB+
+  // (첫 실행 시 Dart SDK·엔진을 추가로 더 받음)라 런타임 자동 확보가 비현실적이다.
+  'pubspec.yaml': {
+    tool: 'flutter',
+    label: 'Flutter',
+    wingetId: null,
+    manualHint:
+      'Flutter SDK는 1GB 이상으로 자동 설치하지 않습니다. ' +
+      'https://docs.flutter.dev/get-started/install/windows 에서 설치하고 ' +
+      'flutter\\bin을 PATH에 추가한 뒤(터미널에서 `flutter --version` 확인) 다시 스캔해주세요.'
+  }
 }
 
 // java가 필요한 manifest (gradle wrapper 실행 / maven)
@@ -54,6 +67,11 @@ const JAVA_MANIFESTS = ['build.gradle', 'build.gradle.kts', 'pom.xml']
 // Temurin 11 JRE (gradle wrapper 5.x~8.x 호환 폭이 가장 넓음, 약 41MB)
 const TEMURIN11_URL =
   'https://api.adoptium.net/v3/binary/latest/11/ga/windows/x64/jre/hotspot/normal/eclipse'
+// Apache Maven (winget에 없음). mvnw가 없는 pom.xml 프로젝트에 제공, 약 8MB.
+const MAVEN_VERSION = '3.9.9'
+const MAVEN_URL =
+  `https://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/` +
+  `apache-maven-${MAVEN_VERSION}-bin.zip`
 
 let installChild: ChildProcess | null = null
 let installCancelled = false
@@ -399,6 +417,93 @@ export async function ensureJavaForGradle(
   return null
 }
 
+/** 대상 폴더 트리에 pom.xml이 있는지 (Maven 필요 판단) */
+export function hasMavenManifest(targetPath: string): boolean {
+  return collectManifests(targetPath).has('pom.xml')
+}
+
+/** 대상 폴더 트리에 Maven wrapper(mvnw)가 있는지 재귀로 확인.
+ * mvnw가 있으면 래퍼가 Maven을 자체 조달하므로 Java만 있으면 된다. */
+function hasMvnw(root: string, maxDepth = 6): boolean {
+  const walk = (dir: string, depth: number): boolean => {
+    if (depth > maxDepth) return false
+    let ents: import('fs').Dirent[]
+    try {
+      ents = readdirSync(dir, { withFileTypes: true })
+    } catch {
+      return false
+    }
+    for (const e of ents) {
+      if (e.isFile() && (e.name === 'mvnw' || e.name === 'mvnw.cmd')) return true
+    }
+    for (const e of ents) {
+      if (e.isDirectory() && !SKIP_DIRS.has(e.name) && walk(join(dir, e.name), depth + 1)) return true
+    }
+    return false
+  }
+  return walk(root, 0)
+}
+
+function depMavenBinDir(): string | null {
+  const base = join(app.getPath('userData'), 'dep-maven')
+  const bin = join(base, `apache-maven-${MAVEN_VERSION}`, 'bin')
+  return existsSync(join(bin, 'mvn.cmd')) ? bin : null
+}
+
+/** gradle과 달리 Maven은 mvnw가 없으면 시스템 mvn이 필요하다. 시스템 mvn이 없고
+ * mvnw도 없으면 Apache Maven을 userData로 1회 다운로드/해제하고, 그 bin을 앞에 붙인
+ * 새 PATH를 돌려준다. 필요 없거나(시스템 mvn/mvnw 존재) 실패하면 null. */
+export async function ensureMaven(
+  targetPath: string,
+  pathEnv: string,
+  onEvent: (e: ScanEvent) => void
+): Promise<string | null> {
+  if (await toolExists('mvn', pathEnv)) return null // 시스템 mvn 사용
+  if (hasMvnw(targetPath)) return null // mvnw 래퍼가 Maven 자체 조달 (Java만 필요)
+
+  const cached = depMavenBinDir()
+  if (cached) return prependToPath(pathEnv, [cached])
+
+  const base = join(app.getPath('userData'), 'dep-maven')
+  try {
+    rmSync(base, { recursive: true, force: true })
+  } catch {
+    // 이전 잔여물 정리 실패는 무시
+  }
+  mkdirSync(base, { recursive: true })
+  const zip = join(base, 'maven.zip')
+
+  onEvent({
+    type: 'log',
+    level: 'INFO',
+    message: 'Maven이 없어 앱 전용 Apache Maven을 내려받습니다 (최초 1회, 약 8MB)...'
+  })
+  try {
+    downloadAbort = new AbortController()
+    await downloadToFile(MAVEN_URL, zip, downloadAbort.signal)
+    const tarExe = join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'tar.exe')
+    await execFileP(tarExe, ['-xf', zip, '-C', base], { windowsHide: true })
+    rmSync(zip, { force: true })
+  } catch (e) {
+    onEvent({
+      type: 'log',
+      level: 'WARNING',
+      message: `Maven 다운로드/해제에 실패했습니다: ${(e as Error).message}`
+    })
+    return null
+  } finally {
+    downloadAbort = null
+  }
+
+  const bin = depMavenBinDir()
+  if (bin) {
+    onEvent({ type: 'log', level: 'INFO', message: '앱 전용 Apache Maven 준비 완료' })
+    return prependToPath(pathEnv, [bin])
+  }
+  onEvent({ type: 'log', level: 'WARNING', message: '앱 전용 Maven 준비에 실패했습니다.' })
+  return null
+}
+
 /** PATH에 없더라도 설치된 Node.js 폴더를 찾는다.
  * Node.js 설치 시 PATH 등록을 하지 않은 PC가 있는데, 이 경우 winget은 ARP 기록을 보고
  * "이미 설치됨/최신"(UPDATE_NOT_APPLICABLE)이라며 재설치를 거부해 계속 npm을 못 찾게 된다. */
@@ -442,7 +547,8 @@ export async function checkMissingTools(targetPath: string, pathEnv: string): Pr
 
   const missing: ToolSpec[] = []
   for (const spec of needed.values()) {
-    if (spec.tool === 'java') continue // java는 ensureJavaForGradle이 확보 (winget 미사용)
+    // java/mvn은 winget이 아니라 ensureJavaForGradle/ensureMaven이 확보한다
+    if (spec.tool === 'java' || spec.tool === 'mvn') continue
     // pypi 분석용 venv는 3.12로 만들어야 하므로(휠 커버리지), 다른 버전만 있어도 설치 대상
     const present =
       spec.tool === 'python'
@@ -480,7 +586,9 @@ export async function installTools(
       onEvent({
         type: 'log',
         level: 'WARNING',
-        message: `${spec.label}은(는) 자동 설치를 지원하지 않습니다. 직접 설치 후 다시 스캔해주세요.`
+        message:
+          spec.manualHint ??
+          `${spec.label}은(는) 자동 설치를 지원하지 않습니다. 직접 설치 후 다시 스캔해주세요.`
       })
       continue
     }

@@ -33,12 +33,14 @@ sys.stdout = sys.stderr
 
 FOSSLIGHT_LOGGER = "FOSSLight"
 
-# manifest 파일 → 필요한 패키지 매니저 실행 파일
+# manifest 파일 → 사전 점검할 실행 파일
+# gradle/maven: fosslight는 프로젝트의 gradlew/mvnw(또는 앱이 제공하는 Maven)를 쓰므로
+# 공통으로 필요한 것은 java. (java·gradle·maven은 앱이 없으면 자동 확보해 PATH로 전달)
 MANIFEST_TOOLS = {
     "package.json": "npm",
-    "pom.xml": "mvn",
-    "build.gradle": "gradle",
-    "build.gradle.kts": "gradle",
+    "pom.xml": "java",
+    "build.gradle": "java",
+    "build.gradle.kts": "java",
     "requirements.txt": "python",
     "setup.py": "python",
     "Pipfile": "python",

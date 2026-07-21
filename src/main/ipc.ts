@@ -19,7 +19,9 @@ import {
   ensureDependencyPython,
   hasPypiManifest,
   ensureJavaForGradle,
-  hasJavaManifest
+  hasJavaManifest,
+  ensureMaven,
+  hasMavenManifest
 } from './depInstaller'
 import { addRecentScan, getRecentScans, loadReport } from './reportStore'
 import type { GitRefValidationResult, ScanConfig, ScanEvent } from '../shared/types'
@@ -191,7 +193,19 @@ export function registerIpcHandlers(): void {
           return { ok: true }
         }
         if (depJava) {
-          send({ type: 'log', level: 'INFO', message: '앱 전용 Java 11로 gradle 분석을 실행합니다.' })
+          send({ type: 'log', level: 'INFO', message: '앱 전용 Java 11로 gradle/maven 분석을 실행합니다.' })
+        }
+      }
+      // maven 프로젝트(pom.xml)인데 mvnw도 시스템 mvn도 없으면 Apache Maven을 확보한다
+      if (hasMavenManifest(scanCfg.target) && !sessionCancelled) {
+        const withMaven = await ensureMaven(scanCfg.target, pathEnv, send)
+        if (sessionCancelled) {
+          send({ type: 'done', exitCode: -2 })
+          return { ok: true }
+        }
+        if (withMaven) {
+          pathEnv = withMaven
+          send({ type: 'log', level: 'INFO', message: '앱 전용 Apache Maven으로 분석을 실행합니다.' })
         }
       }
     }
