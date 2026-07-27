@@ -14,10 +14,7 @@ import {
   installTools,
   cancelInstall,
   getFreshPath,
-  preferPython312,
   ensureNodeOnPath,
-  ensureDependencyPython,
-  hasPypiManifest,
   ensureJavaForGradle,
   hasJavaManifest,
   ensureMaven,
@@ -153,27 +150,10 @@ export function registerIpcHandlers(): void {
       }
     }
 
-    let depPython: string | undefined
     let depJava: string | undefined
     if (cfg.modes.includes('dependency')) {
-      // pypi 의존성 분석용 venv가 Python 3.12로 만들어지도록 PATH 앞에 둔다.
-      // (최신 Python은 프로젝트가 핀한 패키지의 휠이 없어 소스 빌드로 실패하는 경우가 많음)
-      const preferred = await preferPython312(pathEnv)
-      if (preferred) {
-        pathEnv = preferred
-        send({ type: 'log', level: 'INFO', message: '의존성 분석에 Python 3.12를 사용합니다.' })
-      } else if (hasPypiManifest(scanCfg.target) && !sessionCancelled) {
-        // 시스템에 3.12가 없다(winget이 없거나 정책상 설치 실패). pypi 분석을 위해
-        // 앱 전용 Python 3.12(pip 포함)를 내려받아 이번 분석에 사용한다.
-        depPython = (await ensureDependencyPython(send)) ?? undefined
-        if (sessionCancelled) {
-          send({ type: 'done', exitCode: -2 })
-          return { ok: true }
-        }
-        if (depPython) {
-          send({ type: 'log', level: 'INFO', message: '앱 전용 Python 3.12로 의존성을 분석합니다.' })
-        }
-      }
+      // Type B: pypi 분석용 venv는 백엔드가 번들 Python 3.12(sys.executable)로 직접
+      // 만든다. 따라서 외부 Python 3.12 확보/PATH 조정이 더는 필요 없다.
       // Node.js가 설치는 됐지만 PATH에 없는 PC 보강 (winget은 이 경우 재설치를 거부한다)
       const withNode = await ensureNodeOnPath(pathEnv)
       if (withNode) {
@@ -210,7 +190,7 @@ export function registerIpcHandlers(): void {
       }
     }
 
-    const ok = startScan(scanCfg, send, pathEnv, depPython, depJava)
+    const ok = startScan(scanCfg, send, pathEnv, undefined, depJava)
     if (!ok) {
       scanSessionActive = false
       return { ok: false, message: '이미 스캔이 실행 중입니다' }

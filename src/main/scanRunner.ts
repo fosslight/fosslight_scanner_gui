@@ -14,9 +14,12 @@ export function getGuiResultPath(): string {
 
 export function backendCommand(args: string[]): { cmd: string; args: string[] } {
   if (app.isPackaged) {
+    // Type B: 번들 실제 Python으로 backend_main.py를 직접 실행
+    // (resources/backend/python/python.exe + resources/backend/backend_main.py)
+    const backendRoot = join(process.resourcesPath, 'backend')
     return {
-      cmd: join(process.resourcesPath, 'backend', 'fosslight-backend.exe'),
-      args
+      cmd: join(backendRoot, 'python', 'python.exe'),
+      args: [join(backendRoot, 'backend_main.py'), ...args]
     }
   }
   // 개발 모드: venv Python으로 래퍼 직접 실행

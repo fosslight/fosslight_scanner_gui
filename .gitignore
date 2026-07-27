@@ -10,6 +10,7 @@ __pycache__/
 python-backend/.venv/
 python-backend/build/
 python-backend/dist/
+python-backend/pybuild/
 python-backend/*_out/
 python-backend/recon_*/
 .fosslight_temp_*/

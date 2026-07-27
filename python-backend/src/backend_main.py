@@ -346,6 +346,12 @@ def find_real_python312():
     if env_py and os.path.exists(env_py):
         _CACHED_PY312 = env_py
         return env_py
+    # Type B(번들 실제 Python)·개발 모드: 동결이 아니고 현재 인터프리터가 3.12면
+    # 자기 자신으로 venv를 만든다 → 외부 Python이 전혀 필요 없다.
+    if not getattr(sys, "frozen", False) and sys.version_info[:2] == (3, 12):
+        if sys.executable and os.path.exists(sys.executable):
+            _CACHED_PY312 = sys.executable
+            return sys.executable
     try:
         import subprocess as _sp
         r = _sp.run(["py", "-3.12", "-c", "import sys; sys.stdout.write(sys.executable)"],

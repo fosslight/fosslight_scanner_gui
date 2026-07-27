@@ -12,7 +12,9 @@ files:
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
 extraResources:
-  - from: python-backend/dist/fosslight-backend
+  # Type B: 번들 실제 Python(python\python.exe) + backend_main.py 등을 backend로.
+  # 이 Python 하나가 FOSSLight 엔진 실행 + pypi venv 생성을 모두 담당한다.
+  - from: python-backend/pybuild
     to: backend
 win:
   executableName: fosslight-scanner-gui
