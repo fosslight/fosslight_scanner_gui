@@ -150,7 +150,7 @@ async function findPython312(): Promise<string | null> {
 }
 
 /** 주어진 폴더들을 PATH 맨 앞에 둔다 (중복 항목은 제거) */
-function prependToPath(pathEnv: string, dirs: string[]): string {
+export function prependToPath(pathEnv: string, dirs: string[]): string {
   const isSame = (p: string, target: string): boolean =>
     p.trim().replace(/\\+$/, '').toLowerCase() === target.toLowerCase()
   const rest = pathEnv.split(';').filter((p) => !dirs.some((d) => isSame(p, d)))
@@ -504,6 +504,24 @@ export async function ensureMaven(
   return null
 }
 
+// winget을 쓸 수 없는 환경(기업망 TLS 검사로 winget 인증서 고정 실패 등)에서 쓸
+// Node.js를 풀어둘 위치. npm 내부 경로가 깊어(약 103자) 짧은 경로를 쓴다.
+const NODE_BOOTSTRAP_DIR = join(process.env.LOCALAPPDATA ?? '', 'fosslight-node')
+
+/** 앱이 직접 받아둔 Node.js 폴더 (없으면 null) */
+function findBootstrappedNode(): string | null {
+  try {
+    for (const name of readdirSync(NODE_BOOTSTRAP_DIR)) {
+      if (existsSync(join(NODE_BOOTSTRAP_DIR, name, 'node.exe'))) {
+        return join(NODE_BOOTSTRAP_DIR, name)
+      }
+    }
+  } catch {
+    // 폴더 없음 — 아직 받은 적 없다
+  }
+  return null
+}
+
 /** PATH에 없더라도 설치된 Node.js 폴더를 찾는다.
  * Node.js 설치 시 PATH 등록을 하지 않은 PC가 있는데, 이 경우 winget은 ARP 기록을 보고
  * "이미 설치됨/최신"(UPDATE_NOT_APPLICABLE)이라며 재설치를 거부해 계속 npm을 못 찾게 된다. */
@@ -515,6 +533,63 @@ function findNodeDir(): string | null {
   ]
   for (const exe of candidates) {
     if (exe && existsSync(exe)) return dirname(exe)
+  }
+  return findBootstrappedNode()
+}
+
+/** winget 없이 Node.js LTS를 공식 zip으로 받아 사용자 폴더에 푼다.
+ * 기업망의 TLS 검사 프록시는 winget의 인증서 고정을 깨뜨려(0x8A15005E) winget을 아예
+ * 쓸 수 없게 만드는데, 일반 HTTPS는 OS가 기업 루트 CA를 신뢰하므로 정상 동작한다.
+ * 관리자 권한 불필요, 시스템 PATH도 건드리지 않고 스캔에만 쓴다. 실패하면 null. */
+export async function bootstrapNode(onEvent: (e: ScanEvent) => void): Promise<string | null> {
+  const cached = findBootstrappedNode()
+  if (cached) return cached
+
+  onEvent({
+    type: 'log',
+    level: 'INFO',
+    message: 'winget을 사용할 수 없어 Node.js LTS를 직접 내려받습니다 (약 30MB, 몇 분 걸릴 수 있습니다)...'
+  })
+
+  const script = [
+    "$ErrorActionPreference = 'Stop'",
+    '[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12',
+    '$px = [Net.WebRequest]::GetSystemWebProxy()',
+    '$px.Credentials = [Net.CredentialCache]::DefaultCredentials',
+    '[Net.WebRequest]::DefaultWebProxy = $px',
+    "$idx = Invoke-RestMethod -Uri 'https://nodejs.org/dist/index.json' -UseBasicParsing",
+    '$v = ($idx | Where-Object { $_.lts -ne $false } | Select-Object -First 1).version',
+    '$name = "node-$v-win-x64"',
+    '$zip = Join-Path $env:TEMP "$name.zip"',
+    'Invoke-WebRequest -Uri "https://nodejs.org/dist/$v/$name.zip" -OutFile $zip -UseBasicParsing',
+    `New-Item -ItemType Directory -Force -Path '${NODE_BOOTSTRAP_DIR}' | Out-Null`,
+    `Expand-Archive -Path $zip -DestinationPath '${NODE_BOOTSTRAP_DIR}' -Force`,
+    'Remove-Item $zip -Force',
+    `Write-Output (Join-Path '${NODE_BOOTSTRAP_DIR}' $name)`
+  ].join('; ')
+
+  try {
+    const { stdout } = await execFileP('powershell.exe', ['-NoProfile', '-Command', script], {
+      maxBuffer: 10 * 1024 * 1024
+    })
+    const dir = stdout.trim().split(/\r?\n/).pop()?.trim() ?? ''
+    if (dir && existsSync(join(dir, 'node.exe'))) {
+      onEvent({ type: 'log', level: 'INFO', message: 'Node.js 준비 완료 (이번 분석에만 사용)' })
+      return dir
+    }
+    onEvent({
+      type: 'log',
+      level: 'WARNING',
+      message: 'Node.js를 받았지만 실행 파일을 찾지 못했습니다. npm 의존성 분석이 실패할 수 있습니다.'
+    })
+  } catch (e) {
+    onEvent({
+      type: 'log',
+      level: 'WARNING',
+      message:
+        'Node.js 자동 확보에 실패했습니다: ' +
+        `${(e as Error).message.split('\n')[0]} — https://nodejs.org 에서 직접 설치해주세요.`
+    })
   }
   return null
 }

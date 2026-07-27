@@ -15,6 +15,8 @@ import {
   cancelInstall,
   getFreshPath,
   ensureNodeOnPath,
+  bootstrapNode,
+  prependToPath,
   ensureJavaForGradle,
   hasJavaManifest,
   ensureMaven,
@@ -130,8 +132,10 @@ export function registerIpcHandlers(): void {
     }
 
     // 폴더 대상이면 의존성 분석에 필요한 도구를 확인하고 없으면 자동 설치
+    let npmNeeded = false
     if (scanCfg.targetType === 'folder' && scanCfg.modes.includes('dependency')) {
       const missing = await checkMissingTools(scanCfg.target, pathEnv)
+      npmNeeded = missing.some((m) => m.tool === 'npm')
       if (missing.length > 0 && !sessionCancelled) {
         send({ type: 'phase', phase: 'installing' })
         send({
@@ -163,6 +167,11 @@ export function registerIpcHandlers(): void {
           level: 'INFO',
           message: 'PATH에 없는 Node.js를 찾아 이번 분석에만 사용합니다.'
         })
+      } else if (npmNeeded && !sessionCancelled) {
+        // 어디에도 없다 = winget 설치도 실패했다는 뜻. 기업망에서는 TLS 검사가 winget의
+        // 인증서 고정을 깨뜨려(0x8A15005E) winget 자체를 못 쓰므로 공식 zip으로 확보한다.
+        const bootstrapped = await bootstrapNode(send)
+        if (bootstrapped) pathEnv = prependToPath(pathEnv, [bootstrapped])
       }
       // gradle/maven 프로젝트인데 java가 없으면 앱 전용 Java 11을 확보한다
       // (fosslight는 프로젝트의 gradlew를 실행하므로 Gradle 설치는 불필요, Java만 필요)
