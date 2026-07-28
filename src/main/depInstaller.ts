@@ -7,11 +7,6 @@ import type { ScanEvent } from '../shared/types'
 
 const execFileP = promisify(execFile)
 
-// python/pip이 없는 환경을 위한 재배포 가능 Python 3.12 (pip·venv 포함, 시스템 설치 불필요).
-// python-build-standalone(install_only) — userData에 1회 다운로드/해제하여 사용한다.
-const STANDALONE_PY_URL =
-  'https://github.com/astral-sh/python-build-standalone/releases/download/20260718/' +
-  'cpython-3.12.13%2B20260718-x86_64-pc-windows-msvc-install_only.tar.gz'
 // pypi 의존성 분석에만 python이 필요하므로, 다운로드는 이 manifest가 있을 때만 한다.
 const PYPI_MANIFESTS = ['requirements.txt', 'setup.py', 'setup.cfg', 'pyproject.toml', 'Pipfile']
 let downloadAbort: AbortController | null = null
@@ -127,51 +122,12 @@ async function toolExists(tool: string, pathEnv: string): Promise<boolean> {
   }
 }
 
-/** 의존성 분석용 Python 3.12의 설치 폴더를 찾는다 (없으면 null).
- * fosslight의 pypi 분석은 `python -m venv`로 PATH의 첫 Python을 쓰는데, 최신
- * Python(3.13/3.14)은 프로젝트가 핀한 패키지의 미리 빌드된 휠이 없는 경우가 많아
- * pip이 소스 빌드로 넘어가고(→ MSVC 컴파일러 필요) clean PC에서 실패한다.
- * (예: lxml==5.3.0은 cp313까지만 휠 제공, cp314 없음)
- * 휠 커버리지가 넓은 3.12를 쓰기 위해 그 위치를 찾는다.
- * Microsoft Store stub은 3.12로 잡히지 않으므로 자연히 걸러진다. */
-async function findPython312(): Promise<string | null> {
-  // py 런처가 가장 확실 (Python 설치 시 기본 포함)
-  try {
-    const { stdout } = await execFileP('py', [
-      '-3.12',
-      '-c',
-      'import sys; sys.stdout.write(sys.executable)'
-    ])
-    const exe = stdout.trim()
-    if (exe && existsSync(exe)) return dirname(exe)
-  } catch {
-    // py 런처가 없거나 3.12 미설치 — 아래 기본 경로로 확인
-  }
-  const candidates = [
-    join(process.env.LOCALAPPDATA ?? '', 'Programs', 'Python', 'Python312', 'python.exe'),
-    join(process.env.PROGRAMFILES ?? '', 'Python312', 'python.exe'),
-    'C:\\Python312\\python.exe'
-  ]
-  for (const exe of candidates) {
-    if (exe && existsSync(exe)) return dirname(exe)
-  }
-  return null
-}
-
 /** 주어진 폴더들을 PATH 맨 앞에 둔다 (중복 항목은 제거) */
 export function prependToPath(pathEnv: string, dirs: string[]): string {
   const isSame = (p: string, target: string): boolean =>
     p.trim().replace(/\\+$/, '').toLowerCase() === target.toLowerCase()
   const rest = pathEnv.split(';').filter((p) => !dirs.some((d) => isSame(p, d)))
   return [...dirs, ...rest].join(';')
-}
-
-/** 의존성 분석 시 venv가 Python 3.12로 만들어지도록 PATH 맨 앞에 둔다.
- * 3.12가 없으면 PATH를 그대로 둔다(기존 동작 유지). */
-export async function preferPython312(pathEnv: string): Promise<string | null> {
-  const dir = await findPython312()
-  if (!dir) return null
-  return prependToPath(pathEnv, [dir, join(dir, 'Scripts')])
 }
 
 // manifest 재귀 탐색 시 건너뛸 폴더 (대용량/무관). node_modules는 하위에 package.json이
@@ -207,33 +163,6 @@ function collectManifests(root: string, maxDepth = 6): Set<string> {
   return found
 }
 
-/** 대상 폴더 트리에 pypi manifest가 있는지 (있을 때만 Python이 필요) */
-export function hasPypiManifest(targetPath: string): boolean {
-  const found = collectManifests(targetPath)
-  return PYPI_MANIFESTS.some((m) => found.has(m))
-}
-
-function depPythonDir(): string {
-  return join(app.getPath('userData'), 'pydep-python')
-}
-function depPythonExe(): string {
-  // python-build-standalone(install_only)은 python/ 하위에 python.exe를 둔다
-  return join(depPythonDir(), 'python', 'python.exe')
-}
-
-/** 주어진 python.exe가 3.12이고 venv/pip을 갖췄는지 확인 */
-async function verifyPython(exe: string): Promise<boolean> {
-  try {
-    const { stdout } = await execFileP(exe, [
-      '-c',
-      'import sys, venv, ensurepip; sys.stdout.write(sys.version)'
-    ])
-    return /^3\.12\./.test(stdout.trim())
-  } catch {
-    return false
-  }
-}
-
 /** URL을 파일로 내려받는다. Electron net을 쓰므로 리다이렉트를 따르고 Windows
  * 시스템 프록시를 자동 사용한다(회사 PC 프록시 환경 대응). Node fetch는 시스템
  * 프록시를 쓰지 않아 사내망에서 실패할 수 있다. */
@@ -264,81 +193,6 @@ function downloadToFile(url: string, dest: string, signal: AbortSignal): Promise
   })
 }
 
-/** python/pip이 없는 환경을 위해, 재배포 가능한 Python 3.12(pip·venv 포함)를 userData로
- * 1회 다운로드/해제하여 그 python.exe 경로를 돌려준다. 이미 있으면 재사용. 실패 시 null.
- * winget에 의존하지 않으므로 winget이 없거나 정책상 설치가 막힌 PC에서도 동작한다. */
-export async function downloadStandalonePython(
-  onEvent: (e: ScanEvent) => void
-): Promise<string | null> {
-  const exe = depPythonExe()
-  if (existsSync(exe) && (await verifyPython(exe))) return exe // 캐시 재사용
-
-  const dir = depPythonDir()
-  try {
-    rmSync(dir, { recursive: true, force: true })
-  } catch {
-    // 이전 잔여물 정리 실패는 무시
-  }
-  mkdirSync(dir, { recursive: true })
-  const tgz = join(dir, 'python312.tar.gz')
-
-  onEvent({
-    type: 'log',
-    level: 'INFO',
-    message: 'Python 3.12가 없어 앱 전용 Python 3.12(pip 포함)를 내려받습니다 (최초 1회, 약 45MB)...'
-  })
-  try {
-    downloadAbort = new AbortController()
-    await downloadToFile(STANDALONE_PY_URL, tgz, downloadAbort.signal)
-  } catch (e) {
-    onEvent({
-      type: 'log',
-      level: 'WARNING',
-      message: `Python 3.12 다운로드에 실패했습니다: ${(e as Error).message}`
-    })
-    return null
-  } finally {
-    downloadAbort = null
-  }
-
-  onEvent({ type: 'log', level: 'INFO', message: 'Python 3.12 압축을 해제하는 중...' })
-  try {
-    // Windows 10 1803+ 기본 tar.exe(bsdtar)가 .tar.gz를 자동 처리한다.
-    // 반드시 System32의 bsdtar를 절대경로로 호출한다 — PATH에 Git/MSYS의 GNU tar가
-    // 있으면 'C:\...' 경로를 원격 호스트로 오해해 실패한다.
-    const tarExe = join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'tar.exe')
-    await execFileP(tarExe, ['-xf', tgz, '-C', dir], { windowsHide: true })
-  } catch (e) {
-    onEvent({
-      type: 'log',
-      level: 'WARNING',
-      message: `Python 3.12 압축 해제에 실패했습니다: ${(e as Error).message}`
-    })
-    return null
-  }
-  try {
-    rmSync(tgz, { force: true })
-  } catch {
-    // 임시 파일 정리 실패는 무시
-  }
-
-  if (existsSync(exe) && (await verifyPython(exe))) {
-    onEvent({ type: 'log', level: 'INFO', message: '앱 전용 Python 3.12 준비 완료' })
-    return exe
-  }
-  onEvent({ type: 'log', level: 'WARNING', message: '앱 전용 Python 3.12 준비에 실패했습니다.' })
-  return null
-}
-
-/** 의존성(pypi) 분석에 쓸 Python 3.12 절대경로를 확보한다.
- * 시스템에 3.12가 있으면 그 경로를, 없으면 내려받아 반환. (없으면 null) */
-export async function ensureDependencyPython(
-  onEvent: (e: ScanEvent) => void
-): Promise<string | null> {
-  const dir = await findPython312()
-  if (dir) return join(dir, 'python.exe')
-  return downloadStandalonePython(onEvent)
-}
 
 /** 대상 폴더 트리에 java가 필요한 manifest(build.gradle/pom.xml)가 있는지 */
 export function hasJavaManifest(targetPath: string): boolean {
