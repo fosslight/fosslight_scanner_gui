@@ -374,6 +374,67 @@ def find_real_python312():
     return exe or None
 
 
+# 상류가 만드는 pypi venv의 위치. 기본은 상류 기본값(대상 폴더 안 상대명)이고,
+# install_dep_venv_short_path()가 성공하면 짧은 절대경로로 바뀐다.
+# subprocess 후킹(install_dep_venv_diagnostics)의 감지 키로도 쓰인다.
+_DEP_VENV_MARK = "venv_osc_dep_tmp"
+
+
+def short_work_root():
+    """앱 작업물을 두는 짧고 공백 없는 절대경로. 확보 못하면 None.
+    상류가 venv 경로를 따옴표 없이 셸 체인에 넣으므로(Pypi.start_pip_inspect)
+    공백이 있으면 안 된다. 사용자명에 공백이 있으면 8.3 단축명으로 바꾼다."""
+    base = os.environ.get("LOCALAPPDATA")
+    if not base:
+        return None
+    root = os.path.join(base, "fl")
+    try:
+        os.makedirs(root, exist_ok=True)
+    except OSError:
+        return None
+    if " " not in root:
+        return root
+    try:
+        import ctypes
+
+        buf = ctypes.create_unicode_buffer(260)
+        # GetShortPathNameW는 실제 존재하는 경로만 변환하므로 makedirs 뒤에 호출한다
+        if ctypes.windll.kernel32.GetShortPathNameW(root, buf, len(buf)) and " " not in buf.value:
+            return buf.value
+    except Exception:
+        pass
+    return None
+
+
+def install_dep_venv_short_path():
+    """상류는 pypi venv를 '분석 대상 폴더 안'에 상대경로로 만든다
+    (Pypi.venv_tmp_dir='venv_osc_dep_tmp' + _package_manager의 os.chdir(input_dir)).
+    대상 폴더가 깊으면 venv 내부 경로가 Windows MAX_PATH(260자)를 넘어 분석이 실패한다.
+    상류는 절대경로 venv를 이미 지원하므로(Pypi의 isabs 분기, os.path.join 규칙)
+    이 값만 짧은 절대경로로 바꾸면 대상 폴더 깊이와 무관해진다.
+    덤으로, 상대경로라 cwd가 바뀌면 조용히 실패하던 상류의 정리(rmtree)도 정상 동작한다."""
+    global _DEP_VENV_MARK
+    root = short_work_root()
+    if not root:
+        return  # 짧은 경로 확보 실패 — 상류 기본 동작 유지
+    try:
+        from fosslight_dependency.package_manager.Pypi import Pypi
+    except Exception:
+        return
+    venv_dir = os.path.join(root, f"v{os.getpid()}")
+    Pypi.venv_tmp_dir = venv_dir
+    _DEP_VENV_MARK = venv_dir
+    emit({"type": "log", "level": "INFO",
+          "message": f"의존성 분석 가상환경 위치: {venv_dir}"})
+
+
+def cleanup_dep_venv():
+    """상류 정리가 실패해도 남지 않도록 우리가 지정한 venv 루트를 지운다."""
+    if not os.path.isabs(_DEP_VENV_MARK):
+        return  # 상류 기본값(상대명) — 우리가 만든 게 아니므로 건드리지 않는다
+    _rmtree_force(_DEP_VENV_MARK, retries=2)
+
+
 def install_dep_venv_diagnostics():
     """fosslight_dependency(pypi)는 'python -m venv ... & pip install ...'를 하나의
     chained 명령으로 실행하고 stderr를 버린 채 'return code(N)'만 남긴다. 그래서
@@ -392,7 +453,7 @@ def install_dep_venv_diagnostics():
 
     def patched_run(*a, **kw):
         cmd = a[0] if a else kw.get("args")
-        is_dep_venv = isinstance(cmd, str) and "venv_osc_dep_tmp" in cmd
+        is_dep_venv = isinstance(cmd, str) and _DEP_VENV_MARK in cmd
         if is_dep_venv:
             # venv 생성 python을 3.12 절대경로로 교체 (체인 선두의 'python -m venv'만)
             if cmd.lower().startswith("python -m venv"):
@@ -514,11 +575,13 @@ def start_heartbeat(interval_sec=60):
     return stop
 
 
-def check_long_paths_enabled(mode_list):
-    """Windows 긴 경로(260자 제한 해제) 미지원 시 pypi 의존성 분석이
-    실패할 수 있어 경고 이벤트 발생 (예: scancode의 긴 라이선스 룰 파일명)"""
-    if not any(m in ("all", "dependency") for m in mode_list):
-        return
+def check_long_paths_enabled(target, output_dir):
+    """긴 경로로 실제 실패할 위험이 있을 때만 경고한다.
+
+    앱은 더 이상 대상 폴더 안에 긴 경로를 만들지 않으므로(install_dep_venv_short_path),
+    남는 위험은 (1) 대상 트리에 이미 존재하는 깊은 파일, (2) 출력 폴더가 깊을 때 상류가
+    그 옆에 만드는 .fosslight_temp_*\\fosslight_raw_data\\fosslight_report_*.xlsx 뿐이다.
+    레지스트리만 보고 무조건 경고하면 대부분 오탐이라 실제 길이를 함께 본다."""
     if sys.platform != "win32":
         return
     try:
@@ -530,13 +593,23 @@ def check_long_paths_enabled(mode_list):
             value, _ = winreg.QueryValueEx(key, "LongPathsEnabled")
     except OSError:
         value = 0
-    if not value:
-        emit({
-            "type": "log",
-            "level": "WARNING",
-            "message": "Windows 긴 경로 지원이 꺼져 있어 일부 Python 프로젝트의 "
-                       "의존성 분석이 실패할 수 있습니다.",
-        })
+    if value:
+        return  # OS가 긴 경로를 지원 — 경고 불필요
+
+    target_len = len(os.path.abspath(target)) if target else 0
+    # 상류가 출력 폴더 옆에 만드는 임시 폴더 + 리포트 파일명이 약 100자를 더한다
+    output_len = (len(os.path.abspath(output_dir)) + 100) if output_dir else 0
+    if target_len <= 200 and output_len <= 260:
+        return
+
+    where = "분석 경로" if target_len > 200 else "출력 폴더 경로"
+    emit({
+        "type": "log",
+        "level": "WARNING",
+        "message": f"{where}가 길어(각각 {target_len}자 / {output_len - 100 if output_len else 0}자) "
+                   "이 PC에서는 일부 파일 접근이 실패할 수 있습니다. "
+                   "더 짧은 폴더를 사용하거나 Windows 긴 경로 지원을 켜주세요.",
+    })
 
 
 def _emit_versions():
@@ -922,11 +995,12 @@ def main():
             check_git_available(args.url)
         else:
             check_package_managers(args.path, mode_list)
-        check_long_paths_enabled(mode_list)
+        check_long_paths_enabled(args.path, args.output)
 
         from fosslight_scanner.fosslight_scanner import run_main
 
         disable_download_watchdog()
+        install_dep_venv_short_path()
         install_dep_venv_diagnostics()
         install_gradlew_path_fix()
 
@@ -977,6 +1051,8 @@ def main():
     except Exception as ex:
         emit({"type": "error", "message": str(ex), "traceback": traceback.format_exc()})
         sys.exit(1)
+    finally:
+        cleanup_dep_venv()
 
 
 if __name__ == "__main__":

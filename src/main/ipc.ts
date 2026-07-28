@@ -109,7 +109,10 @@ export function registerIpcHandlers(): void {
     // 내려받아 해제한 뒤(2단계), 그 폴더를 폴더 대상처럼 다뤄 도구를 설치한다.
     if (cfg.targetType !== 'folder' && cfg.modes.includes('dependency')) {
       send({ type: 'phase', phase: 'preparing' })
-      const dest = join(app.getPath('temp'), `fl-src-${Date.now()}`)
+      // 해제한 폴더가 곧 분석 대상이 되므로 경로를 짧게 잡는다. 그 안에서 상류가
+      // 다시 깊은 트리를 만들기 때문에, 여기서 아낀 글자가 MAX_PATH 여유가 된다.
+      // (%LOCALAPPDATA%\fl = 백엔드가 쓰는 작업 루트와 동일)
+      const dest = join(process.env.LOCALAPPDATA ?? app.getPath('temp'), 'fl', `s${Date.now().toString(36)}`)
       const prepared = await prepareTarget(cfg, dest, send, pathEnv)
       if (sessionCancelled) {
         send({ type: 'done', exitCode: -2 })
