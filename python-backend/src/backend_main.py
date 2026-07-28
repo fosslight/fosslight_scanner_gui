@@ -49,6 +49,19 @@ MANIFEST_TOOLS = {
     "Cargo.toml": "cargo",
     "Gemfile": "gem",
     "pubspec.yaml": "flutter",
+    "Podfile": "pod",
+    "Podfile.lock": "pod",
+}
+
+# 자동 설치가 불가능해 사용자 조치가 필요한 도구의 구체적 안내
+# (일반 메시지 "…설치되어 있지 않아 실패할 수 있습니다"만으로는 무엇을 해야 할지 모른다)
+MANIFEST_HINTS = {
+    "flutter": "Flutter SDK는 1GB 이상이라 자동 설치하지 않습니다. "
+               "https://docs.flutter.dev/get-started/install/windows 에서 설치하고 "
+               "flutter\\bin을 PATH에 추가한 뒤 다시 스캔해주세요.",
+    "pod": "CocoaPods 분석은 Windows에서 지원되지 않습니다(Xcode 통합 전제의 macOS 전용 도구이며, "
+           "분석 시 pod 명령으로 podspec을 조회합니다). "
+           "macOS에서 `pod install`을 실행한 뒤 분석해주세요.",
 }
 
 
@@ -222,13 +235,19 @@ def check_package_managers(target_path, mode_list):
         entries = set(os.listdir(target_path))
     except OSError:
         return
+    warned_tools = set()
     for manifest, tool in MANIFEST_TOOLS.items():
-        if manifest in entries and shutil.which(tool) is None:
+        if manifest not in entries or tool in warned_tools:
+            continue
+        if shutil.which(tool) is None:
+            warned_tools.add(tool)
+            hint = MANIFEST_HINTS.get(tool)
             emit({
                 "type": "log",
                 "level": "WARNING",
-                "message": f"'{manifest}'이(가) 감지되었지만 '{tool}'이(가) 설치되어 있지 않아 "
-                           f"해당 의존성 분석이 실패할 수 있습니다.",
+                "message": (f"'{manifest}'이(가) 감지되었지만 '{tool}'이(가) 설치되어 있지 않아 "
+                            f"해당 의존성 분석이 실패할 수 있습니다.")
+                           + (f"\n{hint}" if hint else ""),
             })
 
 

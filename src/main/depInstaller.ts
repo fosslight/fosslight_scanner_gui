@@ -31,6 +31,18 @@ const JAVA_SPEC: ToolSpec = {
   wingetId: null // winget 미사용 — ensureJavaForGradle이 확보
 }
 
+// Podfile / Podfile.lock 모두 같은 안내를 쓴다
+const COCOAPODS_SPEC: ToolSpec = {
+  tool: 'pod',
+  label: 'CocoaPods',
+  wingetId: null,
+  manualHint:
+    'CocoaPods 의존성 분석은 Windows에서 지원되지 않습니다. ' +
+    'CocoaPods는 Xcode 통합을 전제로 한 macOS 전용 도구이고, 분석 과정에서 ' +
+    'pod 명령으로 각 라이브러리의 podspec을 조회하기 때문입니다. ' +
+    'macOS에서 프로젝트 폴더에 `pod install`을 실행한 뒤 분석해주세요.'
+}
+
 const MANIFEST_TOOLS: Record<string, ToolSpec> = {
   'package.json': { tool: 'npm', label: 'Node.js (npm)', wingetId: 'OpenJS.NodeJS.LTS' },
   // maven: winget에 Apache Maven 공식 패키지가 없다. mvnw가 없으면 시스템 mvn이
@@ -56,7 +68,12 @@ const MANIFEST_TOOLS: Record<string, ToolSpec> = {
       'Flutter SDK는 1GB 이상으로 자동 설치하지 않습니다. ' +
       'https://docs.flutter.dev/get-started/install/windows 에서 설치하고 ' +
       'flutter\\bin을 PATH에 추가한 뒤(터미널에서 `flutter --version` 확인) 다시 스캔해주세요.'
-  }
+  },
+  // cocoapods: fosslight가 pod마다 `pod spec which`로 podspec 위치를 조회하므로
+  // CocoaPods CLI가 필수인데, CocoaPods는 Xcode 통합 전제라 macOS 전용이다.
+  // Windows에서는 설치도 분석도 불가능하므로 자동 설치 시도 없이 안내만 한다.
+  Podfile: { ...COCOAPODS_SPEC },
+  'Podfile.lock': { ...COCOAPODS_SPEC }
 }
 
 // java가 필요한 manifest (gradle wrapper 실행 / maven)
