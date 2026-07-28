@@ -47,6 +47,8 @@ const MANIFEST_TOOLS: Record<string, ToolSpec> = {
   'setup.py': { tool: 'python', label: 'Python', wingetId: 'Python.Python.3.12' },
   Pipfile: { tool: 'python', label: 'Python', wingetId: 'Python.Python.3.12' },
   'go.mod': { tool: 'go', label: 'Go', wingetId: 'GoLang.Go' },
+  // helm: 분석 시 `helm dependency build`를 실행하므로 Helm CLI가 필요하다
+  'Chart.yaml': { tool: 'helm', label: 'Helm', wingetId: 'Helm.Helm' },
   'Cargo.toml': { tool: 'cargo', label: 'Rust (cargo)', wingetId: 'Rustlang.Rustup' },
   Gemfile: { tool: 'gem', label: 'Ruby (gem)', wingetId: 'RubyInstallerTeam.RubyWithDevKit.3.3' },
   // flutter: pub 분석은 `flutter pub get/deps` 실행이 필요한데, Flutter SDK는 1GB+
@@ -67,6 +69,13 @@ const JAVA_MANIFESTS = ['build.gradle', 'build.gradle.kts', 'pom.xml']
 // Temurin 11 JRE (gradle wrapper 5.x~8.x 호환 폭이 가장 넓음, 약 41MB)
 const TEMURIN11_URL =
   'https://api.adoptium.net/v3/binary/latest/11/ga/windows/x64/jre/hotspot/normal/eclipse'
+// 버전 카탈로그를 쓰는 최신 프로젝트용 Temurin 17 JDK(약 182MB).
+// 두 가지가 동시에 필요해서 JRE 11로는 안 된다:
+//  1) Gradle이 카탈로그 접근자 클래스를 컴파일 → javac 필요("No Java compiler found")
+//  2) 최신 Android Gradle Plugin 8.x는 Java 17을 요구("requires Java 17 to run")
+// 기본을 17로 올리면 구버전 gradle wrapper가 깨지므로, 카탈로그가 감지될 때만 받는다.
+const TEMURIN17_JDK_URL =
+  'https://api.adoptium.net/v3/binary/latest/17/ga/windows/x64/jdk/hotspot/normal/eclipse'
 // Apache Maven (winget에 없음). mvnw가 없는 pom.xml 프로젝트에 제공, 약 8MB.
 const MAVEN_VERSION = '3.9.9'
 const MAVEN_URL =
@@ -337,16 +346,42 @@ export function hasJavaManifest(targetPath: string): boolean {
   return JAVA_MANIFESTS.some((m) => found.has(m))
 }
 
-function depJavaDir(): string {
-  return join(app.getPath('userData'), 'dep-java')
+/** Gradle 버전 카탈로그(gradle/libs.versions.toml)를 쓰는 프로젝트인지.
+ * 이런 프로젝트는 Gradle이 카탈로그 접근자 클래스를 생성해 컴파일하므로 javac(JDK)이
+ * 필요하다. JRE만 있으면 "No Java compiler found"로 분석이 실패한다. */
+export function hasGradleVersionCatalog(targetPath: string, maxDepth = 6): boolean {
+  const walk = (dir: string, depth: number): boolean => {
+    if (depth > maxDepth) return false
+    let ents: import('fs').Dirent[]
+    try {
+      ents = readdirSync(dir, { withFileTypes: true })
+    } catch {
+      return false
+    }
+    for (const e of ents) {
+      if (e.isDirectory()) {
+        if (!SKIP_DIRS.has(e.name) && walk(join(dir, e.name), depth + 1)) return true
+      } else if (e.name === 'libs.versions.toml') {
+        return true
+      }
+    }
+    return false
+  }
+  return walk(targetPath, 0)
+}
+
+function depJavaDir(needJdk = false): string {
+  // JRE와 JDK를 다른 폴더에 두어, 나중에 JDK가 필요해져도 기존 JRE와 섞이지 않게 한다
+  return join(app.getPath('userData'), needJdk ? 'dep-jdk' : 'dep-java')
 }
 
 /** 내려받은 Temurin의 JAVA_HOME(최상위 jdk-* 폴더)을 찾는다 */
-function findDownloadedJavaHome(): string | null {
+function findDownloadedJavaHome(needJdk = false): string | null {
+  const base = depJavaDir(needJdk)
   try {
-    for (const e of readdirSync(depJavaDir(), { withFileTypes: true })) {
-      if (e.isDirectory() && existsSync(join(depJavaDir(), e.name, 'bin', 'java.exe'))) {
-        return join(depJavaDir(), e.name)
+    for (const e of readdirSync(base, { withFileTypes: true })) {
+      if (e.isDirectory() && existsSync(join(base, e.name, 'bin', 'java.exe'))) {
+        return join(base, e.name)
       }
     }
   } catch {
@@ -355,29 +390,43 @@ function findDownloadedJavaHome(): string | null {
   return null
 }
 
-async function verifyJava(javaHome: string): Promise<boolean> {
+async function verifyJava(javaHome: string, needJdk = false): Promise<boolean> {
   try {
     await execFileP(join(javaHome, 'bin', 'java.exe'), ['-version'])
-    return true
+    // JDK가 필요하면 javac까지 있어야 쓸모가 있다 (JRE에는 없다)
+    return !needJdk || existsSync(join(javaHome, 'bin', 'javac.exe'))
   } catch {
     return false
   }
 }
 
 /** gradle/maven 분석용 Java를 확보해 JAVA_HOME 경로를 돌려준다.
- * 시스템에 java가 있으면 null(그대로 사용). 없으면 Temurin 11 JRE를 userData로
- * 1회 다운로드/해제(약 41MB). fosslight는 시스템 gradle을 쓰지 않고 프로젝트의
- * gradlew만 실행하므로 Gradle 설치는 불필요하고 Java만 있으면 된다. */
+ * 시스템에 쓸 수 있는 java가 있으면 null(그대로 사용). 없으면 Temurin 11을 userData로
+ * 1회 다운로드/해제한다. fosslight는 시스템 gradle을 쓰지 않고 프로젝트의 gradlew만
+ * 실행하므로 Gradle 설치는 불필요하고 Java만 있으면 된다.
+ * needJdk=true(버전 카탈로그 프로젝트)면 javac이 필요하므로 JRE(41MB) 대신
+ * JDK(약 180MB)를 받는다. 큰 다운로드라 실제로 필요할 때만 호출해야 한다. */
 export async function ensureJavaForGradle(
   pathEnv: string,
-  onEvent: (e: ScanEvent) => void
+  onEvent: (e: ScanEvent) => void,
+  needJdk = false
 ): Promise<string | null> {
-  if (await toolExists('java', pathEnv)) return null // 시스템 java 사용
+  // JDK가 필요한데 시스템 java가 JRE뿐이면 시스템 것을 쓸 수 없다
+  if (await toolExists('java', pathEnv)) {
+    if (!needJdk || (await toolExists('javac', pathEnv))) return null // 시스템 java 사용
+    onEvent({
+      type: 'log',
+      level: 'INFO',
+      message:
+        '이 프로젝트는 Gradle 버전 카탈로그를 사용해 Java 컴파일러(JDK)가 필요한데 ' +
+        '시스템 Java에는 javac이 없습니다.'
+    })
+  }
 
-  const cached = findDownloadedJavaHome()
-  if (cached && (await verifyJava(cached))) return cached
+  const cached = findDownloadedJavaHome(needJdk)
+  if (cached && (await verifyJava(cached, needJdk))) return cached
 
-  const dir = depJavaDir()
+  const dir = depJavaDir(needJdk)
   try {
     rmSync(dir, { recursive: true, force: true })
   } catch {
@@ -389,11 +438,14 @@ export async function ensureJavaForGradle(
   onEvent({
     type: 'log',
     level: 'INFO',
-    message: 'Java가 없어 앱 전용 Java 11(Temurin JRE)을 내려받습니다 (최초 1회, 약 41MB)...'
+    message: needJdk
+      ? '이 프로젝트(Gradle 버전 카탈로그)는 Java 17 JDK가 필요해 앱 전용 Temurin 17을 ' +
+        '내려받습니다 (최초 1회, 약 182MB)...'
+      : 'Java가 없어 앱 전용 Java 11(Temurin JRE)을 내려받습니다 (최초 1회, 약 41MB)...'
   })
   try {
     downloadAbort = new AbortController()
-    await downloadToFile(TEMURIN11_URL, zip, downloadAbort.signal)
+    await downloadToFile(needJdk ? TEMURIN17_JDK_URL : TEMURIN11_URL, zip, downloadAbort.signal)
     const tarExe = join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'tar.exe')
     await execFileP(tarExe, ['-xf', zip, '-C', dir], { windowsHide: true })
     rmSync(zip, { force: true })
@@ -408,9 +460,13 @@ export async function ensureJavaForGradle(
     downloadAbort = null
   }
 
-  const home = findDownloadedJavaHome()
-  if (home && (await verifyJava(home))) {
-    onEvent({ type: 'log', level: 'INFO', message: '앱 전용 Java 11 준비 완료' })
+  const home = findDownloadedJavaHome(needJdk)
+  if (home && (await verifyJava(home, needJdk))) {
+    onEvent({
+      type: 'log',
+      level: 'INFO',
+      message: `앱 전용 Java(${needJdk ? '17 JDK' : '11 JRE'}) 준비 완료`
+    })
     return home
   }
   onEvent({ type: 'log', level: 'WARNING', message: '앱 전용 Java 준비에 실패했습니다.' })
@@ -622,14 +678,10 @@ export async function checkMissingTools(targetPath: string, pathEnv: string): Pr
 
   const missing: ToolSpec[] = []
   for (const spec of needed.values()) {
-    // java/mvn은 winget이 아니라 ensureJavaForGradle/ensureMaven이 확보한다
-    if (spec.tool === 'java' || spec.tool === 'mvn') continue
-    // pypi 분석용 venv는 3.12로 만들어야 하므로(휠 커버리지), 다른 버전만 있어도 설치 대상
-    const present =
-      spec.tool === 'python'
-        ? (await findPython312()) !== null
-        : await toolExists(spec.tool, pathEnv)
-    if (!present) missing.push(spec)
+    // java/mvn은 winget이 아니라 ensureJavaForGradle/ensureMaven이 확보한다.
+    // python은 번들 Python 3.12가 pypi venv를 스스로 만들므로 설치가 필요 없다.
+    if (spec.tool === 'java' || spec.tool === 'mvn' || spec.tool === 'python') continue
+    if (!(await toolExists(spec.tool, pathEnv))) missing.push(spec)
   }
   return missing
 }

@@ -19,6 +19,7 @@ import {
   prependToPath,
   ensureJavaForGradle,
   hasJavaManifest,
+  hasGradleVersionCatalog,
   ensureMaven,
   hasMavenManifest
 } from './depInstaller'
@@ -179,7 +180,10 @@ export function registerIpcHandlers(): void {
       // gradle/maven 프로젝트인데 java가 없으면 앱 전용 Java 11을 확보한다
       // (fosslight는 프로젝트의 gradlew를 실행하므로 Gradle 설치는 불필요, Java만 필요)
       if (hasJavaManifest(scanCfg.target) && !sessionCancelled) {
-        depJava = (await ensureJavaForGradle(pathEnv, send)) ?? undefined
+        // 버전 카탈로그(gradle/libs.versions.toml)를 쓰면 Gradle이 접근자 클래스를
+        // 컴파일하므로 javac이 필요하다. 이때만 큰 JDK를 받는다.
+        const needJdk = hasGradleVersionCatalog(scanCfg.target)
+        depJava = (await ensureJavaForGradle(pathEnv, send, needJdk)) ?? undefined
         if (sessionCancelled) {
           send({ type: 'done', exitCode: -2 })
           return { ok: true }

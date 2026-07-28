@@ -45,6 +45,7 @@ MANIFEST_TOOLS = {
     "setup.py": "python",
     "Pipfile": "python",
     "go.mod": "go",
+    "Chart.yaml": "helm",
     "Cargo.toml": "cargo",
     "Gemfile": "gem",
     "pubspec.yaml": "flutter",
@@ -289,8 +290,12 @@ def install_gradlew_path_fix():
     _orig_get = fl_pm.get_gradle_cmd
 
     def patched_get():
-        cmd, mode = _orig_get()
-        return _to_abs(cmd), mode
+        # 반환 개수는 상류 버전마다 다르다(4.1.46은 cmd, current_mode, changed_mode 3개).
+        # 첫 값만 절대경로로 바꾸고 나머지는 그대로 넘겨 시그니처 변화에 영향받지 않는다.
+        result = _orig_get()
+        if isinstance(result, tuple) and result:
+            return (_to_abs(result[0]),) + result[1:]
+        return _to_abs(result)
 
     fl_pm.get_gradle_cmd = patched_get
 
