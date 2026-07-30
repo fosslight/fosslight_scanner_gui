@@ -1,4 +1,4 @@
-# Type B 백엔드 빌드: PyInstaller 동결 대신, 재배포 가능한 실제 Python 3.12에
+﻿# Type B 백엔드 빌드: PyInstaller 동결 대신, 재배포 가능한 실제 Python 3.12에
 # fosslight-scanner를 pip install 한 것을 그대로 번들한다.
 # 이 하나의 Python이 FOSSLight 엔진 실행 + pypi venv 생성을 모두 담당한다.
 $ErrorActionPreference = "Stop"
