@@ -20,6 +20,8 @@ import {
   ensureJavaForGradle,
   hasJavaManifest,
   hasGradleVersionCatalog,
+  findGradleWrapperVersion,
+  maxJavaForGradle,
   ensureMaven,
   hasMavenManifest
 } from './depInstaller'
@@ -183,7 +185,11 @@ export function registerIpcHandlers(): void {
         // 버전 카탈로그(gradle/libs.versions.toml)를 쓰면 Gradle이 접근자 클래스를
         // 컴파일하므로 javac이 필요하다. 이때만 큰 JDK를 받는다.
         const needJdk = hasGradleVersionCatalog(scanCfg.target)
-        depJava = (await ensureJavaForGradle(pathEnv, send, needJdk)) ?? undefined
+        // 프로젝트의 Gradle wrapper 버전으로 쓸 수 있는 Java 상한을 구한다.
+        // 시스템 Java가 이보다 최신이면 빌드 스크립트 컴파일이 깨지므로 앱 전용 Java를 쓴다.
+        const gradleVer = findGradleWrapperVersion(scanCfg.target)
+        const maxJava = gradleVer ? maxJavaForGradle(gradleVer) : null
+        depJava = (await ensureJavaForGradle(pathEnv, send, needJdk, maxJava)) ?? undefined
         if (sessionCancelled) {
           send({ type: 'done', exitCode: -2 })
           return { ok: true }

@@ -263,11 +263,16 @@ def disable_download_watchdog():
         import fosslight_util.download as fl_download
 
         class _NoopAlarm:
+            """상류 Alarm 자리를 대신하는 무해한 스텁.
+            호출되는 메서드가 버전마다 다르므로(2.2.4에서 cancel() 추가) 특정 메서드를
+            나열하지 않고 __getattr__으로 무엇이든 흡수한다. 나열식으로 두면 상류가
+            메서드를 추가할 때마다 AttributeError로 분석이 통째로 실패한다."""
+
             def __init__(self, *args, **kwargs):
                 pass
 
-            def start(self):
-                pass
+            def __getattr__(self, _name):
+                return lambda *a, **k: None
 
         fl_download.Alarm = _NoopAlarm
     except Exception:
@@ -278,12 +283,13 @@ def install_gradlew_path_fix():
     """fosslight_dependency는 Windows에서 gradle wrapper를 bare 이름('gradlew.bat')으로
     subprocess(list, shell=False) 호출하는데, CreateProcess는 bare .bat 상대명을
     해석하지 못해 모든 Windows PC에서 [WinError 2]로 실패한다(업스트림 버그).
-    _resolve_gradle_command를 감싸 절대경로를 반환하게 한다."""
+    wrapper 경로를 돌려주는 메서드를 감싸 절대경로를 반환하게 한다.
+    상류가 이름을 바꾸는 일이 있어(4.1.46 _resolve_gradle_command →
+    4.1.47 _resolve_wrapper_command) 후보 이름을 모두 시도하고, 하나도 없으면
+    조용히 넘어간다. 여기서 예외가 나면 스캔 전체가 죽으므로 절대 raise하지 않는다."""
     try:
         from fosslight_dependency import _package_manager as fl_pm
     except Exception:
-        return
-    if getattr(fl_pm.PackageManager._resolve_gradle_command, "_fl_abs_wrapped", False):
         return
 
     def _to_abs(cmd):
@@ -296,17 +302,24 @@ def install_gradlew_path_fix():
             pass
         return cmd
 
-    _orig_resolve = fl_pm.PackageManager._resolve_gradle_command
+    def _wrap_resolver(orig):
+        def patched(self):
+            return _to_abs(orig(self))
 
-    def patched(self):
-        return _to_abs(_orig_resolve(self))
+        patched._fl_abs_wrapped = True
+        return patched
 
-    patched._fl_abs_wrapped = True
-    fl_pm.PackageManager._resolve_gradle_command = patched
+    for _name in ("_resolve_wrapper_command", "_resolve_gradle_command"):
+        _orig_resolve = getattr(fl_pm.PackageManager, _name, None)
+        if _orig_resolve is None or getattr(_orig_resolve, "_fl_abs_wrapped", False):
+            continue
+        setattr(fl_pm.PackageManager, _name, _wrap_resolver(_orig_resolve))
 
     # 모듈 함수 get_gradle_cmd()도 같은 bare 이름을 반환한다
     # (collect_gradle_download_urls가 사용 — 여기서도 WinError 2 발생)
-    _orig_get = fl_pm.get_gradle_cmd
+    _orig_get = getattr(fl_pm, "get_gradle_cmd", None)
+    if _orig_get is None or getattr(_orig_get, "_fl_abs_wrapped", False):
+        return
 
     def patched_get():
         # 반환 개수는 상류 버전마다 다르다(4.1.46은 cmd, current_mode, changed_mode 3개).
@@ -316,6 +329,7 @@ def install_gradlew_path_fix():
             return (_to_abs(result[0]),) + result[1:]
         return _to_abs(result)
 
+    patched_get._fl_abs_wrapped = True
     fl_pm.get_gradle_cmd = patched_get
 
 
@@ -1023,10 +1037,23 @@ def main():
 
         from fosslight_scanner.fosslight_scanner import run_main
 
-        disable_download_watchdog()
-        install_dep_venv_short_path()
-        install_dep_venv_diagnostics()
-        install_gradlew_path_fix()
+        # 몽키패치는 상류 API 이름·시그니처에 의존하므로 버전이 오르면 깨질 수 있다.
+        # 하나가 실패해도 스캔 자체는 진행되도록 개별적으로 감싼다
+        # (감싸지 않으면 AttributeError 하나로 분석 전체가 죽는다 — 실제로 겪음).
+        for _patch in (
+            disable_download_watchdog,
+            install_dep_venv_short_path,
+            install_dep_venv_diagnostics,
+            install_gradlew_path_fix,
+        ):
+            try:
+                _patch()
+            except Exception as _ex:  # noqa: BLE001
+                emit({
+                    "type": "log",
+                    "level": "WARNING",
+                    "message": f"내부 보정({_patch.__name__}) 적용 실패 — 계속 진행합니다: {_ex}",
+                })
 
         emit({"type": "phase", "phase": "scanning"})
         scan_started_at = time.time()

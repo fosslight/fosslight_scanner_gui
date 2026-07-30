@@ -1,5 +1,5 @@
 import { execFile, spawn, ChildProcess } from 'child_process'
-import { createWriteStream, existsSync, mkdirSync, readdirSync, rmSync } from 'fs'
+import { createWriteStream, existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from 'fs'
 import { dirname, join } from 'path'
 import { promisify } from 'util'
 import { app, net } from 'electron'
@@ -271,6 +271,74 @@ async function verifyJava(javaHome: string, needJdk = false): Promise<boolean> {
   }
 }
 
+/** 대상 트리의 gradle-wrapper.properties에서 Gradle 버전을 찾는다 (없으면 null). */
+export function findGradleWrapperVersion(targetPath: string, maxDepth = 6): string | null {
+  let found: string | null = null
+  const walk = (dir: string, depth: number): void => {
+    if (found || depth > maxDepth) return
+    let ents: import('fs').Dirent[]
+    try {
+      ents = readdirSync(dir, { withFileTypes: true })
+    } catch {
+      return
+    }
+    for (const e of ents) {
+      if (found) return
+      if (e.isDirectory()) {
+        if (!SKIP_DIRS.has(e.name)) walk(join(dir, e.name), depth + 1)
+      } else if (e.name === 'gradle-wrapper.properties') {
+        try {
+          const text = readFileSync(join(dir, e.name), 'utf8')
+          const m = text.match(/gradle-(\d+(?:\.\d+)*)-(?:bin|all)\.zip/)
+          if (m) found = m[1]
+        } catch {
+          // 읽기 실패는 무시
+        }
+      }
+    }
+  }
+  walk(targetPath, 0)
+  return found
+}
+
+/** 해당 Gradle 버전이 실행될 수 있는 최대 Java major 버전 (Gradle 공식 호환성 매트릭스).
+ * 이 값을 넘는 Java로 돌리면 Gradle이 번들한 Groovy가 빌드 스크립트를 컴파일하지 못해
+ * "Unsupported class file major version NN"으로 실패한다. */
+export function maxJavaForGradle(gradleVersion: string): number {
+  const [maj, min] = gradleVersion.split('.').map((n) => parseInt(n, 10) || 0)
+  if (maj < 6) return 11
+  if (maj === 6) return min >= 7 ? 15 : 14
+  if (maj === 7) {
+    if (min <= 2) return 16
+    if (min <= 5) return 17
+    return 19 // 7.6
+  }
+  if (maj === 8) {
+    if (min <= 2) return 19
+    if (min <= 4) return 20
+    if (min <= 7) return 21
+    if (min <= 9) return 22
+    return 23
+  }
+  return 99 // 9.x 이상은 최신 Java를 지원한다고 본다
+}
+
+/** 시스템 java의 major 버전 (없거나 확인 실패면 null). java -version은 stderr로 출력한다. */
+async function systemJavaMajor(pathEnv: string): Promise<number | null> {
+  try {
+    const { stdout, stderr } = await execFileP('java', ['-version'], {
+      env: { ...process.env, PATH: pathEnv }
+    })
+    // 'openjdk version "21.0.12"' / 구버전 '"1.8.0_402"'
+    const m = `${stdout}${stderr}`.match(/version "(\d+)(?:\.(\d+))?/)
+    if (!m) return null
+    const major = parseInt(m[1], 10)
+    return major === 1 ? parseInt(m[2] ?? '8', 10) : major
+  } catch {
+    return null // java 없음
+  }
+}
+
 /** gradle/maven 분석용 Java를 확보해 JAVA_HOME 경로를 돌려준다.
  * 시스템에 쓸 수 있는 java가 있으면 null(그대로 사용). 없으면 Temurin 11을 userData로
  * 1회 다운로드/해제한다. fosslight는 시스템 gradle을 쓰지 않고 프로젝트의 gradlew만
@@ -280,17 +348,24 @@ async function verifyJava(javaHome: string, needJdk = false): Promise<boolean> {
 export async function ensureJavaForGradle(
   pathEnv: string,
   onEvent: (e: ScanEvent) => void,
-  needJdk = false
+  needJdk = false,
+  maxJava: number | null = null
 ): Promise<string | null> {
-  // JDK가 필요한데 시스템 java가 JRE뿐이면 시스템 것을 쓸 수 없다
-  if (await toolExists('java', pathEnv)) {
-    if (!needJdk || (await toolExists('javac', pathEnv))) return null // 시스템 java 사용
+  const sysJava = await systemJavaMajor(pathEnv)
+  if (sysJava !== null) {
+    // 시스템 Java가 프로젝트의 Gradle이 감당 못할 만큼 최신이면 쓰면 안 된다.
+    // (예: Gradle 7.4.2 + Java 21 → "Unsupported class file major version 65")
+    const tooNew = maxJava !== null && sysJava > maxJava
+    const jdkOk = !needJdk || (await toolExists('javac', pathEnv))
+    if (!tooNew && jdkOk) return null // 시스템 java 사용
     onEvent({
       type: 'log',
       level: 'INFO',
-      message:
-        '이 프로젝트는 Gradle 버전 카탈로그를 사용해 Java 컴파일러(JDK)가 필요한데 ' +
-        '시스템 Java에는 javac이 없습니다.'
+      message: tooNew
+        ? `시스템 Java ${sysJava}는 이 프로젝트의 Gradle이 지원하지 않아(최대 Java ${maxJava}) ` +
+          '앱 전용 Java를 사용합니다.'
+        : '이 프로젝트는 Gradle 버전 카탈로그를 사용해 Java 컴파일러(JDK)가 필요한데 ' +
+          '시스템 Java에는 javac이 없습니다.'
     })
   }
 
