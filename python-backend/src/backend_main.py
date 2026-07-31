@@ -650,6 +650,75 @@ def check_long_paths_enabled(target, output_dir):
     })
 
 
+def check_upstream_compatibility():
+    """우리가 의존하는 상류 표면이 그대로인지 점검하고, 달라졌으면 경고한다.
+
+    Windows 보정(몽키패치)은 상류의 내부 이름·시그니처에 붙어 있어, 상류가 올라가면
+    조용히 무력화되거나 분석 도중에 터진다. 실제로 세 번 겪었다
+    (get_gradle_cmd 반환 개수, Alarm.cancel 추가, _resolve_gradle_command 개명).
+    미리 드러내는 것이 목적이므로 여기서는 절대 raise하지 않는다."""
+    import inspect
+
+    problems = []
+
+    def _check(label, fn):
+        try:
+            msg = fn()
+        except Exception as ex:  # noqa: BLE001
+            msg = f"확인 실패 ({ex})"
+        if msg:
+            problems.append(f"{label}: {msg}")
+
+    def _run_main():
+        from fosslight_scanner.fosslight_scanner import run_main
+
+        params = list(inspect.signature(run_main).parameters)
+        expected = ["mode_list", "path_arg", "dep_arguments", "output_file_or_dir",
+                    "file_format", "url_to_analyze", "db_url"]
+        if params[:7] != expected:
+            return f"앞 7개 위치 인자가 달라짐 → {params[:7]}"
+        for kw in ("hide_progressbar", "num_cores", "kb_url", "kb_token", "path_to_exclude"):
+            if kw not in params:
+                return f"'{kw}' 인자가 사라짐"
+        return None
+
+    def _gradle():
+        from fosslight_dependency import _package_manager as pm
+
+        if not any(hasattr(pm.PackageManager, n)
+                   for n in ("_resolve_wrapper_command", "_resolve_gradle_command")):
+            return "gradle wrapper 경로 메서드를 찾지 못함(이름 변경 추정)"
+        if not hasattr(pm, "get_gradle_cmd"):
+            return "get_gradle_cmd 함수가 사라짐"
+        return None
+
+    def _pypi_venv():
+        from fosslight_dependency.package_manager.Pypi import Pypi
+
+        return None if hasattr(Pypi, "venv_tmp_dir") else "Pypi.venv_tmp_dir 속성이 사라짐"
+
+    def _alarm():
+        import fosslight_util.download as dl
+
+        return None if hasattr(dl, "Alarm") else "download.Alarm 클래스가 사라짐"
+
+    _check("스캐너 호출 규약(run_main)", _run_main)
+    _check("gradle 실행 경로 보정", _gradle)
+    _check("pypi 가상환경 위치 보정", _pypi_venv)
+    _check("다운로드 시간제한 보정", _alarm)
+
+    if problems:
+        emit({
+            "type": "log",
+            "level": "WARNING",
+            "message": (
+                "FOSSLight Scanner의 내부 구조가 이 GUI가 아는 것과 달라졌습니다. "
+                "아래 항목의 Windows 보정이 동작하지 않을 수 있으니, 분석이 실패하면 "
+                "GUI 업데이트를 확인해주세요:\n- " + "\n- ".join(problems)
+            ),
+        })
+
+
 def _emit_versions():
     """--versions 플래그 처리: FOSSLight 패키지 버전을 JSON으로 출력 후 종료"""
     import importlib.metadata
@@ -1037,6 +1106,9 @@ def main():
 
         from fosslight_scanner.fosslight_scanner import run_main
 
+        # 보정이 붙을 상류 표면이 그대로인지 먼저 확인해 드리프트를 미리 드러낸다
+        check_upstream_compatibility()
+
         # 몽키패치는 상류 API 이름·시그니처에 의존하므로 버전이 오르면 깨질 수 있다.
         # 하나가 실패해도 스캔 자체는 진행되도록 개별적으로 감싼다
         # (감싸지 않으면 AttributeError 하나로 분석 전체가 죽는다 — 실제로 겪음).
@@ -1094,7 +1166,12 @@ def main():
 
         from normalize_report import normalize_report
 
-        result_file, report = normalize_report(args.output, analyze_target, mode_list, result_file=args.result_file)
+        result_file, report, schema_warnings = normalize_report(
+            args.output, analyze_target, mode_list, result_file=args.result_file
+        )
+        # 상류 리포트 구조가 우리가 아는 것과 달라졌으면 사용자에게 드러낸다
+        for _w in schema_warnings:
+            emit({"type": "log", "level": "WARNING", "message": _w})
         emit({"type": "result", "resultFile": result_file, "report": report})
         sys.exit(0)
     except SystemExit:
