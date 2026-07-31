@@ -301,26 +301,19 @@ export function findGradleWrapperVersion(targetPath: string, maxDepth = 6): stri
   return found
 }
 
-/** 해당 Gradle 버전이 실행될 수 있는 최대 Java major 버전 (Gradle 공식 호환성 매트릭스).
- * 이 값을 넘는 Java로 돌리면 Gradle이 번들한 Groovy가 빌드 스크립트를 컴파일하지 못해
- * "Unsupported class file major version NN"으로 실패한다. */
-export function maxJavaForGradle(gradleVersion: string): number {
+/** 해당 Gradle 버전에서 쓸 수 있는 Java major 범위 (max가 null이면 상한 없음).
+ *
+ * 실제 Gradle 호환 범위가 아니라 **fosslight_dependency가 강제하는 값**에 맞춘다.
+ * 4.1.47의 `_package_manager.py`가 이 범위를 벗어나면 경고 후 `return False`로
+ * 분석을 중단하므로, 상류보다 느슨하게 잡으면 우리가 고른 Java 때문에 분석이 실패한다.
+ * (상한만 보고 하한이 없으면 Gradle 8.5+ 프로젝트에 Java 11을 줘서 거부당한다) */
+export function javaRangeForGradle(gradleVersion: string): { min: number; max: number | null } {
   const [maj, min] = gradleVersion.split('.').map((n) => parseInt(n, 10) || 0)
-  if (maj < 6) return 11
-  if (maj === 6) return min >= 7 ? 15 : 14
-  if (maj === 7) {
-    if (min <= 2) return 16
-    if (min <= 5) return 17
-    return 19 // 7.6
-  }
-  if (maj === 8) {
-    if (min <= 2) return 19
-    if (min <= 4) return 20
-    if (min <= 7) return 21
-    if (min <= 9) return 22
-    return 23
-  }
-  return 99 // 9.x 이상은 최신 Java를 지원한다고 본다
+  const atLeast = (a: number, b: number): boolean => maj > a || (maj === a && min >= b)
+  if (atLeast(9, 0)) return { min: 17, max: null }
+  if (atLeast(8, 5)) return { min: 17, max: 21 }
+  if (atLeast(7, 3)) return { min: 11, max: 17 }
+  return { min: 8, max: 11 }
 }
 
 /** 시스템 java의 major 버전 (없거나 확인 실패면 null). java -version은 stderr로 출력한다. */
@@ -349,49 +342,58 @@ export async function ensureJavaForGradle(
   pathEnv: string,
   onEvent: (e: ScanEvent) => void,
   needJdk = false,
-  maxJava: number | null = null
+  range: { min: number; max: number | null } | null = null
 ): Promise<string | null> {
   const sysJava = await systemJavaMajor(pathEnv)
   if (sysJava !== null) {
-    // 시스템 Java가 프로젝트의 Gradle이 감당 못할 만큼 최신이면 쓰면 안 된다.
-    // (예: Gradle 7.4.2 + Java 21 → "Unsupported class file major version 65")
-    const tooNew = maxJava !== null && sysJava > maxJava
+    // 시스템 Java가 이 프로젝트의 Gradle이 요구하는 범위를 벗어나면 쓸 수 없다.
+    // 너무 최신이면 "Unsupported class file major version NN"으로 깨지고,
+    // 너무 낮으면 fosslight_dependency가 "requires from Java X to Y"로 분석을 중단한다.
+    const outOfRange =
+      range !== null && (sysJava < range.min || (range.max !== null && sysJava > range.max))
     const jdkOk = !needJdk || (await toolExists('javac', pathEnv))
-    if (!tooNew && jdkOk) return null // 시스템 java 사용
+    if (!outOfRange && jdkOk) return null // 시스템 java 사용
+    const rangeText = range
+      ? `Java ${range.min}${range.max !== null ? `~${range.max}` : ' 이상'}`
+      : ''
     onEvent({
       type: 'log',
       level: 'INFO',
-      message: tooNew
-        ? `시스템 Java ${sysJava}는 이 프로젝트의 Gradle이 지원하지 않아(최대 Java ${maxJava}) ` +
+      message: outOfRange
+        ? `시스템 Java ${sysJava}는 이 프로젝트의 Gradle 요구 범위(${rangeText})를 벗어나 ` +
           '앱 전용 Java를 사용합니다.'
         : '이 프로젝트는 Gradle 버전 카탈로그를 사용해 Java 컴파일러(JDK)가 필요한데 ' +
           '시스템 Java에는 javac이 없습니다.'
     })
   }
 
-  const cached = findDownloadedJavaHome(needJdk)
+  // 어떤 것을 받을지: 요구 하한이 17 이상이거나 javac이 필요하면 JDK 17, 아니면 JRE 11.
+  // (버전 카탈로그는 Gradle 7.4+ 기능이라 하한이 11이므로 17이 항상 범위 안에 든다)
+  const useJdk = needJdk || (range?.min ?? 0) >= 17
+
+  const cached = findDownloadedJavaHome(useJdk)
   if (cached && (await verifyJava(cached, needJdk))) return cached
 
-  const dir = depJavaDir(needJdk)
+  const dir = depJavaDir(useJdk)
   try {
     rmSync(dir, { recursive: true, force: true })
   } catch {
     // 이전 잔여물 정리 실패는 무시
   }
   mkdirSync(dir, { recursive: true })
-  const zip = join(dir, 'temurin11.zip')
+  const zip = join(dir, 'temurin.zip')
 
   onEvent({
     type: 'log',
     level: 'INFO',
-    message: needJdk
-      ? '이 프로젝트(Gradle 버전 카탈로그)는 Java 17 JDK가 필요해 앱 전용 Temurin 17을 ' +
+    message: useJdk
+      ? '이 프로젝트는 Java 17이 필요해 앱 전용 Temurin 17(JDK)을 ' +
         '내려받습니다 (최초 1회, 약 182MB)...'
       : 'Java가 없어 앱 전용 Java 11(Temurin JRE)을 내려받습니다 (최초 1회, 약 41MB)...'
   })
   try {
     downloadAbort = new AbortController()
-    await downloadToFile(needJdk ? TEMURIN17_JDK_URL : TEMURIN11_URL, zip, downloadAbort.signal)
+    await downloadToFile(useJdk ? TEMURIN17_JDK_URL : TEMURIN11_URL, zip, downloadAbort.signal)
     const tarExe = join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'tar.exe')
     await execFileP(tarExe, ['-xf', zip, '-C', dir], { windowsHide: true })
     rmSync(zip, { force: true })
@@ -406,12 +408,12 @@ export async function ensureJavaForGradle(
     downloadAbort = null
   }
 
-  const home = findDownloadedJavaHome(needJdk)
+  const home = findDownloadedJavaHome(useJdk)
   if (home && (await verifyJava(home, needJdk))) {
     onEvent({
       type: 'log',
       level: 'INFO',
-      message: `앱 전용 Java(${needJdk ? '17 JDK' : '11 JRE'}) 준비 완료`
+      message: `앱 전용 Java(${useJdk ? '17 JDK' : '11 JRE'}) 준비 완료`
     })
     return home
   }
