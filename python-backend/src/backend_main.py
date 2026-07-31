@@ -143,6 +143,16 @@ class NdjsonLogHandler(logging.Handler):
             message = record.getMessage()
             if "Download failed" in message:
                 self.download_failed = True
+            # fosslight_util은 다운로드 총 경과가 SIGNAL_TIMEOUT(600초)을 넘으면
+            # 정상 수신 중이어도 프로세스를 종료한다. 원문("download timeout! (600 sec)")
+            # 만으로는 사용자가 무엇을 해야 할지 알 수 없어 안내를 덧붙인다.
+            if "download timeout" in message.lower():
+                self.download_failed = True
+                emit({"type": "log", "level": "ERROR",
+                      "message": "다운로드가 제한 시간(10분)을 넘겨 중단되었습니다. "
+                                 "저장소가 매우 크거나 네트워크가 느린 경우 발생합니다. "
+                                 "직접 내려받은 압축파일이나 폴더를 지정해 분석해주세요."})
+                return
             if "WinError 32" in message and any(m in message for m in self._CLEANUP_NOISE_MARKERS):
                 emit({"type": "log", "level": "INFO",
                       "message": "fosslight의 임시 파일 정리가 지연되어 앱이 대신 정리합니다."})
@@ -249,34 +259,6 @@ def check_package_managers(target_path, mode_list):
                             f"해당 의존성 분석이 실패할 수 있습니다.")
                            + (f"\n{hint}" if hint else ""),
             })
-
-
-def disable_download_watchdog():
-    """fosslight의 URL 다운로드 워치독(fosslight_util.download.Alarm)은 다운로드
-    시작 후 총 600초(SIGNAL_TIMEOUT)가 지나면 os._exit로 프로세스를 강제 종료한다.
-    데이터가 정상 수신 중이어도 총 경과 시간만으로 죽이므로, 대용량 저장소나 느린
-    회선에서 정상 다운로드가 'download timeout (600 sec)'로 실패한다. 게다가 Windows
-    에서는 다운로드 완료 후에도 스레드가 취소되지 않아 이후 분석 단계까지 위협한다.
-    워치독을 무력화한다 — 멈춘 연결은 requests의 read 타임아웃(무수신 시)과 사용자
-    취소로 계속 처리된다."""
-    try:
-        import fosslight_util.download as fl_download
-
-        class _NoopAlarm:
-            """상류 Alarm 자리를 대신하는 무해한 스텁.
-            호출되는 메서드가 버전마다 다르므로(2.2.4에서 cancel() 추가) 특정 메서드를
-            나열하지 않고 __getattr__으로 무엇이든 흡수한다. 나열식으로 두면 상류가
-            메서드를 추가할 때마다 AttributeError로 분석이 통째로 실패한다."""
-
-            def __init__(self, *args, **kwargs):
-                pass
-
-            def __getattr__(self, _name):
-                return lambda *a, **k: None
-
-        fl_download.Alarm = _NoopAlarm
-    except Exception:
-        pass
 
 
 def install_gradlew_path_fix():
@@ -998,8 +980,6 @@ def _emit_prepare(url, path, dest):
     설치하고 본 스캔을 돌린다."""
     from fosslight_util.download import cli_download_and_extract, extract_compressed_file
 
-    disable_download_watchdog()
-
     logger = logging.getLogger(FOSSLIGHT_LOGGER)
     logger.setLevel(logging.INFO)
     logger.addHandler(NdjsonLogHandler())
@@ -1113,7 +1093,6 @@ def main():
         # 하나가 실패해도 스캔 자체는 진행되도록 개별적으로 감싼다
         # (감싸지 않으면 AttributeError 하나로 분석 전체가 죽는다 — 실제로 겪음).
         for _patch in (
-            disable_download_watchdog,
             install_dep_venv_short_path,
             install_dep_venv_diagnostics,
             install_gradlew_path_fix,
