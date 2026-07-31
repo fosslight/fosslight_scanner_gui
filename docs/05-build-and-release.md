@@ -86,6 +86,28 @@ flowchart LR
 - [ ] Vulnerability의 "NVD에서 검색" → 검색어가 유지된 NVD 결과 페이지
 - [ ] 인스톨러 최종 검증은 **Python 미설치 클린 환경**(Windows Sandbox)에서
 
+## 상류(fosslight-*) 업데이트 시 회귀 검사
+
+`npm run build:backend`은 `--upgrade-strategy eager`로 상류를 최신으로 올린다. 상류가
+올라가면 결과가 조용히 달라지거나 분석이 통째로 죽을 수 있으므로(실제로 gradle 분석이
+상류 API 변경으로 죽었고 사용자 신고로 알았다), **릴리스 전에 회귀 검사를 돌린다.**
+
+```bash
+python-backend\pybuild\python\python.exe scripts\run-regression.py
+```
+
+- 픽스처는 `D:\fosslight_dependency_scanner\tests` (`--tests-dir` 또는 `FL_TESTS_DIR`로 변경)
+- 기준선은 `scripts/regression-baseline.json` — 매니저별 검출 건수
+- 기준선과 다르면 **종료코드 1**. 확인 후 의도된 변화면 `--update`로 갱신
+- `--only pypi,gradle2`로 일부만, `--clean-gradle`로 Gradle 캐시를 비우고 실행
+  (캐시가 있으면 빌드 스크립트 재컴파일이 생략돼 Java 호환성 문제가 가려진다)
+
+Java는 픽스처마다 요구 버전이 달라(fosslight_dependency가 범위 밖 Java를 거부한다)
+`FL_TEST_JRE11` / `FL_TEST_JDK17`로 경로를 지정한다. 없으면 해당 픽스처는 실패가 아니라
+SKIP으로 처리된다. go·helm도 미설치면 SKIP이다.
+
+전체 실행은 30~40분 걸린다(gradle 계열이 대부분). 빠른 확인은 `--only`를 쓴다.
+
 ## 알려진 배포 제약
 
 - **코드 서명 없음** → SmartScreen 경고 (INSTALL.md에 사용자 안내 있음)

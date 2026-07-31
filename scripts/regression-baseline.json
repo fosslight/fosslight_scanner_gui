@@ -1,0 +1,184 @@
+{
+  "_comment": [
+    "패키지 매니저별 회귀 기준선. 상류(fosslight-*)를 올릴 때마다 run-regression.py로",
+    "돌려 이 값과 비교한다. 값이 달라지면 상류 변경이 결과에 영향을 준 것이므로,",
+    "확인 후 의도된 변화면 --update 로 갱신한다.",
+    "",
+    "java: 이 프로젝트의 Gradle이 요구하는 Java. fosslight_dependency가 범위를 벗어난",
+    "Java를 거부하므로 픽스처마다 명시한다(GUI의 javaRangeForGradle과 같은 기준).",
+    "pre_clean: 분석이 남기는 산출물. 그대로 두면 다음 실행이 이를 재사용하거나",
+    "실패하므로(예: helm은 requirements.lock이 남으면 두 번째 실행이 깨진다) 먼저 지운다.",
+    "expect_zero: 도구가 없거나 플랫폼이 달라 0건이 정상인 경우."
+  ],
+  "baselineTotal": 7,
+  "fixtures": [
+    {
+      "name": "pypi",
+      "path": "test_pypi",
+      "expected": 7
+    },
+    {
+      "name": "npm1",
+      "path": "test_npm1",
+      "expected": 60
+    },
+    {
+      "name": "npm2",
+      "path": "test_npm2",
+      "expected": 41
+    },
+    {
+      "name": "multi_pypi_npm",
+      "path": "test_multi_pypi_npm",
+      "expected": 67
+    },
+    {
+      "name": "exclude",
+      "path": "test_exclude",
+      "expected": 23
+    },
+    {
+      "name": "cargo",
+      "path": "test_cargo",
+      "expected": 150
+    },
+    {
+      "name": "go",
+      "path": "test_mod",
+      "expected": 18,
+      "requires": [
+        "go"
+      ],
+      "pre_clean": [
+        "go.sum"
+      ]
+    },
+    {
+      "name": "nuget",
+      "path": "test_nuget",
+      "expected": 6
+    },
+    {
+      "name": "nuget2",
+      "path": "test_nuget2",
+      "expected": 13
+    },
+    {
+      "name": "helm",
+      "path": "test_helm",
+      "expected": 3,
+      "requires": [
+        "helm"
+      ],
+      "pre_clean": [
+        "requirements.lock",
+        "Chart.lock",
+        "charts"
+      ]
+    },
+    {
+      "name": "swift",
+      "path": "test_swift",
+      "expected": 5
+    },
+    {
+      "name": "swift2",
+      "path": "test_swift2",
+      "expected": 3
+    },
+    {
+      "name": "swift3",
+      "path": "test_swift3",
+      "expected": 7
+    },
+    {
+      "name": "carthage",
+      "path": "test_carthage",
+      "expected": 18
+    },
+    {
+      "name": "maven1",
+      "path": "test_maven1/lombok.maven",
+      "expected": 48,
+      "java": "jre11",
+      "pre_clean": [
+        "target"
+      ]
+    },
+    {
+      "name": "maven2",
+      "path": "test_maven2",
+      "expected": 48,
+      "java": "jre11"
+    },
+    {
+      "name": "maven_custom_repo",
+      "path": "test_maven_custom_repo",
+      "expected": 16,
+      "java": "jre11",
+      "pre_clean": [
+        "target"
+      ]
+    },
+    {
+      "name": "gradle",
+      "path": "test_gradle/jib",
+      "expected": 140,
+      "java": "jre11"
+    },
+    {
+      "name": "gradle2",
+      "path": "test_gradle2",
+      "expected": 140,
+      "java": "jre11"
+    },
+    {
+      "name": "android",
+      "path": "test_android/sunflower",
+      "expected": 99,
+      "java": "jre11"
+    },
+    {
+      "name": "android2",
+      "path": "test_android2/sunflower",
+      "expected": 105,
+      "java": "jre11",
+      "pre_clean": [
+        "app/android_dependency_output.txt"
+      ]
+    },
+    {
+      "name": "kotlin",
+      "path": "test_kotlin/sunflower",
+      "expected": 149,
+      "java": "jre11"
+    },
+    {
+      "name": "kotlin2",
+      "path": "test_kotlin2/sunflower",
+      "expected": 129,
+      "java": "jdk17",
+      "pre_clean": [
+        "app/android_dependency_output.txt"
+      ]
+    },
+    {
+      "name": "cocoapods",
+      "path": "test_cocoapods/cocoapods-tips/JWSCocoapodsTips",
+      "expected": 0,
+      "expect_zero": "CocoaPods는 macOS 전용(pod 명령으로 podspec 조회)"
+    },
+    {
+      "name": "pub",
+      "path": "test_pub",
+      "expected": 0,
+      "expect_zero": "Flutter SDK 미설치"
+    },
+    {
+      "name": "pub2",
+      "path": "test_pub2",
+      "expected": 0,
+      "expect_zero": "Flutter SDK 미설치"
+    }
+  ]
+}
