@@ -128,31 +128,13 @@ def emit(obj):
 class NdjsonLogHandler(logging.Handler):
     """fosslight 로거 출력을 Electron으로 전달"""
 
-    def __init__(self):
-        super().__init__()
-        # fosslight는 URL 다운로드 실패 시에도 run_main이 True를 반환하고
-        # 빈 스캔을 계속하므로, 로그로 실패를 감지해야 함
-        self.download_failed = False
-
     # fosslight가 스캔 성공 후 임시 폴더 정리 실패를 WARNING으로 남기는데,
     # 정리는 래퍼(salvage_temp_reports)가 대신 수행하므로 사용자에게는 잡음임
-    _CLEANUP_NOISE_MARKERS = ("temp_extract_", ".fosslight_temp_", "fosslight_raw_data", "venv_osc_dep_tmp")
+    _CLEANUP_NOISE_MARKERS = ("temp_extract_", ".fosslight_temp_", "fosslight_raw_data")
 
     def emit(self, record):
         try:
             message = record.getMessage()
-            if "Download failed" in message:
-                self.download_failed = True
-            # fosslight_util은 다운로드 총 경과가 SIGNAL_TIMEOUT(600초)을 넘으면
-            # 정상 수신 중이어도 프로세스를 종료한다. 원문("download timeout! (600 sec)")
-            # 만으로는 사용자가 무엇을 해야 할지 알 수 없어 안내를 덧붙인다.
-            if "download timeout" in message.lower():
-                self.download_failed = True
-                emit({"type": "log", "level": "ERROR",
-                      "message": "다운로드가 제한 시간(10분)을 넘겨 중단되었습니다. "
-                                 "저장소가 매우 크거나 네트워크가 느린 경우 발생합니다. "
-                                 "직접 내려받은 압축파일이나 폴더를 지정해 분석해주세요."})
-                return
             if "WinError 32" in message and any(m in message for m in self._CLEANUP_NOISE_MARKERS):
                 emit({"type": "log", "level": "INFO",
                       "message": "fosslight의 임시 파일 정리가 지연되어 앱이 대신 정리합니다."})
@@ -187,10 +169,11 @@ def _rmtree_force(path, retries=5):
 
 
 def salvage_temp_reports(output_dir, started_at):
-    """Windows에서 fosslight의 임시 폴더 정리(shutil.rmtree)가 읽기 전용 파일
-    (git clone의 .git, 의존성 분석용 venv 등) 때문에 실패하면 최종 리포트가
-    .fosslight_temp_* 안에 남고 temp_extract_*(압축 해제본)도 잔류한다.
-    리포트를 회수하고 임시 폴더들을 강제 제거한다."""
+    """이번 스캔이 남긴 .fosslight_temp_*와 temp_extract_*를 정리한다.
+
+    fosslight_dependency가 분석 대상 폴더로 chdir한 채 복귀하지 않아, 그 폴더가 프로세스의
+    cwd로 잠겨 상류의 정리가 실패한다(WinError 32). 상류는 이때도 리포트를 먼저 옮기지만,
+    옮기지 못한 리포트는 임시 폴더에 남겨두므로 지우기 전에 회수한다."""
     # fosslight_dependency가 분석 대상 폴더로 chdir한 채 복귀하지 않으므로
     # 자기 자신의 cwd가 삭제 대상 폴더를 잠그지 않도록 출력 폴더로 복귀
     os.chdir(output_dir)
@@ -259,273 +242,6 @@ def check_package_managers(target_path, mode_list):
                             f"해당 의존성 분석이 실패할 수 있습니다.")
                            + (f"\n{hint}" if hint else ""),
             })
-
-
-def install_gradlew_path_fix():
-    """fosslight_dependency는 Windows에서 gradle wrapper를 bare 이름('gradlew.bat')으로
-    subprocess(list, shell=False) 호출하는데, CreateProcess는 bare .bat 상대명을
-    해석하지 못해 모든 Windows PC에서 [WinError 2]로 실패한다(업스트림 버그).
-    wrapper 경로를 돌려주는 메서드를 감싸 절대경로를 반환하게 한다.
-    상류가 이름을 바꾸는 일이 있어(4.1.46 _resolve_gradle_command →
-    4.1.47 _resolve_wrapper_command) 후보 이름을 모두 시도하고, 하나도 없으면
-    조용히 넘어간다. 여기서 예외가 나면 스캔 전체가 죽으므로 절대 raise하지 않는다."""
-    try:
-        from fosslight_dependency import _package_manager as fl_pm
-    except Exception:
-        return
-
-    def _to_abs(cmd):
-        try:
-            if cmd and not os.path.isabs(cmd):
-                cand = os.path.abspath(cmd.replace("./", "", 1))
-                if os.path.isfile(cand):
-                    return cand
-        except Exception:
-            pass
-        return cmd
-
-    def _wrap_resolver(orig):
-        def patched(self):
-            return _to_abs(orig(self))
-
-        patched._fl_abs_wrapped = True
-        return patched
-
-    for _name in ("_resolve_wrapper_command", "_resolve_gradle_command"):
-        _orig_resolve = getattr(fl_pm.PackageManager, _name, None)
-        if _orig_resolve is None or getattr(_orig_resolve, "_fl_abs_wrapped", False):
-            continue
-        setattr(fl_pm.PackageManager, _name, _wrap_resolver(_orig_resolve))
-
-    # 모듈 함수 get_gradle_cmd()도 같은 bare 이름을 반환한다
-    # (collect_gradle_download_urls가 사용 — 여기서도 WinError 2 발생)
-    _orig_get = getattr(fl_pm, "get_gradle_cmd", None)
-    if _orig_get is None or getattr(_orig_get, "_fl_abs_wrapped", False):
-        return
-
-    def patched_get():
-        # 반환 개수는 상류 버전마다 다르다(4.1.46은 cmd, current_mode, changed_mode 3개).
-        # 첫 값만 절대경로로 바꾸고 나머지는 그대로 넘겨 시그니처 변화에 영향받지 않는다.
-        result = _orig_get()
-        if isinstance(result, tuple) and result:
-            return (_to_abs(result[0]),) + result[1:]
-        return _to_abs(result)
-
-    patched_get._fl_abs_wrapped = True
-    fl_pm.get_gradle_cmd = patched_get
-
-
-def _decode_bytes(b):
-    """subprocess 출력 바이트를 최대한 사람이 읽을 수 있게 디코딩한다."""
-    if not b:
-        return ""
-    if isinstance(b, str):
-        return b
-    for enc in ("utf-8", "cp949", "mbcs"):
-        try:
-            return b.decode(enc)
-        except Exception:
-            continue
-    return b.decode("utf-8", "replace")
-
-
-def _dep_venv_hint(detail_lower):
-    """venv/pip 실패 메시지에서 흔한 원인을 짚어 사용자에게 안내한다."""
-    d = detail_lower
-    if "windowsapps" in d or "was not found" in d or "microsoft store" in d:
-        return ("Python이 Microsoft Store 실행 별칭(stub)으로 실행됐습니다. "
-                "python.org 또는 winget의 정식 Python 3.12 설치가 필요합니다.")
-    if "no module named venv" in d or "ensurepip" in d or "no module named 'pip'" in d:
-        return "설치된 Python에 venv/pip 구성요소가 없습니다. 정식 Python 3.12 배포판 설치를 권장합니다."
-    if ("no matching distribution" in d or "could not find a version" in d
-            or "failed building wheel" in d or "microsoft visual c++" in d
-            or "error: metadata-generation-failed" in d):
-        return ("대상 프로젝트의 의존성 패키지 설치에 실패했습니다(휠 없음/빌드 도구 필요 등). "
-                "앱 문제가 아니라 프로젝트 의존성 자체 문제일 수 있습니다.")
-    if ("getaddrinfo" in d or "timed out" in d or "temporary failure" in d
-            or "proxy" in d or "ssl" in d or "connection" in d):
-        return "네트워크(프록시/방화벽/오프라인)로 의존성 다운로드에 실패했습니다."
-    return ""
-
-
-_CACHED_PY312 = None
-
-
-def find_real_python312():
-    """의존성 venv 생성에 쓸 정식 Python 3.12 절대경로를 찾는다(없으면 None).
-    최신 Python(3.13/3.14)은 프로젝트가 핀한 패키지의 미리 빌드된 휠이 없어 pip이
-    소스 빌드로 넘어가 clean PC에서 실패하므로, 휠 커버리지가 넓은 3.12를 강제한다.
-    Microsoft Store stub은 3.12로 잡히지 않아 자연히 걸러진다."""
-    global _CACHED_PY312
-    if _CACHED_PY312 is not None:
-        return _CACHED_PY312 or None
-    exe = ""
-    # 앱(Electron)이 확보해 전달한 Python 3.12를 최우선 사용한다.
-    # (clean PC: 시스템/winget에 3.12가 없을 때 앱이 내려받은 전용 인터프리터)
-    env_py = os.environ.get("FL_DEP_PYTHON")
-    if env_py and os.path.exists(env_py):
-        _CACHED_PY312 = env_py
-        return env_py
-    # Type B(번들 실제 Python)·개발 모드: 동결이 아니고 현재 인터프리터가 3.12면
-    # 자기 자신으로 venv를 만든다 → 외부 Python이 전혀 필요 없다.
-    if not getattr(sys, "frozen", False) and sys.version_info[:2] == (3, 12):
-        if sys.executable and os.path.exists(sys.executable):
-            _CACHED_PY312 = sys.executable
-            return sys.executable
-    try:
-        import subprocess as _sp
-        r = _sp.run(["py", "-3.12", "-c", "import sys; sys.stdout.write(sys.executable)"],
-                    stdout=_sp.PIPE, stderr=_sp.PIPE, timeout=20)
-        cand = _decode_bytes(r.stdout).strip()
-        if cand and os.path.exists(cand):
-            exe = cand
-    except Exception:
-        pass
-    if not exe:
-        for c in (
-            os.path.join(os.environ.get("LOCALAPPDATA", ""), "Programs", "Python", "Python312", "python.exe"),
-            os.path.join(os.environ.get("PROGRAMFILES", ""), "Python312", "python.exe"),
-            "C:\\Python312\\python.exe",
-        ):
-            if c and os.path.exists(c):
-                exe = c
-                break
-    _CACHED_PY312 = exe
-    return exe or None
-
-
-# 상류가 만드는 pypi venv의 위치. 기본은 상류 기본값(대상 폴더 안 상대명)이고,
-# install_dep_venv_short_path()가 성공하면 짧은 절대경로로 바뀐다.
-# subprocess 후킹(install_dep_venv_diagnostics)의 감지 키로도 쓰인다.
-_DEP_VENV_MARK = "venv_osc_dep_tmp"
-
-
-def short_work_root():
-    """앱 작업물을 두는 짧고 공백 없는 절대경로. 확보 못하면 None.
-    상류가 venv 경로를 따옴표 없이 셸 체인에 넣으므로(Pypi.start_pip_inspect)
-    공백이 있으면 안 된다. 사용자명에 공백이 있으면 8.3 단축명으로 바꾼다."""
-    base = os.environ.get("LOCALAPPDATA")
-    if not base:
-        return None
-    root = os.path.join(base, "fl")
-    try:
-        os.makedirs(root, exist_ok=True)
-    except OSError:
-        return None
-    if " " not in root:
-        return root
-    try:
-        import ctypes
-
-        buf = ctypes.create_unicode_buffer(260)
-        # GetShortPathNameW는 실제 존재하는 경로만 변환하므로 makedirs 뒤에 호출한다
-        if ctypes.windll.kernel32.GetShortPathNameW(root, buf, len(buf)) and " " not in buf.value:
-            return buf.value
-    except Exception:
-        pass
-    return None
-
-
-def install_dep_venv_short_path():
-    """상류는 pypi venv를 '분석 대상 폴더 안'에 상대경로로 만든다
-    (Pypi.venv_tmp_dir='venv_osc_dep_tmp' + _package_manager의 os.chdir(input_dir)).
-    대상 폴더가 깊으면 venv 내부 경로가 Windows MAX_PATH(260자)를 넘어 분석이 실패한다.
-    상류는 절대경로 venv를 이미 지원하므로(Pypi의 isabs 분기, os.path.join 규칙)
-    이 값만 짧은 절대경로로 바꾸면 대상 폴더 깊이와 무관해진다.
-    덤으로, 상대경로라 cwd가 바뀌면 조용히 실패하던 상류의 정리(rmtree)도 정상 동작한다."""
-    global _DEP_VENV_MARK
-    root = short_work_root()
-    if not root:
-        return  # 짧은 경로 확보 실패 — 상류 기본 동작 유지
-    try:
-        from fosslight_dependency.package_manager.Pypi import Pypi
-    except Exception:
-        return
-    venv_dir = os.path.join(root, f"v{os.getpid()}")
-    Pypi.venv_tmp_dir = venv_dir
-    _DEP_VENV_MARK = venv_dir
-    emit({"type": "log", "level": "INFO",
-          "message": f"의존성 분석 가상환경 위치: {venv_dir}"})
-
-
-def cleanup_dep_venv():
-    """상류 정리가 실패해도 남지 않도록 우리가 지정한 venv 루트를 지운다."""
-    if not os.path.isabs(_DEP_VENV_MARK):
-        return  # 상류 기본값(상대명) — 우리가 만든 게 아니므로 건드리지 않는다
-    _rmtree_force(_DEP_VENV_MARK, retries=2)
-
-
-def install_dep_venv_diagnostics():
-    """fosslight_dependency(pypi)는 'python -m venv ... & pip install ...'를 하나의
-    chained 명령으로 실행하고 stderr를 버린 채 'return code(N)'만 남긴다. 그래서
-    venv 생성 실패인지 의존성 설치 실패인지 원인을 알 수 없다. subprocess.run을 감싸:
-      1) venv 생성에 쓰는 python을 검증된 3.12 절대경로로 바꿔 PATH 순서/전파 문제를
-         회피하고(절대경로는 shadowing 불가),
-      2) 그래도 실패하면 실제 stderr와 사용된 python을 로그로 드러낸다.
-    (fosslight 내부는 건드리지 않으므로 버전 변화에 안전) """
-    try:
-        import subprocess as _sp
-    except Exception:
-        return
-    if getattr(_sp.run, "_fl_dep_wrapped", False):
-        return
-    _orig_run = _sp.run
-
-    def patched_run(*a, **kw):
-        cmd = a[0] if a else kw.get("args")
-        is_dep_venv = isinstance(cmd, str) and _DEP_VENV_MARK in cmd
-        if is_dep_venv:
-            # venv 생성 python을 3.12 절대경로로 교체 (체인 선두의 'python -m venv'만)
-            if cmd.lower().startswith("python -m venv"):
-                py312 = find_real_python312()
-                if py312:
-                    cmd = f'"{py312}" -m venv' + cmd[len("python -m venv"):]
-                    if a:
-                        a = (cmd,) + tuple(a[1:])
-                    else:
-                        kw["args"] = cmd
-                    emit({"type": "log", "level": "INFO",
-                          "message": f"의존성 분석 가상환경을 Python 3.12로 생성합니다: {py312}"})
-            # 원인 확인을 위해 출력을 캡처(=화면 미표시). fosslight는 stderr만 읽으므로 무해.
-            kw.setdefault("stdout", _sp.PIPE)
-            kw.setdefault("stderr", _sp.PIPE)
-        result = _orig_run(*a, **kw)
-        if is_dep_venv and getattr(result, "returncode", 0) not in (0, None):
-            detail = (_decode_bytes(getattr(result, "stderr", None)) + "\n"
-                      + _decode_bytes(getattr(result, "stdout", None))).strip()
-
-            def _probe(probe_cmd):
-                try:
-                    p = _orig_run(probe_cmd, shell=True, stdout=_sp.PIPE, stderr=_sp.STDOUT, timeout=20)
-                    return _decode_bytes(p.stdout).strip() or "(출력 없음)"
-                except Exception as ex:  # noqa
-                    return f"(확인 실패: {ex})"
-
-            # clean PC 진단을 위해 환경을 한 번에 수집한다 (한 번의 테스트로 원인 확정)
-            where_python = _probe("where python")
-            python_ver = _probe("python --version")
-            py_list = _probe("py -0p")            # py 런처가 아는 모든 Python
-            winget_where = _probe("where winget")  # 자동 설치 가능 여부
-            found_312 = find_real_python312() or "(없음)"
-            hint = _dep_venv_hint((detail + " " + where_python + " " + python_ver + " " + py_list).lower())
-            emit({
-                "type": "log",
-                "level": "ERROR",
-                "message": (
-                    "의존성(pypi) 가상환경 준비 실패 — 환경 진단\n"
-                    f"[where python]\n{where_python}\n"
-                    f"[python --version]\n{python_ver}\n"
-                    f"[py -0p (설치된 Python)]\n{py_list}\n"
-                    f"[번들/시스템 Python 3.12]\n{found_312}\n"
-                    f"[where winget]\n{winget_where}\n"
-                    f"[실제 오류]\n{detail[-2500:] or '(출력 없음)'}"
-                    + (f"\n[원인 추정] {hint}" if hint else "")
-                ),
-            })
-        return result
-
-    patched_run._fl_dep_wrapped = True
-    _sp.run = patched_run
 
 
 def available_memory_gb():
@@ -598,7 +314,7 @@ def start_heartbeat(interval_sec=60):
 def check_long_paths_enabled(target, output_dir):
     """긴 경로로 실제 실패할 위험이 있을 때만 경고한다.
 
-    앱은 더 이상 대상 폴더 안에 긴 경로를 만들지 않으므로(install_dep_venv_short_path),
+    상류가 pypi venv를 대상 폴더 밖에 만들므로,
     남는 위험은 (1) 대상 트리에 이미 존재하는 깊은 파일, (2) 출력 폴더가 깊을 때 상류가
     그 옆에 만드는 .fosslight_temp_*\\fosslight_raw_data\\fosslight_report_*.xlsx 뿐이다.
     레지스트리만 보고 무조건 경고하면 대부분 오탐이라 실제 길이를 함께 본다."""
@@ -633,12 +349,11 @@ def check_long_paths_enabled(target, output_dir):
 
 
 def check_upstream_compatibility():
-    """우리가 의존하는 상류 표면이 그대로인지 점검하고, 달라졌으면 경고한다.
+    """run_main 호출 규약이 그대로인지 점검하고, 달라졌으면 경고한다.
 
-    Windows 보정(몽키패치)은 상류의 내부 이름·시그니처에 붙어 있어, 상류가 올라가면
-    조용히 무력화되거나 분석 도중에 터진다. 실제로 세 번 겪었다
-    (get_gradle_cmd 반환 개수, Alarm.cancel 추가, _resolve_gradle_command 개명).
-    미리 드러내는 것이 목적이므로 여기서는 절대 raise하지 않는다."""
+    run_main은 위치 인자로 호출하므로 상류가 인자를 빼거나 순서를 바꾸면 스캔이
+    시작하자마자 실패한다(실제로 db_url 제거로 겪었다). 미리 드러내는 것이 목적이므로
+    여기서는 절대 raise하지 않는다."""
     import inspect
 
     problems = []
@@ -656,47 +371,23 @@ def check_upstream_compatibility():
 
         params = list(inspect.signature(run_main).parameters)
         expected = ["mode_list", "path_arg", "dep_arguments", "output_file_or_dir",
-                    "file_format", "url_to_analyze", "db_url"]
-        if params[:7] != expected:
-            return f"앞 7개 위치 인자가 달라짐 → {params[:7]}"
+                    "file_format", "url_to_analyze"]
+        if params[:6] != expected:
+            return f"앞 6개 위치 인자가 달라짐 → {params[:6]}"
         for kw in ("hide_progressbar", "num_cores", "kb_url", "kb_token", "path_to_exclude"):
             if kw not in params:
                 return f"'{kw}' 인자가 사라짐"
         return None
 
-    def _gradle():
-        from fosslight_dependency import _package_manager as pm
-
-        if not any(hasattr(pm.PackageManager, n)
-                   for n in ("_resolve_wrapper_command", "_resolve_gradle_command")):
-            return "gradle wrapper 경로 메서드를 찾지 못함(이름 변경 추정)"
-        if not hasattr(pm, "get_gradle_cmd"):
-            return "get_gradle_cmd 함수가 사라짐"
-        return None
-
-    def _pypi_venv():
-        from fosslight_dependency.package_manager.Pypi import Pypi
-
-        return None if hasattr(Pypi, "venv_tmp_dir") else "Pypi.venv_tmp_dir 속성이 사라짐"
-
-    def _alarm():
-        import fosslight_util.download as dl
-
-        return None if hasattr(dl, "Alarm") else "download.Alarm 클래스가 사라짐"
-
     _check("스캐너 호출 규약(run_main)", _run_main)
-    _check("gradle 실행 경로 보정", _gradle)
-    _check("pypi 가상환경 위치 보정", _pypi_venv)
-    _check("다운로드 시간제한 보정", _alarm)
 
     if problems:
         emit({
             "type": "log",
             "level": "WARNING",
             "message": (
-                "FOSSLight Scanner의 내부 구조가 이 GUI가 아는 것과 달라졌습니다. "
-                "아래 항목의 Windows 보정이 동작하지 않을 수 있으니, 분석이 실패하면 "
-                "GUI 업데이트를 확인해주세요:\n- " + "\n- ".join(problems)
+                "FOSSLight Scanner의 호출 규약이 이 GUI가 아는 것과 달라졌습니다. "
+                "분석이 실패하면 GUI 업데이트를 확인해주세요:\n- " + "\n- ".join(problems)
             ),
         })
 
@@ -991,6 +682,10 @@ def _emit_prepare(url, path, dest):
             success, msg, _oss_name, _oss_version, _link = cli_download_and_extract(
                 url, dest, os.path.join(dest, "download_log")
             )
+            if not success and msg.startswith("Download timeout"):
+                msg = ("다운로드가 제한 시간(10분)을 넘겨 중단되었습니다. "
+                       "저장소가 매우 크거나 네트워크가 느린 경우 발생합니다. "
+                       "직접 내려받은 압축파일이나 폴더를 지정해 분석해주세요.")
         else:
             # remove_after_extract=False: 사용자의 원본 압축파일을 지우면 안 됨
             success = extract_compressed_file(path, dest, False, False)
@@ -1070,8 +765,7 @@ def main():
     # (hasHandlers 분기) 레벨을 직접 INFO로 지정해야 진행 로그가 전달됨
     logger = logging.getLogger(FOSSLIGHT_LOGGER)
     logger.setLevel(logging.INFO)
-    ndjson_handler = NdjsonLogHandler()
-    logger.addHandler(ndjson_handler)
+    logger.addHandler(NdjsonLogHandler())
 
     analyze_target = args.analyzed_path or args.path or args.url
 
@@ -1086,25 +780,8 @@ def main():
 
         from fosslight_scanner.fosslight_scanner import run_main
 
-        # 보정이 붙을 상류 표면이 그대로인지 먼저 확인해 드리프트를 미리 드러낸다
+        # 호출 규약이 그대로인지 먼저 확인해 드리프트를 미리 드러낸다
         check_upstream_compatibility()
-
-        # 몽키패치는 상류 API 이름·시그니처에 의존하므로 버전이 오르면 깨질 수 있다.
-        # 하나가 실패해도 스캔 자체는 진행되도록 개별적으로 감싼다
-        # (감싸지 않으면 AttributeError 하나로 분석 전체가 죽는다 — 실제로 겪음).
-        for _patch in (
-            install_dep_venv_short_path,
-            install_dep_venv_diagnostics,
-            install_gradlew_path_fix,
-        ):
-            try:
-                _patch()
-            except Exception as _ex:  # noqa: BLE001
-                emit({
-                    "type": "log",
-                    "level": "WARNING",
-                    "message": f"내부 보정({_patch.__name__}) 적용 실패 — 계속 진행합니다: {_ex}",
-                })
 
         emit({"type": "phase", "phase": "scanning"})
         scan_started_at = time.time()
@@ -1120,7 +797,6 @@ def main():
                 args.output,
                 ["excel"],
                 args.url or "",
-                "",
                 hide_progressbar=True,
                 num_cores=num_cores,
                 kb_url=args.kb_url,
@@ -1132,16 +808,10 @@ def main():
         emit({"type": "phase", "phase": "normalizing"})
         salvage_temp_reports(args.output, scan_started_at)
 
-        if ndjson_handler.download_failed:
-            raise RuntimeError("다운로드에 실패했습니다. URL을 확인해주세요.")
-        # run_main은 스캔 성공 후 임시 파일 정리 예외에도 False를 반환하므로
-        # 리포트 존재 여부로 실제 성패를 판정한다
-        reports_exist = any(
-            os.path.getmtime(f) >= scan_started_at
-            for f in glob.glob(os.path.join(args.output, "fosslight_report_*.xlsx"))
-        )
-        if ok is False and not reports_exist:
-            raise RuntimeError("스캔이 실패했습니다. 분석 대상 경로/URL을 확인해주세요.")
+        # run_main은 다운로드 실패처럼 분석하지 못했을 때 False를 반환한다
+        if ok is False:
+            raise RuntimeError("다운로드에 실패했습니다. URL을 확인해주세요." if args.url
+                               else "스캔이 실패했습니다. 분석 대상 경로를 확인해주세요.")
 
         from normalize_report import normalize_report
 
@@ -1158,8 +828,6 @@ def main():
     except Exception as ex:
         emit({"type": "error", "message": str(ex), "traceback": traceback.format_exc()})
         sys.exit(1)
-    finally:
-        cleanup_dep_venv()
 
 
 if __name__ == "__main__":

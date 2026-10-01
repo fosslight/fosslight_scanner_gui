@@ -213,7 +213,7 @@ export function registerIpcHandlers(): void {
       }
     }
 
-    const ok = startScan(scanCfg, send, pathEnv, undefined, depJava)
+    const ok = startScan(scanCfg, send, pathEnv, depJava)
     if (!ok) {
       scanSessionActive = false
       return { ok: false, message: '이미 스캔이 실행 중입니다' }

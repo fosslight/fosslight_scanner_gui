@@ -26,7 +26,10 @@ Write-Host "fosslight-scanner 설치 (엔진)..."
 # Type B는 PyInstaller가 필요 없으므로 requirements.txt(pyinstaller 포함) 대신
 # 엔진만 설치해 번들을 슬림하게 유지한다.
 & $python -m pip install --upgrade pip
-& $python -m pip install --upgrade --upgrade-strategy eager fosslight-scanner
+# 최소 버전: GUI의 Windows 보정(몽키패치)을 걷어낸 근거가 된 상류 수정이 들어간 버전.
+# 이보다 낮으면 gradle(WinError 2)·깊은 경로 pypi·MS Store python·다운로드 타임아웃
+# 문제가 다시 생긴다.
+& $python -m pip install --upgrade --upgrade-strategy eager "fosslight-scanner>=2.1.32" "fosslight-dependency>=4.1.55" "fosslight-util>=2.2.15"
 
 # 백엔드 스크립트를 번들 폴더로 복사 (electron-builder가 pybuild 통째로 담는다)
 Copy-Item "$backend\src\backend_main.py", "$backend\src\normalize_report.py" "$pybuild\" -Force

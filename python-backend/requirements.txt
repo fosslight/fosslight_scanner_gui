@@ -1,2 +1,4 @@
-fosslight-scanner
+fosslight-scanner>=2.1.32
+fosslight-dependency>=4.1.55
+fosslight-util>=2.2.15
 pyinstaller==6.21.0
