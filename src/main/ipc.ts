@@ -2,6 +2,7 @@ import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import { execFile } from 'child_process'
 import { rmSync, statSync } from 'fs'
 import { basename, join } from 'path'
+import { openOssNotice } from './ossNotice'
 import {
   startScan,
   cancelScan,
@@ -321,6 +322,10 @@ export function registerIpcHandlers(): void {
       ]
     })
     return result.canceled ? null : result.filePaths[0]
+  })
+
+  ipcMain.handle('app:openOssNotice', (event) => {
+    openOssNotice(BrowserWindow.fromWebContents(event.sender))
   })
 
   ipcMain.handle('shell:openExternal', (_event, url: string) => {

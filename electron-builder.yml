@@ -7,6 +7,7 @@ files:
   - '!src/*'
   - '!python-backend/*'
   - '!scripts/*'
+  - '!OSS_Notice.html'
   - '!electron.vite.config.{js,ts,mjs,cjs}'
   - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md,CLAUDE.md,RECON.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
