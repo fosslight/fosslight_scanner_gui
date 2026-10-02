@@ -28,6 +28,7 @@ const api = {
   selectDirectory: (): Promise<string | null> => ipcRenderer.invoke('dialog:selectDir'),
   selectArchive: (): Promise<string | null> => ipcRenderer.invoke('dialog:selectArchive'),
   openExternal: (url: string): Promise<void> => ipcRenderer.invoke('shell:openExternal', url),
+  openOssNotice: (): Promise<void> => ipcRenderer.invoke('app:openOssNotice'),
   openPath: (path: string): Promise<string> => ipcRenderer.invoke('shell:openPath', path),
   showInFolder: (path: string): Promise<void> => ipcRenderer.invoke('shell:showInFolder', path)
 }

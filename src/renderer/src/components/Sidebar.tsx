@@ -110,6 +110,14 @@ export default function Sidebar(): React.JSX.Element {
         </div>
       )}
 
+      <button
+        onClick={() => void window.api.openOssNotice()}
+        title="이 앱에 포함된 오픈소스의 라이선스 고지문"
+        className="mb-2 flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-gray-400 transition-colors hover:bg-sidebar-hover hover:text-gray-200"
+      >
+        Open Source Notice
+      </button>
+
       <div className="flex items-center justify-between border-t border-gray-700/60 px-3 pt-3">
         <div className="group relative">
           <span className="cursor-default text-xs text-gray-500">{version && `v${version}`}</span>
