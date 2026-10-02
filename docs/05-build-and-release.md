@@ -104,7 +104,12 @@ python-backend\pybuild\python\python.exe scripts\run-regression.py
 
 Java는 픽스처마다 요구 버전이 달라(fosslight_dependency가 범위 밖 Java를 거부한다)
 `FL_TEST_JRE11` / `FL_TEST_JDK17`로 경로를 지정한다. 없으면 해당 픽스처는 실패가 아니라
-SKIP으로 처리된다. go·helm도 미설치면 SKIP이다.
+SKIP으로 처리된다. go·helm도 미설치면 SKIP이다. maven 픽스처는 `mvn`이 필요해
+`FL_TEST_MVN`(maven 배포판의 `bin`) 또는 `%LOCALAPPDATA%\fl-verify\mvn`에서 찾는다.
+
+Git Bash에서 돌릴 때를 대비해 스크립트가 `NoDefaultCurrentDirectoryInExePath`를 지운다.
+이 값이 있으면 cmd.exe가 프로젝트 폴더의 `mvnw.cmd`를 이름만으로 해석하지 못해 maven
+분석이 0건으로 죽는다(실제 GUI 환경에는 없는 값이라 회귀 검사에서만 문제가 된다).
 
 전체 실행은 30~40분 걸린다(gradle 계열이 대부분). 빠른 확인은 `--only`를 쓴다.
 

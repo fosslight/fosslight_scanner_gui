@@ -49,6 +49,24 @@ def find_java(kind):
     return None
 
 
+def find_maven_bin():
+    """maven 배포판의 bin 디렉터리. 없으면 None."""
+    env = os.environ.get("FL_TEST_MVN")
+    if env and os.path.isfile(os.path.join(env, "mvn.cmd")):
+        return env
+    base = os.path.join(os.environ.get("LOCALAPPDATA", ""), "fl-verify", "mvn")
+    try:
+        for name in os.listdir(base):
+            cand = os.path.join(base, name, "bin")
+            if os.path.isfile(os.path.join(cand, "mvn.cmd")):
+                return cand
+    except OSError:
+        pass
+    if shutil.which("mvn"):
+        return ""  # 이미 PATH에 있음
+    return None
+
+
 def tool_exists(tool):
     return shutil.which(tool) is not None
 
@@ -77,6 +95,19 @@ def run_fixture(fx, tests_dir, out_root):
             return "SKIP", None, f"'{tool}' 미설치"
 
     env = dict(os.environ)
+    # Git Bash가 심어두는 값. cmd.exe가 현재 폴더의 mvnw.cmd/mvn을 해석하지 못하게 만들어
+    # maven 분석이 "배치 파일이 아닙니다"로 죽는다. 실제 GUI에는 없는 값이라 제거한다.
+    # (os.environ은 Windows에서 키를 대문자로 정규화하므로 대소문자 무시하고 찾는다)
+    for key in [k for k in env if k.lower() == "nodefaultcurrentdirectoryinexepath"]:
+        del env[key]
+
+    if fx.get("maven"):
+        mvn_bin = find_maven_bin()
+        if mvn_bin is None:
+            return "SKIP", None, "maven 없음 (FL_TEST_MVN 로 지정)"
+        if mvn_bin:
+            env["PATH"] = mvn_bin + os.pathsep + env.get("PATH", "")
+
     java_kind = fx.get("java")
     if java_kind:
         home = find_java(java_kind)
@@ -175,7 +206,8 @@ def main():
         for fx, status, count in rows:
             if status in ("OK", "DIFF") and count is not None:
                 fx["expected"] = count
-        baseline["baselineTotal"] = total
+        # --only로 일부만 갱신해도 전체 기준선 합계가 맞도록 모든 픽스처에서 다시 계산한다
+        baseline["baselineTotal"] = sum(f["expected"] for f in baseline["fixtures"])
         with open(BASELINE, "w", encoding="utf-8") as f:
             json.dump(baseline, f, ensure_ascii=False, indent=2)
             f.write("\n")

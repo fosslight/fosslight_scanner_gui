@@ -8,14 +8,19 @@
     "Java를 거부하므로 픽스처마다 명시한다(GUI의 javaRangeForGradle과 같은 기준).",
     "pre_clean: 분석이 남기는 산출물. 그대로 두면 다음 실행이 이를 재사용하거나",
     "실패하므로(예: helm은 requirements.lock이 남으면 두 번째 실행이 깨진다) 먼저 지운다.",
-    "expect_zero: 도구가 없거나 플랫폼이 달라 0건이 정상인 경우."
+    "expect_zero: 도구가 없거나 플랫폼이 달라 0건이 정상인 경우.",
+    "maven: mvn 실행이 필요한 픽스처. maven1은 fosslight가 임시 pom에 넣는",
+    "excludedScopes=test 때문에 test 스코프(junit·hamcrest)가 빠져 46이 정상이다",
+    "(48은 수동 mvn 실행이 남긴 licenses.xml을 재사용한 값이었다).",
+    "test_maven2의 target/generated-resources/licenses.xml은 저장소에 커밋된",
+    "픽스처 데이터라 지우면 안 된다(pom.xml의 하위 모듈이 실제로 없어 분석이 실패한다)."
   ],
-  "baselineTotal": 7,
+  "baselineTotal": 1296,
   "fixtures": [
     {
       "name": "pypi",
       "path": "test_pypi",
-      "expected": 7
+      "expected": 8
     },
     {
       "name": "npm1",
@@ -30,12 +35,12 @@
     {
       "name": "multi_pypi_npm",
       "path": "test_multi_pypi_npm",
-      "expected": 67
+      "expected": 68
     },
     {
       "name": "exclude",
       "path": "test_exclude",
-      "expected": 23
+      "expected": 24
     },
     {
       "name": "cargo",
@@ -99,8 +104,9 @@
     {
       "name": "maven1",
       "path": "test_maven1/lombok.maven",
-      "expected": 48,
+      "expected": 46,
       "java": "jre11",
+      "maven": true,
       "pre_clean": [
         "target"
       ]
@@ -109,13 +115,15 @@
       "name": "maven2",
       "path": "test_maven2",
       "expected": 48,
-      "java": "jre11"
+      "java": "jre11",
+      "maven": true
     },
     {
       "name": "maven_custom_repo",
       "path": "test_maven_custom_repo",
       "expected": 16,
       "java": "jre11",
+      "maven": true,
       "pre_clean": [
         "target"
       ]
