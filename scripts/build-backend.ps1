@@ -28,8 +28,9 @@ Write-Host "fosslight-scanner 설치 (엔진)..."
 & $python -m pip install --upgrade pip
 # 최소 버전: GUI의 Windows 보정(몽키패치)을 걷어낸 근거가 된 상류 수정이 들어간 버전.
 # 이보다 낮으면 gradle(WinError 2)·깊은 경로 pypi·MS Store python·다운로드 타임아웃
-# 문제가 다시 생긴다.
-& $python -m pip install --upgrade --upgrade-strategy eager "fosslight-scanner>=2.1.32" "fosslight-dependency>=4.1.55" "fosslight-util>=2.2.15"
+# 문제가 다시 생긴다. dependency 4.1.56은 helm 의존 차트 누락·NuGet CPM 중단(4.1.51~55 회귀),
+# util 2.2.16은 한글 경로에서 git 출력이 사라지는 문제를 고친 버전이다.
+& $python -m pip install --upgrade --upgrade-strategy eager "fosslight-scanner>=2.1.32" "fosslight-dependency>=4.1.56" "fosslight-util>=2.2.16"
 
 # 백엔드 스크립트를 번들 폴더로 복사 (electron-builder가 pybuild 통째로 담는다)
 Copy-Item "$backend\src\backend_main.py", "$backend\src\normalize_report.py" "$pybuild\" -Force
