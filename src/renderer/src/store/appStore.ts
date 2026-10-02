@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { GuiResult, RecentScan, ScanEvent, ScanMode, ScanTargetType } from '@shared/types'
+import { canonicalizeLicenses } from '../utils/licenseMatcher'
 
 export type ScanStatus = 'idle' | 'running' | 'success' | 'error' | 'cancelled'
 export type ToastTone = 'success' | 'error'
@@ -80,7 +81,7 @@ export const useAppStore = create<AppState>((set) => ({
   },
 
   setForm: (patch) => set((s) => ({ form: { ...s.form, ...patch } })),
-  setReport: (report) => set({ report }),
+  setReport: (report) => set({ report: report && canonicalizeLicenses(report) }),
   setRecentScans: (recentScans) => set({ recentScans }),
   clearToast: () => set({ toast: null }),
   clearOverviewNew: () => set({ overviewHasNew: false }),
@@ -121,7 +122,7 @@ export const useAppStore = create<AppState>((set) => ({
         case 'result':
           return {
             lastResultFile: e.resultFile,
-            report: e.report ?? s.report
+            report: e.report ? canonicalizeLicenses(e.report) : s.report
           }
         case 'done': {
           if (s.scanStatus === 'cancelled') return { scanPhase: '' }
