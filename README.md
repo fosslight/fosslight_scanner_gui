@@ -1,185 +1,191 @@
 # FOSSLight Scanner GUI
 
-Windows에서 프로젝트의 오픈소스와 라이선스를 찾아 주는 데스크톱 앱입니다. 분석할 폴더나 파일을 고르고 **스캔 시작**을 누르면, 화면에서 결과를 보고 엑셀 리포트로 저장할 수 있습니다.
+A Windows desktop app that finds open source and licenses in a project. Choose a folder or file, click **스캔 시작** (Start scan), review the results on screen, and save them as an Excel report.
 
-Python이나 스캐너를 따로 설치하지 않아도 됩니다. 설치 파일 안에 분석 엔진이 들어 있습니다.
+You do not need to install Python or the scanners separately. The analysis engine is included in the installer.
 
-- 설치 파일: [Releases](https://github.com/fosslight/fosslight_scanner_gui/releases)의 `fosslight-scanner-gui-<버전>-setup.exe`
-- 지원 환경: Windows 10 / 11 (64비트)
+- Installer: `fosslight-scanner-gui-<version>-setup.exe` from [Releases](https://github.com/fosslight/fosslight_scanner_gui/releases)
+- Supported environment: Windows 10 / 11 (64-bit)
 
-## 분석대상
+## What it analyzes
 
-한 번의 스캔에서 아래 세 가지를 함께 볼 수 있습니다. 필요한 항목만 골라서 실행할 수도 있습니다.
+One scan can cover all three of the following. You can also run only the ones you need.
 
-| 분석 | 보는 대상 | 이런 경우에 켭니다 |
-|:-----|:----------|:-------------------|
-| **Source Code** | 소스 코드 안의 라이선스 문구, 저작권, 코드 조각 | 소스 폴더를 그대로 분석할 때 |
-| **Dependency** | `package.json`, `pom.xml` 같은 파일에 적힌 라이브러리와 그 하위 라이브러리 | 패키지로 받아 쓰는 오픈소스를 확인할 때 |
-| **Binary** | 바이너리 파일 목록과, 알고 있는 오픈소스 정보 | 빌드 결과물이나 라이브러리 파일이 있을 때 |
+| Analysis | What it looks at | When to turn it on |
+|:---------|:-----------------|:-------------------|
+| **Source Code** | License text, copyright, and code snippets in source files | When you analyze a source folder as it is |
+| **Dependency** | Libraries declared in files such as `package.json` and `pom.xml`, and their transitive libraries | When you need to check open source pulled in as packages |
+| **Binary** | A list of binary files and known open source information | When the target includes build outputs or library files |
 
-분석할 수 있는 대상은 세 가지입니다.
+There are three kinds of analysis targets.
 
-- 내 PC의 폴더
-- 압축 파일 (zip, tar, tar.gz, tgz, tar.bz2, tar.xz, bz2, jar, whl, rpm, src.rpm)
-- 주소 (`https://` 또는 `git@`로 시작). Git 저장소는 받아서 분석하고, 주소가 압축 파일로 끝나면 그 파일을 내려받아 분석합니다.
+- A folder on your PC
+- An archive (zip, tar, tar.gz, tgz, tar.bz2, tar.xz, bz2, jar, whl, rpm, src.rpm)
+- A URL (starting with `https://` or `git@`). A Git repository is cloned and then analyzed. If the URL ends with an archive, that file is downloaded and analyzed.
 
-## 설치
+## Installation
 
-1. [Releases](https://github.com/fosslight/fosslight_scanner_gui/releases)에서 `fosslight-scanner-gui-<버전>-setup.exe`를 받습니다. 파일 크기는 약 259MB입니다.
-2. 설치 파일을 실행합니다. **Windows의 PC 보호** 창이 나오면 **추가 정보**를 누른 뒤 **실행**을 누릅니다. 코드 서명이 없는 설치 파일에서 나오는 안내입니다.
-3. 설치 위치를 확인하고 **설치**를 누릅니다. 기본 위치는 사용자 폴더 안의 `AppData\Local\Programs\fosslight-scanner-gui`이며, 설치 화면에서 바꿀 수 있습니다. 관리자 권한은 필요하지 않습니다.
-4. 설치가 끝나면 바탕화면 또는 시작 메뉴의 **FOSSLight Scanner**로 실행합니다.
+1. Download `fosslight-scanner-gui-<version>-setup.exe` from [Releases](https://github.com/fosslight/fosslight_scanner_gui/releases). The file is about 259MB.
+2. Run the installer. If **Windows protected your PC** appears, click **More info** and then **Run anyway**. This notice is shown for installers that are not code-signed.
+3. Confirm the install location and click **Install**. The default location is `AppData\Local\Programs\fosslight-scanner-gui` under your user folder. You can change it in the setup screen. Administrator rights are not required.
+4. When setup finishes, start **FOSSLight Scanner** from the desktop or the Start menu.
 
-설치만 할 때는 인터넷이 없어도 됩니다. 설치 후 용량은 약 1GB이며, 대부분은 Source 분석에 쓰는 라이선스 데이터입니다.
+Installation itself does not require an internet connection. After installation the app uses about 1GB, most of which is the license data used for Source analysis.
 
-주소로 프로젝트를 받거나, 없는 개발 도구를 설치할 때는 인터넷이 필요합니다. Git 저장소 주소를 분석하려면 PC에 [Git](https://git-scm.com/download/win)이 설치되어 있어야 합니다. 압축 파일 주소는 Git 없이 동작합니다.
+An internet connection is required when the app fetches a project from a URL or installs a missing development tool. Analyzing a Git repository URL requires [Git](https://git-scm.com/download/win) on the PC. An archive URL works without Git.
 
-## 실행하기
+## Run a scan
 
-왼쪽 메뉴에서 **New Scan**을 엽니다.
+Open **New Scan** from the left menu.
 
 ![New Scan](images/1_gui_new_scan.png)
 
-1. **분석 대상**에서 **폴더**, **압축파일**, **URL** 중 하나를 고릅니다.
-   - **폴더**: **폴더 선택**으로 프로젝트 폴더를 지정합니다. 리포트 저장 위치는 그 폴더로 채워집니다.
-   - **압축파일**: **파일 선택**으로 zip, tar.gz, jar 같은 파일을 지정합니다. 앱이 압축을 푼 뒤 분석합니다. 리포트는 그 파일이 있는 폴더에 저장됩니다.
-   - **URL**: 주소를 입력합니다. Git 저장소라면 **Branch 또는 Tag**를 적을 수 있고, 비워 두면 기본 브랜치를 사용합니다. 입력칸에서 포커스가 빠지면 그 브랜치나 태그가 있는지 확인합니다. 없으면 비슷한 이름을 보여 주고, 스캔은 시작되지 않습니다.
-2. **분석 유형**에서 실행할 항목을 고릅니다. 처음에는 세 가지가 모두 선택되어 있습니다. 하나 이상은 켜 두어야 합니다.
-3. Source Code를 켠 경우 **KB URL**과 **KB Token**이 보입니다. 조직에서 받은 주소와 토큰이 있을 때만 입력합니다. 비워 두면 그 서버 없이 Source 분석을 진행합니다.
-4. 분석에서 빼려는 폴더가 있으면 **제외 경로**에 적고 **추가**를 누릅니다. Enter 키로도 추가됩니다. 예: `node_modules`
-5. **리포트 저장 위치**를 확인합니다. 폴더와 압축파일은 자동으로 채워지고, URL은 **폴더 선택**으로 직접 지정합니다.
-6. **스캔 시작**을 누릅니다.
+1. Under **분석 대상** (Analysis target), choose **폴더** (Folder), **압축파일** (Archive), or **URL**.
+   - **Folder**: click **폴더 선택** (Choose folder) and select the project folder. The report output folder is filled in with that folder.
+   - **Archive**: click **파일 선택** (Choose file) and select a file such as zip, tar.gz, or jar. The app extracts it and then analyzes it. The report is saved in the folder that contains the file.
+   - **URL**: enter the address. For a Git repository you can enter a **Branch or Tag**. Leave it empty to use the default branch. When the field loses focus, the app checks that the branch or tag exists. If it does not, similar names are shown and the scan does not start.
+2. Under **분석 유형** (Analysis type), choose what to run. All three are selected by default. At least one must stay selected.
+3. When Source Code is selected, **KB URL** and **KB Token** are shown. Enter them only if your organization gave you an address and a token. If you leave them empty, Source analysis runs without that server.
+4. To skip a folder, enter it under **제외 경로** (Exclude paths) and click **추가** (Add). Enter also adds the path. Example: `node_modules`
+5. Check **리포트 저장 위치** (Report output folder). A folder or an archive fills this in automatically. For a URL, choose the folder yourself with **폴더 선택** (Choose folder).
+6. Click **스캔 시작** (Start scan).
 
-주소 예시는 아래와 같습니다.
+URL examples:
 
-- Git 저장소: `https://github.com/fosslight/fosslight_scanner`
-- 특정 태그: 위 주소를 넣고 Branch 또는 Tag에 `v2.1.25`
-- 압축 파일 주소: `https://github.com/fosslight/fosslight_scanner/archive/refs/tags/v2.1.25.zip`
+- Git repository: `https://github.com/fosslight/fosslight_scanner`
+- A specific tag: use the URL above and enter `v2.1.25` in Branch or Tag
+- An archive URL: `https://github.com/fosslight/fosslight_scanner/archive/refs/tags/v2.1.25.zip`
 
-**스캔 시작**이 비활성화되어 있으면 분석 대상이나 저장 위치가 비어 있거나, 입력한 Branch 또는 Tag 확인이 끝나지 않은 상태입니다.
+If **스캔 시작** (Start scan) is disabled, the analysis target or the output folder is empty, or the Branch or Tag check has not finished.
 
-## 분석 진행 과정
+## While a scan is running
 
-스캔이 시작되면 단계가 **다운로드 → 도구 설치 → 준비 → 분석 → 결과 정리** 순서로 표시됩니다. 다운로드와 도구 설치는 필요할 때만 진행됩니다. 왼쪽 메뉴 아래에는 **스캔 진행 중...**이 보입니다.
+After the scan starts, the steps are shown as **다운로드** (Download) → **도구 설치** (Install tools) → **준비** (Prepare) → **분석** (Analyze) → **결과 정리** (Normalize results). Download and tool installation run only when they are needed. **스캔 진행 중...** (Scan in progress...) appears under the left menu.
 
-프로젝트 크기에 따라 몇 분에서 몇십 분이 걸릴 수 있습니다. 화면의 로그는 저장 위치의 `fosslight_gui_<timestamp>.log`에도 같은 내용으로 남습니다.
+Depending on the project size, a scan can take from several minutes to several tens of minutes. The on-screen log is also written to `fosslight_gui_<timestamp>.log` in the output folder.
 
-**취소**를 누르면 확인 후 작업이 멈추고, **스캔이 취소되었습니다.**가 표시됩니다.
+**취소** (Cancel) asks for confirmation and then stops the work. The screen shows **스캔이 취소되었습니다.** (The scan was cancelled.)
 
-끝난 뒤 화면은 이렇게 구분합니다.
+When the scan ends, the screen distinguishes the outcome as follows.
 
-- **빨간색 배너**: 스캔이 완료되지 않았습니다. 메시지를 확인한 뒤 다시 실행합니다.
-- **노란색 경고**: 분석은 끝났고 리포트도 만들어졌습니다. 일부 도구가 없거나 설치에 실패한 경우입니다. 해당 패키지의 의존성만 빠졌을 수 있으니 경고 내용을 확인합니다.
-- 완료 후 왼쪽 **Overview**에 **New**가 붙습니다. 그 화면으로 결과를 확인합니다.
+- **Red banner**: the scan did not finish. Read the message and run it again.
+- **Yellow warning**: the analysis finished and a report was created. A tool was missing or its installation failed. Only that package's dependencies may be missing, so read the warning.
+- After a successful scan, **New** appears next to **Overview** in the left menu. Open that screen to review the results.
 
-앱을 다시 실행하면 마지막으로 성공한 스캔 결과가 열립니다.
+When you start the app again, it opens the last successful scan result.
 
-## 결과 확인
+## Review the results
 
-### Overview에서 먼저 확인하기
+### Start with Overview
 
 ![Overview](images/2_gui_overview.png)
 
-**Overview**는 이번 스캔의 요약입니다.
+**Overview** is the summary of this scan.
 
-- **Open Source 검출**: Source, Dependency, Binary에서 찾은 건수입니다. 카드를 누르면 그 목록으로 이동합니다.
-- **License 정보**: 서로 다른 라이선스가 몇 종인지, 위험도가 어떻게 나뉘는지, 항목이 많은 라이선스가 무엇인지 보여 줍니다. Strong Copyleft 또는 Restricted가 있으면 빨간 경고가 나오고, 누르면 License 화면으로 이동합니다.
-- **Result file**: 리포트가 저장된 폴더를 탐색기에서 엽니다.
-- **스캐너 정보**: 어떤 스캐너가 실행되었는지, 분석 경로와 제외 경로가 무엇인지 적혀 있습니다.
+- **Open Source 검출** (Open source detected): counts found by Source, Dependency, and Binary. Click a card to open that list.
+- **License 정보** (License information): how many distinct licenses were found, how risk is distributed, and which licenses have the most items. If a Strong Copyleft or Restricted license is present, a red warning is shown. Clicking it opens the License screen.
+- **Result file**: opens the report folder in File Explorer.
+- **스캐너 정보** (Scanner information): which scanners ran, and what the analysis path and exclude paths were.
 
-제외 경로로 빠진 항목과 Exclude로 표시된 항목은 이 통계에 포함되지 않습니다.
+Items skipped by an exclude path, and items marked Exclude, are left out of these statistics.
 
-위험도가 높은 라이선스가 있으면 License 화면을 먼저 보고, 이어서 건수가 있는 Source, Dependency, Binary 목록을 확인하면 됩니다.
+If a high-risk license is present, open the License screen first, then review the Source, Dependency, and Binary lists that have detections.
 
-### 검출 목록 보기
+### Detection lists
 
 ![Scan result](images/3_gui_scan_result.png)
 
-왼쪽의 **Source**, **Dependency**, **Binary** 옆 숫자는 검출 건수입니다. 목록은 한 페이지에 50건씩 나옵니다.
+The number next to **Source**, **Dependency**, and **Binary** in the left menu is the detection count. The list shows 50 rows per page.
 
-- 위 검색칸에서 경로, OSS 이름, 라이선스를 찾을 수 있습니다.
-- 열 제목을 누르면 정렬됩니다.
-- 행을 누르면 Download Location, Homepage, Copyright, Comment가 펼쳐집니다.
-- Exclude인 행은 흐리게 표시됩니다.
+- Use the search box to find a path, OSS name, or license.
+- Click a column header to sort.
+- Click a row to expand Download Location, Homepage, Copyright, and Comment.
+- Rows marked Exclude are dimmed.
 
-경로 열 이름은 화면마다 다릅니다. Source는 **Source Path**, Dependency는 **Package URL**, Binary는 **Binary Path**입니다.
+The path column name differs by screen. Source uses **Source Path**, Dependency uses **Package URL**, and Binary uses **Binary Path**.
 
-### 라이선스 의무 확인하기
+### License obligations
 
 ![License Risk](images/4_gui_license_risk.png)
 
-**License** 화면은 검출된 라이선스를 위험도가 높은 순으로 모읍니다. 각 라이선스 옆에는 주요 의무사항이 함께 나옵니다. 행을 누르면 그 라이선스가 어떤 항목에서 나왔는지 펼쳐집니다.
+The **License** screen groups detected licenses with higher risk first. The main obligations are shown next to each license. Click a row to expand the items where that license was found.
 
-| 분류 | 화면에 표시되는 위험도 | 이렇게 보면 됩니다 |
-|:-----|:-----------------------|:-------------------|
-| Restricted | 높음 | 사용 조건이 엄격합니다. 배포 전에 의무사항을 확인합니다. |
-| Strong Copyleft | 높음 | 수정하거나 함께 배포할 때 소스 공개 의무가 있을 수 있습니다. |
-| Weak Copyleft | 중간 | 라이브러리 자체에는 의무가 있고, 이를 쓰는 코드 전체에 퍼지는 범위는 라이선스마다 다릅니다. |
-| Permissive | 낮음 | 저작권과 라이선스 고지가 중심인 경우가 많습니다. |
-| 미분류 | 확인 필요 | 앱이 분류하지 못한 이름입니다. 화면 위 안내대로 직접 확인합니다. |
+| Category | Risk shown on screen | How to read it |
+|:---------|:---------------------|:---------------|
+| Restricted | High (높음) | The terms of use are strict. Check the obligations before you distribute. |
+| Copyleft | High (높음) | Modifying it or distributing it together may require you to disclose source code. |
+| Weak Copyleft | Medium (중간) | The library itself has obligations. How far those obligations reach into the code that uses it depends on the license. |
+| Permissive | Low (낮음) | The main requirements are often copyright and license notices. |
+| Unclassified (미분류) | Needs review (확인 필요) | A name the app could not classify. Check it yourself, as the notice at the top of the screen says. |
 
-미분류 라이선스는 숨기지 않습니다. 표 위에 **분류되지 않은 라이선스가 있습니다**라고 표시됩니다.
+Unclassified licenses are not hidden. Above the table, the screen says **분류되지 않은 라이선스가 있습니다** (There are unclassified licenses).
 
-## 저장되는 파일
+## Files that are saved
 
-**리포트 저장 위치**에 아래 파일이 생깁니다. Overview의 **Result file**로 그 폴더를 열 수 있습니다.
+The following files are created in **리포트 저장 위치** (Report output folder). You can open that folder from **Result file** on Overview.
 
-| 파일 | 용도 |
-|:-----|:-----|
-| `fosslight_report_*.xlsx` | 이번 분석의 엑셀 리포트입니다. [FOSSLight Hub](https://fosslight.org/hub-guide/learn/2_fosslight_report.html)에 올릴 수 있습니다. |
-| `fosslight_report_*.yaml` | 같은 결과의 YAML 파일입니다. |
-| `fosslight_gui_<timestamp>.log` | 스캔 화면에 보였던 로그입니다. 경고나 실패 원인을 다시 볼 때 엽니다. |
-| `gui_result.json` | 앱이 결과를 다시 열 때 읽는 파일입니다. |
+| File | Purpose |
+|:-----|:--------|
+| `fosslight_report_*.xlsx` | The Excel report for this analysis. It can be uploaded to [FOSSLight Hub](https://fosslight.org/hub-guide/learn/2_fosslight_report.html). |
+| `fosslight_report_*.yaml` | The same result as YAML. |
+| `fosslight_gui_<timestamp>.log` | The log that was shown on the scan screen. Open it to review warnings or the cause of a failure. |
+| `gui_result.json` | The file the app reads when it opens the result again. |
 
-화면에서 본 표와 엑셀은 같은 분석 결과입니다. Hub에 올리거나 다른 사람에게 전달할 때는 엑셀 파일을 사용합니다.
+The table on screen and the Excel file are the same analysis result. Use the Excel file when you upload it to Hub or share it with someone else.
 
-## 의존성 분석에 필요한 프로그램
+## Programs required for dependency analysis
 
-**Dependency**를 켜면, 프로젝트 안의 파일에 맞춰 필요한 프로그램을 확인합니다. 없으면 분석을 시작하기 전에 준비합니다. 압축 파일과 URL은 받은 뒤에 같은 방식으로 확인합니다. 준비에 실패해도 스캔 전체가 멈추지는 않고, 그 패키지 종류만 실패할 수 있습니다. 이 경우는 노란색 경고로 알려 줍니다.
+When **Dependency** is turned on, the app checks which programs the files in the project need. If one is missing, it prepares it before analysis starts. An archive or a URL is checked the same way after it has been fetched. A failed preparation does not stop the whole scan. Only that package type may fail, and the app reports it as a yellow warning.
 
-Windows 권한 창이 나오면 허용해야 설치가 계속됩니다.
+If Windows asks for permission, allow it so the installation can continue.
 
-| 프로젝트에 있는 파일 | 필요한 프로그램 | 없을 때 |
-|:---------------------|:----------------|:--------|
-| package.json | Node.js (npm) | 앱이 설치합니다. 설치 도구를 쓸 수 없으면 이번 분석에만 쓸 파일을 받아 사용합니다. |
-| pom.xml | Apache Maven, Java | Maven Wrapper(`mvnw`)나 이미 설치된 Maven이 없으면 Maven을 준비합니다. Java도 없으면 준비합니다. |
-| build.gradle, build.gradle.kts | Java | Gradle은 설치하지 않고 프로젝트 안의 Gradle Wrapper를 사용합니다. Java가 없으면 준비합니다. |
-| requirements.txt, setup.py, setup.cfg, pyproject.toml, Pipfile | Python | 앱에 포함된 Python으로 분석합니다. 따로 설치하지 않아도 됩니다. |
-| go.mod | Go | 앱이 설치합니다. |
-| Chart.yaml | Helm | 앱이 설치합니다. |
-| Cargo.toml | Rust (cargo) | 앱이 설치합니다. |
-| Gemfile | Ruby | 앱이 설치합니다. |
-| pubspec.yaml | Flutter | 자동으로 설치하지 않습니다. [Flutter Windows 설치 안내](https://docs.flutter.dev/get-started/install/windows)대로 설치한 뒤 다시 스캔합니다. |
-| Podfile, Podfile.lock | CocoaPods | Windows에서는 분석할 수 없습니다. macOS에서 분석합니다. |
+| File in the project | Required program | If it is missing |
+|:--------------------|:-----------------|:-----------------|
+| package.json | Node.js (npm) | The app installs it. If the installer tool cannot be used, it downloads a file and uses it only for this analysis. |
+| pom.xml | Apache Maven, Java | If neither the Maven Wrapper (`mvnw`) nor an already installed Maven is available, the app prepares Maven. It also prepares Java if Java is missing. |
+| build.gradle, build.gradle.kts | Java | The app does not install Gradle. It uses the Gradle Wrapper in the project. It prepares Java if Java is missing. |
+| requirements.txt, setup.py, setup.cfg, pyproject.toml, Pipfile | Python | Analysis uses the Python bundled in the app. A separate install is not required. |
+| go.mod | Go | The app installs it. |
+| Chart.yaml | Helm | The app installs it. |
+| Cargo.toml | Rust (cargo) | The app installs it. |
+| Gemfile | Ruby | The app installs it. |
+| pubspec.yaml | Flutter | The app does not install it automatically. Install it using the [Flutter Windows install guide](https://docs.flutter.dev/get-started/install/windows), then scan again. |
+| Podfile, Podfile.lock | CocoaPods | Cannot be analyzed on Windows. Analyze it on macOS. |
 
-## 업데이트와 제거
+## Updates and uninstall
 
-앱을 실행하면 새 버전이 있는지 확인합니다. 새 버전이 있으면 **다운로드** 또는 **나중에**를 고릅니다.
+When the app starts, it checks whether a newer version exists. If one does, choose **다운로드** (Download) or **나중에** (Later).
 
-**다운로드**를 고르면 받는 동안 앱을 사용할 수 없습니다. 받기가 끝나면 **지금 재시작**으로 설치 마법사를 엽니다. 재시작하면 진행 중인 스캔은 중단됩니다. 인터넷이 없거나 확인에 실패하면 안내 없이 현재 버전으로 계속 사용할 수 있습니다.
+While **다운로드** (Download) is in progress, the app cannot be used. When the download finishes, **지금 재시작** (Restart now) opens the setup wizard. Restarting stops a scan that is still running. If there is no internet connection, or the check fails, the app continues on the current version without a message.
 
-제거는 Windows **설정 > 앱 > 설치된 앱**에서 **FOSSLight Scanner**를 제거하거나, 설치 폴더의 `Uninstall FOSSLight Scanner.exe`를 실행합니다. 분석으로 만들어진 엑셀과 로그는 리포트 저장 위치에 그대로 남습니다.
+To uninstall, remove **FOSSLight Scanner** from Windows **Settings > Apps > Installed apps**, or run `Uninstall FOSSLight Scanner.exe` in the install folder. Excel files and logs created by analysis stay in the report output folder.
 
-## 문제가 생겼을 때
+## If something goes wrong
 
-**설치할 때 PC 보호 창이 나옵니다.**  
-**추가 정보 → 실행**으로 설치를 계속합니다.
+**Windows protected your PC during installation.**  
+Continue with **More info → Run anyway**.
 
-**Git 주소로 스캔이 시작되지 않습니다.**  
-Git 저장소 주소는 PC에 Git이 있어야 합니다. 압축 파일로 끝나는 주소는 Git 없이 받을 수 있습니다. Branch 또는 Tag를 적었다면 입력칸 밖을 한 번 눌러 확인이 끝났는지 봅니다. **유효하지 않음**이면 안내된 비슷한 이름으로 다시 입력합니다.
+**A scan does not start from a Git URL.**  
+A Git repository URL requires Git on the PC. A URL that ends with an archive can be downloaded without Git. If you entered a Branch or Tag, click outside the field once and check that the lookup finished. If it says **유효하지 않음** (Invalid), enter one of the similar names it suggests.
 
-**로그에 WARNING이 있습니다.**  
-리포트 파일이 만들어졌다면 분석은 완료된 것입니다. WARNING은 일부 도구가 없다는 식의 확인 안내입니다. 스캔이 실패한 경우는 빨간색 배너로 따로 표시됩니다.
+**The log contains WARNING.**  
+If a report file was created, the analysis finished. A WARNING is a notice to check, such as a missing tool. A failed scan is shown separately with a red banner.
 
-**Dependency 결과가 비어 있습니다.**  
-그 프로젝트의 패키지 프로그램을 준비하지 못했거나, Flutter·CocoaPods처럼 자동 설치되지 않는 경우입니다. 스캔 화면의 노란색 경고와 로그를 확인한 뒤, 필요한 프로그램을 설치하고 다시 스캔합니다.
+**The Dependency result is empty.**  
+The package program for that project could not be prepared, or it is a tool that is not installed automatically, such as Flutter or CocoaPods. Read the yellow warning on the scan screen and the log, install the required program, and scan again.
 
-**설치 용량이 큽니다.**  
-Source 분석용 라이선스 데이터가 용량의 대부분입니다. 설치 파일은 이 데이터를 압축한 상태이고, 설치하면서 풉니다.
+**The installed size is large.**  
+The license data for Source analysis accounts for most of the size. The installer ships that data compressed, and installation extracts it.
 
-**예전에 보던 결과가 다시 열리지 않습니다.**  
-마지막으로 성공한 스캔만 자동으로 열립니다. 취소했거나 오류로 끝난 스캔은 이전 성공 결과를 유지합니다. 저장해 둔 엑셀은 **Result file** 폴더에서 직접 열 수 있습니다.
+**A result you viewed before does not open again.**  
+Only the last successful scan opens automatically. A scan that was cancelled or ended with an error keeps the previous successful result. You can open a saved Excel file directly from the **Result file** folder.
 
-해결되지 않으면 앱 왼쪽 아래 GitHub 아이콘을 누르거나 [이슈](https://github.com/fosslight/fosslight_scanner_gui/issues)에 남겨 주세요. 저장 위치의 `fosslight_gui_<timestamp>.log`를 함께 첨부하면 원인을 찾기 쉽습니다. 왼쪽 아래 버전에 마우스를 올리면 앱과 포함된 스캐너 버전을 볼 수 있습니다.
+If the problem remains, click the GitHub icon at the bottom left of the app or open an [issue](https://github.com/fosslight/fosslight_scanner_gui/issues). Attaching `fosslight_gui_<timestamp>.log` from the output folder makes the cause easier to find. Hover over the version at the bottom left to see the app version and the bundled scanner versions.
 
-빌드와 내부 구조는 [docs/](docs/README.md)에 있습니다.
+Build and internal structure are described in [docs/](docs/README.md).
+
+## License
+
+This project is licensed under [Apache-2.0](LICENSE).
+
+For the 3rd party licenses included when the app is distributed as an installer, see [OSS_Notice.html](OSS_Notice.html).
