@@ -1,108 +1,75 @@
-# 06. 배포물 구성과 설치 용량
+# 06. 배포물 구성과 실행 시 생기는 파일
 
-## 1. 설치 파일(인스톨러)에 포함되는 것
+## 1. 설치 파일에 포함되는 것
 
-`fosslight-scanner-gui-<버전>-setup.exe` (약 259MB, NSIS/LZMA 압축) 하나에
-아래가 전부 들어 있습니다. **최종 사용자는 다른 것을 설치할 필요가 없습니다.**
-
-> **259MB(인스톨러) vs 1,054MB(설치 후)가 헷갈릴 수 있는데, 다운로드가 아니라
-> 압축 때문입니다.** scancode 라이선스 DB를 포함한 모든 파일이 인스톨러 안에
-> 실제로 들어 있고, 설치는 "압축 해제 + 복사"만 수행합니다.
-> **설치 중 네트워크 다운로드는 전혀 없으며, 오프라인 PC에서도 설치 가능합니다.**
-> 라이선스 DB(440MB)는 대부분 텍스트(라이선스 원문·규칙·인덱스)라 압축률이 매우
-> 높아서, 전체 1,054MB가 259MB로 줄어듭니다.
-> 실측: 라이선스 DB만 일반 zip으로 압축해도 440MB → 116MB(3.8배)이며,
-> 인스톨러가 쓰는 LZMA는 이보다 더 높은 압축률을 냅니다 (전체 기준 4.1배).
+`fosslight-scanner-gui-<버전>-setup.exe` 하나에 앱을 실행하는 데 필요한 파일이 들어 있다.
+설치 중에는 분석 엔진을 따로 받지 않는다. 오프라인 PC에서도 설치할 수 있다.
 
 ```mermaid
 flowchart LR
-    subgraph SETUP["setup.exe — 259MB (LZMA 압축 상태)"]
-        A["Electron/Chromium 런타임<br/>(UI 셸)"]
-        B["app.asar<br/>(앱 코드 번들)"]
-        C["동결 Python 백엔드<br/>Python 3.12 + fosslight-scanner<br/>+ scancode 라이선스 DB 440MB 포함"]
-        D["아이콘·locale 등"]
+    subgraph SETUP["setup.exe"]
+        A["Electron/Chromium 런타임"]
+        B["app.asar"]
+        C["resources/backend<br/>CPython 3.12 + fosslight + backend_main.py"]
     end
-    SETUP -->|"설치 = 압축 해제 + 복사<br/>(네트워크 다운로드 없음)"| INST["설치 폴더 — 1,054MB (비압축)"]
+    SETUP -->|"설치 폴더에 직접 해제"| INST["설치 폴더"]
 ```
 
-| 구성 요소 | 내용 | 원본(비압축) 크기 |
-|---|---|---|
-| Electron/Chromium 런타임 | `fosslight-scanner-gui.exe`(201MB), locales(44MB), GPU/ICU DLL 등 | 약 325MB |
-| `resources/app.asar` | 우리가 작성한 앱 코드 + 렌더러 번들(React, recharts 등 포함) | 28.6MB |
-| `resources/backend/` | 동결 Python 백엔드 (아래 3절 상세) | 699MB |
-| 기타 | elevate.exe, 아이콘 등 | <1MB |
-
-포함되지 **않는** 것: 분석 대상 프로젝트의 패키지 매니저(npm, Maven 등) —
-이는 대상 프로젝트마다 달라 번들이 불가능하며, 필요 시 런타임에 자동 설치합니다(2절).
-
-## 2. 설치 실행 시 시스템에 생기는 것
-
-### 설치 시점 (setup.exe 실행)
-
-| 항목 | 위치/내용 |
+| 구성 요소 | 내용 |
 |---|---|
-| 프로그램 본체 | 기본 `%LOCALAPPDATA%\Programs\fosslight-scanner-gui\` (설치 화면에서 변경 가능, 사용자 단위 설치) |
-| 바로가기 | 바탕화면 + 시작 메뉴 |
-| 제거 정보 | Windows "설정 > 앱" 목록 등록 + 설치 폴더의 Uninstall exe |
+| Electron/Chromium | `fosslight-scanner-gui.exe`, locales, DLL |
+| `resources/app.asar` | 메인·프리로드·렌더러 번들 |
+| `resources/backend/` | `python-backend/pybuild` 전체. `python/python.exe`, site-packages의 fosslight, `backend_main.py`, `normalize_report.py` |
 
-**하지 않는 것**: 서비스 등록, PATH/환경변수 변경, 시스템 전역 레지스트리 변경,
-타 프로그램 설치. 관리자 권한도 기본적으로 불필요합니다(사용자 단위 설치).
+포함되지 않는 것:
 
-### 첫 실행 이후 생성되는 데이터
+- 분석 대상 프로젝트의 패키지 매니저(npm, Go, Helm 등). 스캔 시점에 필요하면 설치한다.
+- scancode 라이선스 **인덱스 캐시**. 첫 분석 때 사용자 프로필 아래에 만든다. 라이선스 규칙 데이터 자체는 scancode 패키지 안에 있다.
+- `gui_result.json`. 스캔이 성공한 뒤에 생긴다.
+
+NSIS는 TEMP에 풀었다가 복사하지 않고 설치 폴더에 직접 해제한다. `scripts/patch-nsis-template.js`가 electron-builder 템플릿을 그렇게 고친다.
+
+예전에 PyInstaller로 묶던 설치본의 용량(설치 파일 약 259MB, 설치 후 약 1GB, 그중 licensedcode 캐시 440MB)은 현재 번들의 크기가 아니다. 그 캐시는 설치 폴더 밖에 두고, 백엔드는 실행 파일이 아니라 Python 트리이다.
+
+## 2. 설치 후 시스템에 생기는 것
+
+### 설치 시점
+
+| 항목 | 내용 |
+|---|---|
+| 프로그램 | 기본 `%LOCALAPPDATA%\Programs\fosslight-scanner-gui\`. 설치 화면에서 바꿀 수 있다 |
+| 바로가기 | 바탕화면과 시작 메뉴 |
+| 제거 | Windows 설정 > 앱에 등록되고, 설치 폴더에 제거 프로그램이 생긴다 |
+
+서비스 등록, 시스템 PATH 변경, 다른 프로그램 설치는 하지 않는다. 관리자 권한 없이 사용자 단위로 설치할 수 있다. 경로를 Program Files로 바꾸면 그때는 권한이 필요할 수 있다.
+
+### 실행 이후
 
 | 항목 | 위치 | 내용 |
 |---|---|---|
-| 앱 데이터 | `%APPDATA%\fosslight-scanner-gui\` | `gui_result.json`(최근 결과), `recent-scans.json`(최근 스캔 10건), Chromium 캐시 |
-| 스캔 리포트 | 사용자가 지정한 출력 폴더 | `fosslight_report_*.xlsx/.yaml`, `gui_result.json`, **`fosslight_gui_*.log`** |
+| 최근 결과 | `%APPDATA%\fosslight-scanner-gui\gui_result.json` | 마지막 성공 스캔의 정규화 결과. 앱이 다시 열 때 이 파일을 읽는다 |
+| 최근 목록 | 같은 폴더의 `recent-scans.json` | 최대 10건. 파일이 지워진 항목은 목록에서 빠진다 |
+| 스캔 리포트 | 사용자가 지정한 출력 폴더 | `fosslight_report_*.xlsx`, `fosslight_gui_<시각>.log` |
+| 라이선스 인덱스 | `%LOCALAPPDATA%\FOSSLightScanner\scancode` | 첫 Source 분석 때 생성. 이후 스캔은 재사용 |
+| Java | `%APPDATA%\fosslight-scanner-gui\dep-java` 또는 `dep-jdk` | 시스템에 Java가 없을 때 Temurin 11 JRE, 버전 카탈로그면 Temurin 17 JDK |
+| Maven | 같은 폴더의 `dep-maven` | `mvnw`와 `mvn`이 없을 때 Apache Maven 3.9.9 |
 
-> **스캔 로그(`fosslight_gui_<시각>.log`)**: 스캔 진행 화면의 로그 콘솔(터미널창)에
-> 표시된 내용과 **동일하게** 저장됩니다(`[레벨] 메시지` 형식). 비정상 종료 시에만
-> 화면에 안 나온 stderr가 진단용으로 파일 말미에 추가됩니다. 구현: `src/main/scanRunner.ts`.
+로그 파일은 스캔 화면 콘솔과 같은 `[레벨] 메시지` 형식이다. 종료 코드가 0이 아니면, 화면에 없던 stderr를 최대 64KB까지 파일 끝에 붙인다. 구현은 `src/main/scanRunner.ts`이다.
 
-### 런타임 조건부 설치 (의존성 분석 도구 자동 설치)
+`gui_result.json`은 출력 폴더에 쓰지 않는다. `--result-file`이 userData 경로를 넘긴다.
 
-폴더를 의존성 분석할 때 필요한 패키지 매니저가 없으면 **winget으로 자동 설치**합니다
-(진행 상황이 "도구 설치" 단계로 표시됨). 이는 앱 설치가 아니라 사용 시점의 선택적
-설치이며, 대상은 manifest에 따라 다릅니다:
+### 스캔 중에만 설치되는 도구
 
-| 감지 파일 | 설치 대상 (winget) |
+Dependency 분석에 필요하고 PC에 없을 때만 준비한다. 앱 설치와는 별개다.
+
+| 감지 파일 | 준비 방법 |
 |---|---|
-| package.json | Node.js LTS |
-| pom.xml / build.gradle | Maven / Gradle (+ Temurin JDK 21) |
-| requirements.txt, setup.py, Pipfile | Python 3.12 |
-| go.mod / Cargo.toml / Gemfile | Go / Rustup / Ruby |
-| pubspec.yaml | (자동 설치 미지원 — 수동 안내) |
+| package.json | winget으로 Node.js LTS. 실패하면 공식 zip을 받아 그 스캔의 PATH에만 넣는다 |
+| pom.xml | `mvnw`나 `mvn`이 없으면 Apache Maven 3.9.9를 받는다. Java도 없으면 아래 Java를 받는다 |
+| build.gradle, build.gradle.kts | Gradle은 받지 않는다. Java가 없으면 Temurin 11 JRE. 버전 카탈로그가 있으면 Temurin 17 JDK |
+| requirements.txt, setup.py, setup.cfg, pyproject.toml, Pipfile | 번들 Python으로 venv를 만든다 |
+| go.mod, Chart.yaml, Cargo.toml, Gemfile | winget으로 Go, Helm, Rustup, Ruby |
+| pubspec.yaml | 설치하지 않고 Flutter를 직접 설치하라고 안내한다 |
+| Podfile, Podfile.lock | Windows에서는 분석하지 않는다고 안내한다 |
 
-## 3. 설치 용량 약 1GB — 주요 점유 항목
-
-설치(비압축) 총 **약 1,054MB**. 내역:
-
-```mermaid
-pie title 설치 용량 구성 (총 ~1,054MB)
-    "scancode 라이선스 DB (licensedcode)" : 440
-    "Electron/Chromium 런타임" : 325
-    "Python 런타임 + 기타 분석 라이브러리" : 260
-    "앱 코드 (app.asar)" : 29
-```
-
-| 순위 | 항목 | 크기 | 설명 |
-|---|---|---|---|
-| 1 | `backend\_internal\licensedcode` | **440MB** | scancode-toolkit의 라이선스 탐지 데이터. 그중 `data/cache` 394MB(사전 빌드된 라이선스 인덱스), `rules` 27MB(탐지 규칙 3만+개), `licenses` 18MB(라이선스 원문). **Source 분석의 정확도가 여기서 나옵니다** |
-| 2 | Electron/Chromium 런타임 | **325MB** | exe 201MB + locales 44MB + GPU/ICU/기타 DLL. Electron 앱의 고정 비용 |
-| 3 | 백엔드의 나머지 Python 스택 | **260MB** | numpy(40MB), libarchive/libmagic 네이티브(30MB), matplotlib+PIL(27MB — fosslight_util의 그래프 의존성), pandas(13MB), grpc(11MB), Python 3.12 런타임 등 수백 개 패키지 |
-| 4 | `app.asar` | 29MB | 우리가 작성한 코드 + 렌더러 번들 |
-
-### 왜 이 용량을 그대로 두는가 (설계 결정)
-
-- **licensedcode 440MB**: 제거하면 source 분석이 불가능. 인덱스 캐시(394MB)를 빼고
-  첫 실행 시 생성하게 할 수도 있으나, 첫 스캔이 수 분 느려지고 실패 지점이 늘어남.
-- **onedir(비압축 배치)**: onefile로 만들면 설치 크기는 줄지만 **매 실행마다**
-  수백 MB를 %TEMP%에 풀어야 해서 스캔 시작이 수십 초 느려지고 백신 오탐이 잦음.
-- 인스톨러 자체는 LZMA 압축으로 1,054MB → 259MB로 배포됩니다.
-
-### 용량을 줄이고 싶다면 (후속 과제 후보)
-
-1. matplotlib/PIL — fosslight_util이 리포트 그래프용으로 끌어오는 의존성 (~27MB).
-   PyInstaller `excludes`로 제외 가능한지 검증 필요 (그래프 기능 미사용 확인 후)
-2. `licensedcode/data/cache` 최초 실행 시 생성 방식 검토 (위 트레이드오프 참고)
-3. Electron 대신 Tauri(WebView2) 전환 시 런타임 ~300MB 절감 — 대규모 공사
+winget 설치 중 Windows 권한 창이 나오면 사용자가 허용해야 계속된다. 설치에 실패해도 스캔 전체를 멈추지는 않고, 그 도구가 필요한 분석만 실패할 수 있다.
