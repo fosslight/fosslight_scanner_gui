@@ -1,0 +1,29 @@
+# Check commit messages and the build before merging
+
+name: Pull requests fosslight_scanner_gui
+
+on:
+  pull_request:
+    branches:
+      - '*'
+
+jobs:
+  check-commit-message:
+    uses: fosslight/.github/.github/workflows/base-check-commit-message.yml@main
+    secrets:
+      envPAT: ${{ secrets.GITHUB_TOKEN }}
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'npm'
+    - name: Install Node dependencies
+      run: npm ci
+    - name: Type check
+      run: npm run typecheck
+    # Lint is left out until the two existing react-hooks errors are fixed
+    # (OverviewPage.tsx, ScanPage.tsx); otherwise every pull request fails.

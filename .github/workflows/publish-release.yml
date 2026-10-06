@@ -1,0 +1,92 @@
+# 1. Update changelog and bump up the version on main
+# 2. Build the Windows installer and upload it in the release assets
+#    (exe, blockmap and latest.yml: electron-updater reads latest.yml to update installed apps)
+
+name: Release fosslight_scanner_gui
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  update-changelog:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+        ref: main
+    - name: Get Release
+      uses: bruceadams/get-release@v1.3.2
+      id: get_release
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+    - name: Bump up version
+      env:
+        NEW_TAG: ${{ steps.get_release.outputs.tag_name }}
+      run: |
+        new_version=${NEW_TAG#v}
+        echo New version: ${new_version}
+        # package.json and package-lock.json
+        npm version "$new_version" --no-git-tag-version --allow-same-version
+    - name: Update changelog with gren
+      env:
+        GREN_GITHUB_TOKEN: ${{ secrets.TOKEN }}
+      run: |
+        # npx, not npm install: installing would add gren to package.json and commit it
+        npx --yes github-release-notes@0.17.3 changelog --override
+    - name: Commit files
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "fosslight-dev@lge.com"
+        git add CHANGELOG.md package.json package-lock.json
+        git commit -m "Update ChangeLog"
+    - name: Push changes
+      uses: ad-m/github-push-action@v1.3.0
+      with:
+        github_token: ${{ secrets.TOKEN }}
+        branch: main
+
+  build:
+    needs: update-changelog
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: main
+    - name: Check the version matches the release
+      shell: bash
+      env:
+        TAG: ${{ github.event.release.tag_name }}
+      run: |
+        version=$(node -p "require('./package.json').version")
+        echo "package.json: $version / release: $TAG"
+        test "$version" = "${TAG#v}"
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'npm'
+    - name: Install Node dependencies
+      run: npm ci
+    # The backend is a redistributable Python 3.12 with fosslight-scanner installed
+    # (python-backend/pybuild); electron-builder.yml packs it through extraResources.
+    - name: Build Python backend
+      run: npm run build:backend
+    - name: Build Electron app and package installer
+      run: npm run build && npx electron-builder --win --publish never
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Upload installer to the release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ github.event.release.tag_name }}
+        files: |
+          dist/*.exe
+          dist/*.blockmap
+          dist/latest.yml
+        fail_on_unmatched_files: true
